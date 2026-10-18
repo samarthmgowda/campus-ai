@@ -1,0 +1,39 @@
+POST http://localhost:8080/documents
+Content-Type: application/json
+
+{
+  "title": "Hackathon Rules",
+  "content": "Each team must contain between 2 and 4 students."
+}
+
+### Chat orchestrator endpoint
+POST http://localhost:8080/api/chat
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "question": "How many students can be in a hackathon team?",
+  "forceRag": true
+}
+
+### Ask endpoint (GET-based)
+GET http://localhost:8080/ask?q=How+many+students+can+be+in+a+hackathon+team
+X-Demo-User: 1
+
+### Agent endpoint (POST - Phase 3 execution loop)
+POST http://localhost:8080/api/agent
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "question": "Find teammates for my project"
+}
+
+### Agent: RAG fallback
+POST http://localhost:8080/api/agent
+X-Demo-User: 2
+Content-Type: application/json
+
+{
+  "question": "What is the attendance policy?"
+}

@@ -1,0 +1,47 @@
+package com.campusconnect.campus_ai.controller;
+
+import com.campusconnect.campus_ai.service.DocumentService;
+import com.campusconnect.campus_ai.service.RagEvalService;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.Map;
+
+@RestController
+@RequestMapping("/eval/rag")
+public class RagEvalController {
+
+    private final RagEvalService evalService;
+    private final DocumentService documentService;
+
+    public RagEvalController(RagEvalService evalService, DocumentService documentService) {
+        this.evalService = evalService;
+        this.documentService = documentService;
+    }
+
+    /** GET /eval/rag/cases — admin: view the curated Q/A set */
+    @GetMapping("/cases")
+    public List<Map<String, Object>> cases(
+            @RequestHeader(value = "X-Demo-User", required = false) String header) {
+        documentService.requireAdmin(requireHeader(header));
+        return evalService.cases();
+    }
+
+    /**
+     * POST /eval/rag/run?retrievalOnly=true — admin: Recall@K per arm (+win/tie/loss);
+     * retrievalOnly=false adds full /ask generation per arm (correctness, faithfulness,
+     * citations, latency, abstention rate). Needs Ollama up; run on Windows JDK 22.
+     */
+    @PostMapping("/run")
+    public RagEvalService.EvalSummary run(
+            @RequestHeader(value = "X-Demo-User", required = false) String header,
+            @RequestParam(defaultValue = "true") boolean retrievalOnly) {
+        documentService.requireAdmin(requireHeader(header));
+        return evalService.run(retrievalOnly);
+    }
+
+    private Long requireHeader(String header) {
+        if (header != null && !header.isBlank()) try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        throw new IllegalArgumentException("X-Demo-User header required");
+    }
+}
