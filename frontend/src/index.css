@@ -74,6 +74,20 @@
     animation: rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* Float and drift back the `Banner` washes. Both are declared in
+     tailwind.config.js and were previously unused — the blurred colour fields
+     on the violet banners were completely static. They are slow (6s / 18s) and
+     low-amplitude on purpose: this is ambience behind content, not an effect. */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+  .animate-float-slow {
+    animation: float 9s ease-in-out infinite;
+  }
+  .animate-drift {
+    animation: drift 18s ease-in-out infinite;
+  }
+
   @keyframes fadeIn {
     from { opacity: 0; }
     to { opacity: 1; }
@@ -101,6 +115,15 @@
   @keyframes rise {
     from { opacity: 0; transform: translateY(14px); }
     to { opacity: 1; transform: translateY(0); }
+  }
+  @keyframes float {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-12px); }
+  }
+  @keyframes drift {
+    0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+    33% { transform: translate3d(3%, -4%, 0) scale(1.06); }
+    66% { transform: translate3d(-3%, 3%, 0) scale(0.97); }
   }
 
   .scrollbar-thin {
@@ -141,5 +164,15 @@
   .stagger > * {
     animation: rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
     animation-delay: calc(var(--stagger, 0) * 45ms);
+  }
+
+  /* A press affordance for the things that are clickable but are not <button>
+     — link cards, row wrappers. A button already gets this from its active
+     state; these need it spelled out or the whole page feels inert. */
+  .press {
+    transition: transform 140ms cubic-bezier(0.22, 1, 0.36, 1);
+  }
+  .press:active {
+    transform: scale(0.985);
   }
 }
