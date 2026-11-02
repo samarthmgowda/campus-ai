@@ -1,4 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
+import { useNavigate } from 'react-router-dom'
+import { useEffect } from 'react'
 import { api } from '../api/client'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
@@ -11,7 +13,18 @@ function myId(): number | null {
 }
 
 export default function DashboardPage() {
+  const navigate = useNavigate()
   const demoUserId = myId()
+  const role = localStorage.getItem('demoUserRole')
+
+  // Redirect alumni / recruiters to their own dashboard routes
+  useEffect(() => {
+    if (role === 'alumni') {
+      navigate('/dashboard/alumni', { replace: true })
+    } else if (role === 'recruiter') {
+      navigate('/dashboard/recruiter', { replace: true })
+    }
+  }, [role, navigate])
 
   const {
     data: dash,

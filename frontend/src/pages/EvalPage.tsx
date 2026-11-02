@@ -19,6 +19,7 @@ interface ArmResult {
   cited: boolean
   latencyMs: number | null
   answerPreview: string | null
+  perFactCitationPrecision: number
 }
 
 interface RagCase {
@@ -43,6 +44,8 @@ interface RagSummary {
   citationRateImproved: number
   precisionAtKBasic: number
   precisionAtKImproved: number
+  perFactCitationPrecisionBasic: number
+  perFactCitationPrecisionImproved: number
   abstentionRate: number
   avgLatencyBasicMs: number
   avgLatencyImprovedMs: number
@@ -226,6 +229,7 @@ export default function EvalPage() {
                       <MetricRow label="Correctness" basic={rag.data.correctnessBasic} improved={rag.data.correctnessImproved} />
                       <MetricRow label="Faithfulness" basic={rag.data.faithfulnessBasic} improved={rag.data.faithfulnessImproved} />
                       <MetricRow label="Citation rate" basic={rag.data.citationRateBasic} improved={rag.data.citationRateImproved} />
+                      <MetricRow label="Per-fact citation precision" basic={rag.data.perFactCitationPrecisionBasic} improved={rag.data.perFactCitationPrecisionImproved} />
                       <MetricRow label="Avg latency (ms)" basic={rag.data.avgLatencyBasicMs} improved={rag.data.avgLatencyImprovedMs} fmt={v => Math.round(v).toString()} />
                     </>
                   )}
@@ -259,6 +263,7 @@ export default function EvalPage() {
                                 <span className="flex items-center gap-1"><BoolDot v={r.correct} /> correct</span>
                                 <span className="flex items-center gap-1"><BoolDot v={r.faithful} /> faithful</span>
                                 <span className="flex items-center gap-1"><BoolDot v={r.cited} /> cited</span>
+                                <span className="text-caption text-surface-500">per-fact cite: {r.perFactCitationPrecision.toFixed(2)}</span>
                               </>
                             )}
                           </div>

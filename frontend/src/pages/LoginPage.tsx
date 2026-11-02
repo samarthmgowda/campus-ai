@@ -1,10 +1,17 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Student } from '../types'
+import type { DemoUser } from '../types'
 import { Button } from '../components/ui/Button'
+import { Badge } from '../components/ui/Badge'
 import { cn } from '../utils/cn'
 import { Bot, ArrowRight, CheckCircle2, MessagesSquare, FolderKanban, CalendarDays, AlertTriangle, Loader2 } from 'lucide-react'
+
+const ROLE_LABELS = {
+  student: 'Student',
+  alumni: 'Alumni',
+  recruiter: 'Recruiter',
+}
 
 const PILLARS = [
   { icon: MessagesSquare, label: 'Ask grounded answers' },
@@ -14,13 +21,13 @@ const PILLARS = [
 
 export default function LoginPage() {
   const navigate = useNavigate()
-  const [users, setUsers] = useState<Student[]>([])
+  const [users, setUsers] = useState<DemoUser[]>([])
   const [selectedUser, setSelectedUser] = useState<string>('')
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   useEffect(() => {
-    api.get<Student[]>('/demo/users')
+    api.get<DemoUser[]>('/demo/users')
       .then(setUsers)
       .catch(() => setError('Could not load demo users. Is the backend running on port 8080?'))
       .finally(() => setLoading(false))
@@ -38,7 +45,13 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedUser) return
+    const user = users.find(u => String(u.id) === selectedUser)
     localStorage.setItem('demoUserId', selectedUser)
+    if (user?.role) {
+      localStorage.setItem('demoUserRole', user.role)
+    } else {
+      localStorage.removeItem('demoUserRole')
+    }
     navigate('/home')
   }
 
@@ -134,8 +147,18 @@ export default function LoginPage() {
                     </span>
                     <span className="flex-1 text-left min-w-0">
                       <span className="block font-semibold text-body-sm text-campus-950 truncate">{user.name}</span>
-                      <span className="block text-caption text-surface-400 mt-0.5">{user.branch} · Year {user.year}</span>
+                      <span className="block text-caption text-surface-400 mt-0.5">
+                        {user.branch && <span>{user.branch} · </span>}
+                        {user.year != null && <span>Year {user.year} · </span>}
+                        {user.company && <span>{user.company} · </span>}
+                        {user.currentRole && <span>{user.currentRole}</span>}
+                      </span>
                     </span>
+                    {user.role && (
+                      <Badge variant="outline" size="sm" className="flex-shrink-0">
+                        {ROLE_LABELS[user.role]}
+                      </Badge>
+                    )}
                     {active && <CheckCircle2 className="h-5 w-5 text-campus-600 flex-shrink-0" aria-hidden="true" />}
                   </label>
                 )

@@ -59,7 +59,9 @@ const NAV_GROUPS = [
       { path: '/skills-graph', label: 'Skill Graph', icon: Network, badge: null },
       { path: '/roadmaps', label: 'Roadmaps', icon: Map, badge: null },
       { path: '/referrals', label: 'Referrals', icon: Briefcase, badge: null },
+      { path: '/dashboard/alumni', label: 'Alumni Hub', icon: GraduationCap, badge: null },
       { path: '/recruiter', label: 'Careers', icon: Briefcase, badge: null },
+      { path: '/dashboard/recruiter', label: 'Recruiter Hub', icon: Briefcase, badge: null },
       { path: '/documents', label: 'Library', icon: FileText, badge: null },
     ],
   },
@@ -90,6 +92,8 @@ const TITLES: Record<string, { title: string; sub: string }> = {
   '/events': { title: 'Events', sub: 'Hackathons, workshops, gatherings' },
   '/mentorship': { title: 'Mentorship', sub: 'Learn from those who walked it' },
   '/recruiter': { title: 'Careers', sub: 'Roles and your applications' },
+  '/dashboard/alumni': { title: 'Alumni Dashboard', sub: 'Mentorship and referrals' },
+  '/dashboard/recruiter': { title: 'Recruiter Dashboard', sub: 'Postings and applications' },
   '/analytics': { title: 'Analytics', sub: 'The pulse of your campus' },
   '/eval': { title: 'Evaluation', sub: 'RAG and teammate research harness' },
   '/admin': { title: 'Admin', sub: 'Keep the community healthy' },
@@ -189,7 +193,7 @@ function SidebarContent({ onNavigate, demoUser, onLogout }: { onNavigate: () => 
               </div>
               <div className="flex-1 text-left min-w-0">
                 <p className="font-medium text-campus-950 truncate">{demoUser ? `User #${demoUser}` : 'Demo User'}</p>
-                <p className="text-micro text-surface-400 truncate">Student · MIT Mysore</p>
+                <p className="text-micro text-surface-400 truncate capitalize">{localStorage.getItem('demoUserRole') || 'student'} · MIT Mysore</p>
               </div>
               <ChevronDown className={cn('h-4 w-4 text-surface-400 transition-transform', userMenuOpen && 'rotate-180')} />
             </button>
@@ -272,7 +276,7 @@ export default function Layout() {
             <div className="ml-auto flex items-center gap-2">
               <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-campus-900/10 bg-white/70 px-3 py-1.5 text-caption text-surface-600">
                 <Sparkles className="h-3.5 w-3.5 text-accent-500" aria-hidden="true" />
-                {demoUser ? `Signed in as #${demoUser}` : 'Demo mode'}
+                {demoUser ? `Signed in as #${demoUser} (${localStorage.getItem('demoUserRole') || 'student'})` : 'Demo mode'}
               </span>
             </div>
           </div>

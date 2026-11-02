@@ -1,5 +1,19 @@
 // Backend API response types
 
+export interface DemoUser {
+  id: number
+  role: 'student' | 'alumni' | 'recruiter'
+  name: string
+  branch?: string
+  year?: number
+  skills?: string
+  currentRole?: string
+  currentCompany?: string
+  company?: string
+  roleTitle?: string
+  availability?: string
+}
+
 export interface Student {
   id: number
   name: string

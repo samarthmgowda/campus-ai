@@ -10,6 +10,8 @@ import RoadmapPage from './pages/RoadmapPage'
 import ReferralPage from './pages/ReferralPage'
 import SkillsGraphPage from './pages/SkillsGraphPage'
 import DashboardPage from './pages/DashboardPage'
+import AlumniDashboardPage from './pages/AlumniDashboardPage'
+import RecruiterDashboardPage from './pages/RecruiterDashboardPage'
 import DocumentsPage from './pages/DocumentsPage'
 import ProjectsPage from './pages/ProjectsPage'
 import EventsPage from './pages/EventsPage'
@@ -49,6 +51,8 @@ function App() {
             <Route path="/search" element={<SearchPage />} />
             <Route path="/reviews" element={<ReviewsPage />} />
             <Route path="/dashboard" element={<DashboardPage />} />
+            <Route path="/dashboard/alumni" element={<AlumniDashboardPage />} />
+            <Route path="/dashboard/recruiter" element={<RecruiterDashboardPage />} />
             <Route path="/skills-graph" element={<SkillsGraphPage />} />
             <Route path="/roadmaps" element={<RoadmapPage />} />
             <Route path="/referrals" element={<ReferralPage />} />

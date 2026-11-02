@@ -63,6 +63,7 @@ export default function ChatPage() {
   const [liveResponse, setLiveResponse] = useState<AgentResponse | null>(null)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
+  const lastQuestionRef = useRef<string | null>(null)
 
   const { data: users = [] } = useQuery({
     queryKey: ['demo-users'],
@@ -83,6 +84,14 @@ export default function ChatPage() {
 
   const sendMutation = useMutation({
     mutationFn: (q: string) => api.post<AgentResponse>('/api/agent', { question: q }),
+    onSuccess: (resp) => {
+      // Persist the live answer to local state so it renders immediately
+      // (history refetch from the backend may lag by a few ms).
+      setLiveResponse(resp)
+      // Invalidate history so the backend-persisted turn is pulled into `history`.
+      queryClient.invalidateQueries({ queryKey: ['chat-history', demoUser] })
+      queryClient.invalidateQueries({ queryKey: ['chat-history-count', demoUser] })
+    },
   })
 
   const clearMutation = useMutation({
@@ -106,9 +115,24 @@ export default function ChatPage() {
     scrollToBottom()
   }, [history.length, liveResponse, sendMutation.isPending, scrollToBottom])
 
+  // Clear liveResponse once the history refetch includes the just-answered turn,
+  // preventing the turn from rendering twice (once in liveResponse, once in history).
+  useEffect(() => {
+    if (!liveResponse || history.length === 0 || sendMutation.isPending) return
+    const last = history[0] // history is ordered most-recent-first by the backend
+    // If the latest history turn matches the question we just sent, the turn is
+    // now persisted in history — clear the live copy to avoid rendering twice.
+    if (last && last.question === lastQuestionRef.current) {
+      setLiveResponse(null)
+    }
+  }, [history, liveResponse, sendMutation.isPending])
+
   const ask = (q: string) => {
     const trimmed = q.trim()
     if (!trimmed || sendMutation.isPending) return
+    // Track the question we're about to ask so we can detect when the
+    // history refetch picks it up (and clear the live copy to avoid dupes).
+    lastQuestionRef.current = trimmed
     // Clear any previous live response so it doesn't repeat on the next ask
     setLiveResponse(null)
     // Show the user's question as a chat bubble while waiting for the response
@@ -116,12 +140,9 @@ export default function ChatPage() {
     // Keep the query visible in the input until the response arrives,
     // then clear it so the user sees the answer take its place.
     sendMutation.mutate(trimmed, {
-      onSuccess: (resp) => {
+      onSuccess: () => {
         setActiveAsk(null)
         setQuestion('') // clear input only after response is received
-        setLiveResponse(resp)
-        queryClient.invalidateQueries({ queryKey: ['chat-history', demoUser] })
-        queryClient.invalidateQueries({ queryKey: ['chat-history-count', demoUser] })
       },
       onSettled: (resp: AgentResponse | undefined) => {
         if (!resp) return;
