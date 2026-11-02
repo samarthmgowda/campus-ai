@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { PageContainer } from '../components/ui/PageContainer'
+import { PageHeader } from '../components/ui/PageState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { DemoUser, ChatTurn, ChatSource, AgentResponse } from '../types'
@@ -173,17 +174,33 @@ export default function ChatPage() {
 
   return (
     <PageContainer width="reading">
-      {/* Top strip */}
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-card flex-shrink-0">
-          <Bot className="h-5 w-5 text-accent-300" aria-hidden="true" />
-        </div>
-        <div className="min-w-0 flex-1">
-          <p className="font-display font-bold text-[19px] text-campus-950 tracking-tight leading-tight">Ask Campus AI</p>
-          <p className="text-caption text-surface-500 truncate">Answers grounded in your college knowledge base — never invented</p>
-        </div>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <div className="relative hidden sm:block">
+      <PageHeader
+        title="Ask Campus AI"
+        sub="Answers grounded in your college knowledge base — never invented"
+        actions={
+          <Badge variant="success">
+            <span className="mr-1 inline-block h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true" />
+            Grounded
+          </Badge>
+        }
+      />
+      {/* Toolbar: history plus a clearly-labelled demo identity override.
+          Signing in already sets the acting user; this stays only so a demo
+          can show how the same question answers differently per role, and it
+          says so rather than silently swapping who you are. */}
+      <div className="flex items-center gap-2 mb-5 flex-wrap">
+        <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}>
+          <History className="h-4 w-4" />
+          History
+          {historyCount > 0 && (
+            <span className="ml-0.5 min-w-[20px] px-1.5 py-0.5 text-micro font-bold text-white bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-full tabular-nums">
+              {historyCount}
+            </span>
+          )}
+        </Button>
+        {users.length > 0 && (
+          <label className="ml-auto inline-flex items-center gap-2 rounded-xl border border-campus-900/[0.07] bg-white/70 pl-3 pr-1 py-1 shadow-card">
+            <span className="text-caption text-surface-400 whitespace-nowrap">Demo · answer as</span>
             <select
               value={demoUser}
               onChange={(e) => {
@@ -194,27 +211,18 @@ export default function ChatPage() {
                   setIdentity(id, role as 'student' | 'alumni' | 'recruiter')
                 }
               }}
-              aria-label="Ask as user"
-              className="appearance-none bg-white border border-campus-900/10 rounded-xl pl-3 pr-8 py-2 text-body-sm font-medium text-campus-900 focus:outline-none focus:ring-2 focus:ring-campus-500 cursor-pointer shadow-card max-w-[190px]"
+              aria-label="Answer as user (demo only)"
+              className="appearance-none bg-transparent border-0 py-1 pr-6 text-body-sm font-medium text-campus-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-campus-500 cursor-pointer max-w-[170px]"
             >
-              <option value="">Ask as…</option>
+              <option value="">Current</option>
               {users.map((u) => (
                 <option key={`${u.role}:${u.id}`} value={`${u.role}:${u.id}`}>
                   {u.name} · {u.branch ?? u.company ?? u.role}
                 </option>
               ))}
             </select>
-          </div>
-          <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}>
-            <History className="h-4 w-4" />
-            <span className="hidden sm:inline">History</span>
-            {historyCount > 0 && (
-              <span className="ml-0.5 min-w-[20px] px-1.5 py-0.5 text-micro font-bold text-white bg-gradient-to-br from-[#667eea] to-[#764ba2] rounded-full tabular-nums">
-                {historyCount}
-              </span>
-            )}
-          </Button>
-        </div>
+          </label>
+        )}
       </div>
 
       {/* History drawer */}
