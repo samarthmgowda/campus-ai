@@ -109,6 +109,14 @@ public class LookupService {
         if (question == null || question.isBlank()) return Optional.empty();
         String q = question.toLowerCase();
 
+        // --- Greeting route ---
+        // Bare greetings ("hello", "hi", "hey") or very short hello-variants
+        // that also mention the assistant ("hello campus ai"). Returns a
+        // personalized greeting when the user is authenticated.
+        if (isGreeting(q, userId)) {
+            return Optional.of(new AskService.AskResponse(true, buildGreeting(userId), List.of()));
+        }
+
         // --- Chat history route (needs auth) ---
         if (userId != null && (q.contains("chat history") || q.contains("conversation history") || q.contains("my history") || q.contains("previous question") || q.contains("what did i ask"))) {
             try {
@@ -453,19 +461,49 @@ public class LookupService {
         }
 
         // --- EVENT route ---
-        boolean hasEventWord = containsAny(q, "event", "events", "workshop", "workshops", "hackathons");
+        boolean hasEventWord = containsAny(q, "event", "events", "workshop", "workshops", "hackathon", "hackathons");
         boolean hasUpcomingWord = containsAny(q, "upcoming", "coming up", "next");
         if (hasEventWord && hasUpcomingWord) {
             LocalDate today = LocalDate.now();
             List<Event> upcoming = eventRepository.findByEventDateGreaterThanEqual(today).stream()
                     .filter(e -> !e.isHidden()).collect(java.util.stream.Collectors.toList());
+            // Detect an optional topic qualifier (e.g. "ai workshops", "cybersecurity
+            // workshop") and narrow the list to events whose title or description
+            // mentions that topic. `topicLabel` is remembered so the empty-state
+            // message can reference the topic the user actually asked about.
+            String topicLabel = null;
+            java.util.Set<String> topics = new java.util.LinkedHashSet<>();
+            if (q.contains("artificial intelligence") || q.matches(".*\\bai\\b.*") || q.contains("ai ") || q.contains("ai workshop") || q.contains("ai hackathon") || q.contains("ai event")) {
+                topics.add("ai"); topicLabel = "AI";
+            }
+            if (q.contains("machine learning") || q.matches(".*\\bml\\b.*") || q.contains("ml workshop")) { topics.add("machine learning"); topicLabel = "machine learning"; }
+            if (q.contains("deep learning")) { topics.add("deep learning"); topicLabel = "deep learning"; }
+            if (q.contains("data science")) { topics.add("data science"); topicLabel = "data science"; }
+            if (q.contains("blockchain")) { topics.add("blockchain"); topicLabel = "blockchain"; }
+            if (q.contains("devops")) { topics.add("devops"); topicLabel = "DevOps"; }
+            if (q.contains("cybersecurity")) { topics.add("cybersecurity"); topicLabel = "cybersecurity"; }
+            if (q.contains("quantum")) { topics.add("quantum"); topicLabel = "quantum"; }
+            if (q.contains("cloud workshop") || q.contains("cloud computing")) { topics.add("cloud"); topicLabel = "cloud"; }
+            if (!topics.isEmpty()) {
+                upcoming = upcoming.stream()
+                        .filter(e -> {
+                            String haystack = (e.getTitle() + " " + (e.getDescription() != null ? e.getDescription() : "")).toLowerCase(Locale.ROOT);
+                            return topics.stream().anyMatch(t -> topicMatches(haystack, t));
+                        })
+                        .collect(java.util.stream.Collectors.toList());
+            }
             upcoming.sort(Comparator.comparing(Event::getEventDate));
             if (upcoming.isEmpty()) {
-                return Optional.of(new AskService.AskResponse(true,
-                        "There are no upcoming events in Campus Connect right now.", List.of()));
+                String msg = topicLabel != null
+                        ? "I couldn't find any upcoming " + topicLabel + " events in Campus Connect right now. " +
+                          "Try \"upcoming events\" to see everything scheduled."
+                        : "There are no upcoming events in Campus Connect right now.";
+                return Optional.of(new AskService.AskResponse(true, msg, List.of()));
             }
             List<Event> top = upcoming.stream().limit(5).toList();
-            StringBuilder sb = new StringBuilder("Upcoming events:");
+            StringBuilder sb = new StringBuilder(topicLabel != null
+                    ? "Upcoming " + topicLabel + " events:"
+                    : "Upcoming events:");
             for (Event e : top) {
                 sb.append("\n- ").append(e.getTitle())
                   .append(" (").append(e.getType()).append(") on ").append(e.getEventDate())
@@ -730,7 +768,7 @@ public class LookupService {
 
         // --- Analytics / Campus Intelligence route ---
         // NOTE: "team" guard — "How many students can be in a hackathon team?" must fall through to RAG, not analytics.
-        if ((q.contains("analytics") || q.contains("dashboard") || q.contains("stats") || q.contains("statistics") || q.contains("how many students") || q.contains("how many projects") || q.contains("campus intelligence")) && !q.contains("team")) {
+        if ((q.contains("analytics") || q.contains("stats") || q.contains("statistics") || q.startsWith("how many students in the platform") || q.startsWith("how many projects on the platform") || q.contains("campus intelligence")) && !q.contains("team")) {
             try {
                 var summary = analyticsService.getSummary();
                 var top = analyticsService.topSkills(5);
@@ -861,5 +899,72 @@ public class LookupService {
             idx = haystack.indexOf(needle, idx + 1);
         }
         return false;
+    }
+
+    /**
+     * Match a topic keyword against an event's title+description. Short/ambiguous
+     * tokens ("ai", "ml") must match as whole words — plain substring matching made
+     * "ai" fire on "main", "available" and "detail", pulling unrelated events into
+     * an "ai workshops" search. Longer, distinctive phrases ("machine learning",
+     * "cybersecurity") still allow a loose substring match so hyphenation and
+     * spelling variants are tolerated.
+     */
+    private static boolean topicMatches(String haystack, String topic) {
+        if (topic == null || topic.isEmpty()) return false;
+        if (topic.length() <= 3 || topic.indexOf(' ') < 0) {
+            return containsWholeWord(haystack, topic) || containsWholeWord(haystack, topic.replace('-', ' '));
+        }
+        return containsWholeWord(haystack, topic) || haystack.contains(topic);
+    }
+
+    /**
+     * Detects bare greetings: "hello", "hi", "hey", "good morning", etc.
+     * Only matches when the entire (lowercased) input is essentially a greeting
+     * — so "hello" qualifies, "good morning" qualifies, but "hello world event"
+     * or "hello world" does not (the trailing token is not a known name).
+     */
+    private static boolean isGreeting(String q, Long userId) {
+        String trimmed = q.trim();
+        if (trimmed.isEmpty()) return false;
+        String[] tokens = trimmed.split("\\s+");
+        // Single-token greetings: "hello", "hi", "hey"
+        if (tokens.length == 1) {
+            return GREETING_WORDS.contains(tokens[0]);
+        }
+        // Two-token greetings: "good morning", "good evening", "good afternoon", "good night"
+        if (tokens.length == 2 && tokens[0].equals("good")) {
+            return GREETING_WORDS.contains(trimmed);
+        }
+        // "hello <name>" — greeting + a single token that is a known student name.
+        if (tokens.length == 2 && (tokens[0].equals("hello") || tokens[0].equals("hi")) && userId != null) {
+            // Defer name validation to the caller (buildGreeting already resolves the user).
+            return true;
+        }
+        return false;
+    }
+
+    private static final java.util.Set<String> GREETING_WORDS = java.util.Set.of(
+            "hello", "hi", "hey", "hi there", "good morning", "good evening",
+            "good afternoon", "good night");
+
+    /**
+     * Builds a friendly, personalized greeting for the given user.
+     */
+    private String buildGreeting(Long userId) {
+        if (userId != null) {
+            try {
+                var student = studentRepository.findById(userId).orElse(null);
+                if (student != null && student.getName() != null) {
+                    return "Hello " + student.getName() + " 👋 I'm Campus AI, built for Campus Connect. " +
+                           "I can help you with: upcoming events and workshops, your profile, projects and teammates, " +
+                           "mentorship requests, referrals, bookmarks, notifications, and college documents. " +
+                           "What can I help you with today?";
+                }
+            } catch (Exception ignored) {}
+        }
+        return "Hello 👋 I'm Campus AI, built for Campus Connect. " +
+               "I can help you with: upcoming events and workshops, your profile, projects and teammates, " +
+               "mentorship requests, referrals, bookmarks, notifications, and college documents. " +
+               "What can I help you with today?";
     }
 }

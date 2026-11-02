@@ -151,6 +151,45 @@ public class TeammateMatchingService {
                                                 Collection<Long> excludeIds,
                                                 boolean availableOnly, boolean useSemantic,
                                                 Map<String, float[]> embeddingCache) {
+        return score("project:" + project.getId(),
+                useSemantic ? projectText(project) : null,
+                projectTokens(project),
+                gaps, excludeIds, availableOnly, useSemantic, embeddingCache);
+    }
+
+    /**
+     * Same weighted scorer applied to an ad-hoc context rather than a persisted
+     * Project — used for event-driven teammate discovery, where the "project" is
+     * the event's domain: {@code needs} are the domain's representative skills
+     * (scored exactly like skill gaps) and {@code contextTokens} are the
+     * interest-matching tokens (domain label + skills). All hard filters, sort
+     * order, tiebreaks and the top-10 cap are identical to
+     * {@link #rankCandidates(Project, List, Collection, boolean, boolean, Map)},
+     * so event suggestions are as "analysed" as project suggestions.
+     *
+     * @param cacheKey      stable key for the context embedding (e.g. "event:12")
+     * @param contextText   text to embed when {@code useSemantic} (null to skip)
+     * @param contextTokens interest tokens describing the context
+     * @param needs         skills the team needs; drives SkillMatch
+     */
+    public List<ScoredCandidate> rankCandidatesForContext(String cacheKey, String contextText,
+                                                          Set<String> contextTokens, List<String> needs,
+                                                          Collection<Long> excludeIds,
+                                                          boolean availableOnly, boolean useSemantic,
+                                                          Map<String, float[]> embeddingCache) {
+        return score(cacheKey, useSemantic ? contextText : null, contextTokens, needs,
+                excludeIds, availableOnly, useSemantic, embeddingCache);
+    }
+
+    /**
+     * Shared scoring core. {@code contextTokens} drives the interest component and
+     * {@code gaps} the skill-match component; {@code cacheKey}/{@code contextText}
+     * drive the optional semantic component.
+     */
+    private List<ScoredCandidate> score(String cacheKey, String contextText, Set<String> contextTokens,
+                                        List<String> gaps, Collection<Long> excludeIds,
+                                        boolean availableOnly, boolean useSemantic,
+                                        Map<String, float[]> embeddingCache) {
         if (gaps == null || gaps.isEmpty()) return List.of();
         Set<Long> exclude = excludeIds == null ? Set.of() : new HashSet<>(excludeIds);
 
@@ -164,8 +203,8 @@ public class TeammateMatchingService {
         }
         if (gapLowerToOriginal.isEmpty()) return List.of();
 
-        // Project interest tokens: normalized required skills + domain words.
-        Set<String> projectTokens = projectTokens(project);
+        // Interest tokens describing the context (project domain+skills, or event domain).
+        Set<String> projectTokens = contextTokens == null ? Set.of() : contextTokens;
 
         // Related-skill cache per gap (one DB-backed lookup per gap, not per candidate).
         Map<String, Set<String>> relatedByGap = new HashMap<>();
@@ -173,10 +212,9 @@ public class TeammateMatchingService {
             relatedByGap.put(gapLower, relatedSkillsLower(gapLower));
         }
 
-        String projectText = useSemantic ? projectText(project) : null;
         float[] projectVec = null;
         if (useSemantic) {
-            projectVec = cachedEmbed(embeddingCache, "project:" + project.getId(), projectText);
+            projectVec = cachedEmbed(embeddingCache, cacheKey, contextText);
         }
 
         List<ScoredCandidate> out = new ArrayList<>();
@@ -226,15 +264,28 @@ public class TeammateMatchingService {
                     endorsements, avgRating, reported));
         }
 
-        // Sort: score desc → endorsements desc → reported sinks → AVAILABLE first → name.
-        out.sort(Comparator
-                .comparingDouble(ScoredCandidate::score).reversed()
-                .thenComparingLong(ScoredCandidate::endorsements).reversed()
-                .thenComparing(c -> c.hasOpenReport() ? 1 : 0)
-                .thenComparing(c -> "AVAILABLE".equalsIgnoreCase(c.availability()) ? 0 : 1)
-                .thenComparing(c -> c.name() == null ? "" : c.name().toLowerCase(Locale.ROOT)));
+        out.sort(candidateOrder());
         if (out.size() > 10) return out.subList(0, 10);
         return out;
+    }
+
+    /**
+     * Ranking order for teammate suggestions: score desc → endorsements desc →
+     * reported sinks → AVAILABLE first → name.
+     *
+     * Extracted and package-visible so the order can be unit-tested directly.
+     * NOTE: each secondary clause carries its own .reversed() *inside* the
+     * thenComparing argument. Chaining .reversed() onto the outer comparator would
+     * reverse the entire chain built so far — including score — silently turning the
+     * ranking upside down so the weakest match is listed first.
+     */
+    static Comparator<ScoredCandidate> candidateOrder() {
+        return Comparator
+                .comparingDouble(ScoredCandidate::score).reversed()
+                .thenComparing(Comparator.comparingLong(ScoredCandidate::endorsements).reversed())
+                .thenComparing(c -> c.hasOpenReport() ? 1 : 0)
+                .thenComparing(c -> "AVAILABLE".equalsIgnoreCase(c.availability()) ? 0 : 1)
+                .thenComparing(c -> c.name() == null ? "" : c.name().toLowerCase(Locale.ROOT));
     }
 
     // ——— component scorers (all 0..1, package-visible for unit checks) ———

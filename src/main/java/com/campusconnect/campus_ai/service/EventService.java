@@ -59,7 +59,17 @@ public class EventService {
         else if (hasType) raw = repository.findByTypeIgnoreCase(type.trim());
         else if (wantUpcoming) raw = repository.findByEventDateGreaterThanEqual(today);
         else raw = repository.findAll();
-        return raw.stream().filter(e -> !e.isHidden()).collect(java.util.stream.Collectors.toList());
+        return raw.stream()
+                .filter(e -> !e.isHidden())
+                .sorted((a, b) -> {
+                    LocalDate da = a.getEventDate();
+                    LocalDate db = b.getEventDate();
+                    if (da == null && db == null) return 0;
+                    if (da == null) return 1;  // null dates last
+                    if (db == null) return -1;
+                    return da.compareTo(db);
+                })
+                .collect(java.util.stream.Collectors.toList());
     }
 
     /** Admin view: all events including pending (hidden). */

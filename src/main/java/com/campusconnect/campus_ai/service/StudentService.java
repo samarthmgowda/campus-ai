@@ -36,11 +36,15 @@ public class StudentService {
         boolean hasAvailability = availability != null && !availability.isBlank();
 
         if (!hasSkill && !hasBranch && !hasAvailability) {
-            return repository.findAll();
+            return repository.findAll().stream()
+                    .filter(s -> !s.isSuspended())
+                    .collect(Collectors.toList());
         }
         if (hasSkill) return findByWholeSkill(skill.trim());
-        if (hasBranch) return repository.findByBranchIgnoreCase(branch.trim());
-        return repository.findByAvailabilityIgnoreCase(availability.trim());
+        if (hasBranch) return repository.findByBranchIgnoreCase(branch.trim()).stream()
+                .filter(s -> !s.isSuspended()).collect(Collectors.toList());
+        return repository.findByAvailabilityIgnoreCase(availability.trim()).stream()
+                .filter(s -> !s.isSuspended()).collect(Collectors.toList());
     }
 
     private List<Student> findByWholeSkill(String skill) {

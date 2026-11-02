@@ -16,11 +16,14 @@ public class DevToolsController {
 
     private final ProjectToolService projectToolService;
     private final TeammateMatchingService teammateMatchingService;
+    private final ToolRegistry toolRegistry;
 
     public DevToolsController(ProjectToolService projectToolService,
-                              TeammateMatchingService teammateMatchingService) {
+                              TeammateMatchingService teammateMatchingService,
+                              ToolRegistry toolRegistry) {
         this.projectToolService = projectToolService;
         this.teammateMatchingService = teammateMatchingService;
+        this.toolRegistry = toolRegistry;
     }
 
     @GetMapping("/teammates")
@@ -71,6 +74,6 @@ public class DevToolsController {
     // TEMPORARY - expose tool registry for agent handoff verification
     @GetMapping("/registry")
     public List<ToolRegistry.ToolSpec> registry() {
-        return ToolRegistry.allTools();
+        return toolRegistry.allToolSpecs();
     }
 }

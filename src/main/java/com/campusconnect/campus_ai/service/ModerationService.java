@@ -18,7 +18,7 @@ import java.util.stream.Collectors;
 @Service
 public class ModerationService {
 
-    private static final Set<String> ALLOWED_TARGETS = Set.of("POST", "PROJECT", "STUDENT", "EVENT", "COMMENT", "MESSAGE");
+    private static final Set<String> ALLOWED_TARGETS = Set.of("POST", "PROJECT", "STUDENT", "EVENT", "COMMENT", "MESSAGE", "DOCUMENT");
     private static final Set<String> ALLOWED_REASONS = Set.of("SPAM", "HARASSMENT", "INAPPROPRIATE", "PLAGIARISM", "OTHER");
 
     private final ModerationReportRepository reportRepository;
@@ -27,6 +27,7 @@ public class ModerationService {
     private final ProjectRepository projectRepository;
     private final EventRepository eventRepository;
     private final PostCommentRepository commentRepository;
+    private final DocumentRepository documentRepository;
     @Value("${campus.admin-ids:}")
     private String adminIds;
 
@@ -35,13 +36,15 @@ public class ModerationService {
                              CommunityPostRepository postRepository,
                              ProjectRepository projectRepository,
                              EventRepository eventRepository,
-                             PostCommentRepository commentRepository) {
+                             PostCommentRepository commentRepository,
+                             DocumentRepository documentRepository) {
         this.reportRepository = reportRepository;
         this.studentRepository = studentRepository;
         this.postRepository = postRepository;
         this.projectRepository = projectRepository;
         this.eventRepository = eventRepository;
         this.commentRepository = commentRepository;
+        this.documentRepository = documentRepository;
     }
 
     public ReportDto report(Long reporterId, String targetType, Long targetId, String reason, String details) {
@@ -128,6 +131,10 @@ public class ModerationService {
                     var ev = eventRepository.findById(targetId).orElse(null);
                     if (ev != null) { ev.setHidden(true); eventRepository.save(ev); }
                 }
+                case "DOCUMENT" -> {
+                    var doc = documentRepository.findById(targetId).orElse(null);
+                    if (doc != null) { doc.setHidden(true); documentRepository.save(doc); }
+                }
                 default -> {}
             }
         } catch (Exception ignored) {}
@@ -154,9 +161,9 @@ public class ModerationService {
     }
 
     private String normalizeTarget(String raw) {
-        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("targetType required (POST|PROJECT|STUDENT|EVENT)");
+        if (raw == null || raw.isBlank()) throw new IllegalArgumentException("targetType required (POST|PROJECT|STUDENT|EVENT|COMMENT|MESSAGE|DOCUMENT)");
         String t = raw.trim().toUpperCase();
-        if (!ALLOWED_TARGETS.contains(t)) throw new IllegalArgumentException("targetType must be POST, PROJECT, STUDENT, EVENT, COMMENT, or MESSAGE");
+        if (!ALLOWED_TARGETS.contains(t)) throw new IllegalArgumentException("targetType must be POST, PROJECT, STUDENT, EVENT, COMMENT, MESSAGE, or DOCUMENT");
         return t;
     }
 
@@ -173,6 +180,7 @@ public class ModerationService {
             case "PROJECT" -> projectRepository.findById(targetId).orElseThrow(() -> new IllegalArgumentException("Project not found: " + targetId));
             case "STUDENT" -> studentRepository.findById(targetId).orElseThrow(() -> new IllegalArgumentException("Student not found: " + targetId));
             case "EVENT" -> eventRepository.findById(targetId).orElseThrow(() -> new IllegalArgumentException("Event not found: " + targetId));
+            case "DOCUMENT" -> documentRepository.findById(targetId).orElseThrow(() -> new IllegalArgumentException("Document not found: " + targetId));
             default -> { /* COMMENT/MESSAGE skip strict check */ }
         }
     }

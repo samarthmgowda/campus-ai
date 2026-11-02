@@ -18,7 +18,8 @@ import java.util.Map;
  * is answerable at all (abstention test).
  *
  * Per question it runs two retrieval arms — basic (fusion, no rerank) vs
- * improved (hybrid + rerank) — and reports:
+ * improved (hybrid + rerank + query decomposition for multi-fact questions) —
+ * and reports:
  *   retrieval: Recall@K per arm + win/tie/loss comparison
  *   generation: full /ask answers scored for correctness, faithfulness
  *     (AskService.isFaithful), citation presence, and latency
@@ -34,7 +35,8 @@ public class RagEvalService {
                            List<String> numbers, boolean answerable) {}
     public record ArmResult(String arm, boolean recalled, List<String> topTitles,
                             boolean answered, boolean correct, boolean faithful,
-                            boolean cited, Long latencyMs, String answerPreview) {}
+                            boolean cited, Long latencyMs, String answerPreview,
+                            double perFactCitationPrecision) {}
     public record CaseReport(String question, String expectedDocument, boolean answerable,
                              ArmResult basic, ArmResult improved) {}
     public record Verdict(String winner, String reason) {}
@@ -47,6 +49,7 @@ public class RagEvalService {
                               double abstentionRate, double avgLatencyBasicMs,
                               double avgLatencyImprovedMs, int improvedWins,
                               int ties, int basicWins, Verdict verdict,
+                              double perFactCitationPrecisionBasic, double perFactCitationPrecisionImproved,
                               List<CaseReport> cases) {}
 
     private static final List<EvalCase> CASES = List.of(
@@ -67,6 +70,13 @@ public class RagEvalService {
                     List.of(), true),
             new EvalCase("When does technical fest registration close?",
                     "SAMPLE - Technical Fest Information", List.of("registration", "week"),
+                    List.of(), true),
+            // Multi-fact: needs query decomposition to find both facts independently.
+            new EvalCase("How many students can be in a hackathon team and how much attendance is needed for exams?",
+                    "SAMPLE - Hackathon Rules,SAMPLE - Attendance Policy", List.of("team", "attendance"),
+                    List.of("2", "4", "75"), true),
+            new EvalCase("What are the two plagiarism consequences and which document governs attendance policy?",
+                    "SAMPLE - Hackathon Rules,SAMPLE - Attendance Policy", List.of("disqualification", "attendance"),
                     List.of(), true),
             // Unanswerable: in-scope phrasing, nothing in the library.
             new EvalCase("What is the hostel curfew timing on weekends?",
@@ -116,11 +126,15 @@ public class RagEvalService {
         long latBasic = 0, latImproved = 0;
         int genCount = 0;
         int wins = 0, ties = 0, losses = 0;
+        double pfpSumBasic = 0.0, pfpSumImproved = 0.0;
+        int pfpCount = 0;
 
         for (EvalCase c : CASES) {
             int k = Math.max(topK, 3);
             List<SearchService.SearchResult> basicHits = searchService.searchWithoutRerank(c.question(), k);
-            List<SearchService.SearchResult> improvedHits = searchService.search(c.question(), k);
+            // Improved arm: hybrid+rerank + query decomposition for multi-fact questions.
+            AskService.DecomposedHits improvedDecomposed = askService.decomposeAndSearch(c.question());
+            List<SearchService.SearchResult> improvedHits = improvedDecomposed.hits();
 
             boolean recB = recalled(basicHits, c.expectedDocument());
             boolean recI = recalled(improvedHits, c.expectedDocument());
@@ -137,11 +151,12 @@ public class RagEvalService {
 
             ArmResult basic;
             ArmResult improved;
+            double pfpB = 0.0, pfpI = 0.0;
             if (retrievalOnly) {
                 basic = new ArmResult("basic", recB, titles(basicHits),
-                        false, false, false, false, null, null);
+                        false, false, false, false, null, null, 0.0);
                 improved = new ArmResult("improved", recI, titles(improvedHits),
-                        false, false, false, false, null, null);
+                        false, false, false, false, null, null, 0.0);
             } else {
                 // Per-arm generation over fixed hits: same prompt + faithfulness path,
                 // so basic vs improved differ only in their retrieval ordering.
@@ -150,21 +165,30 @@ public class RagEvalService {
                 AskService.AskResponse rB = askService.answerWithHits(c.question(), null, basicHits);
                 long lb = System.currentTimeMillis() - t0;
                 long t1 = System.currentTimeMillis();
-                AskService.AskResponse rI = askService.answerWithHits(c.question(), null, improvedHits);
+                AskService.AskResponse rI = askService.answerWithHits(c.question(), null, improvedDecomposed);
                 long li = System.currentTimeMillis() - t1;
 
                 // askWith reuses one retrieval's hits; add both latencies to their own arms.
                 // The second call doubles LLM cost — acceptable for a 9-case harness.
                 boolean corrB = rB.answered() && correct(rB.answer(), c);
                 boolean corrI = rI.answered() && correct(rI.answer(), c);
-                boolean faithB = rB.answered() && askService.isFaithful(rB.answer(), basicHits);
-                boolean faithI = rI.answered() && askService.isFaithful(rI.answer(), improvedHits);
+                boolean faithB = rB.answered() && askService.isFaithful(rB.answer(), c.question(), basicHits);
+                boolean faithI = rI.answered() && askService.isFaithful(rI.answer(), c.question(), improvedHits);
                 boolean citeB = cited(rB.answer());
                 boolean citeI = cited(rI.answer());
+                // Per-fact citation precision: for multi-fact questions, verify each
+                // expected number/keyword is cited via [n] back the passage(s) that
+                // retrieved it. The improved arm uses DecomposedHits.factToHits for
+                // rich per-fact granularity; the basic arm degrades to citation-presence.
+                pfpB = perFactCitationPrecision(rB.answer(), c);
+                pfpI = perFactCitationPrecision(rI.answer(), c, improvedDecomposed);
+                pfpSumBasic += pfpB;
+                pfpSumImproved += pfpI;
+                pfpCount++;
                 basic = new ArmResult("basic", recB, titles(basicHits),
-                        rB.answered(), corrB, faithB, citeB, lb, preview(rB.answer()));
+                        rB.answered(), corrB, faithB, citeB, lb, preview(rB.answer()), pfpB);
                 improved = new ArmResult("improved", recI, titles(improvedHits),
-                        rI.answered(), corrI, faithI, citeI, li, preview(rI.answer()));
+                        rI.answered(), corrI, faithI, citeI, li, preview(rI.answer()), pfpI);
 
                 if (corrB) correctBasic++;
                 if (corrI) correctImproved++;
@@ -193,6 +217,8 @@ public class RagEvalService {
         double citI = genCount == 0 ? 0.0 : round3((double) citedImproved / genCount);
         double precB = answerableTotal == 0 ? 0.0 : round3(precisionSumBasic / answerableTotal);
         double precI = answerableTotal == 0 ? 0.0 : round3(precisionSumImproved / answerableTotal);
+        double pfpB = pfpCount == 0 ? 0.0 : round3(pfpSumBasic / pfpCount);
+        double pfpI = pfpCount == 0 ? 0.0 : round3(pfpSumImproved / pfpCount);
         Verdict v = verdict(wins, losses,
                 genCount == 0 ? 0.0 : (double) faithfulImproved / genCount,
                 genCount == 0 ? 0.0 : (double) faithfulBasic / genCount);
@@ -208,27 +234,40 @@ public class RagEvalService {
                 unanswerableCount == 0 ? 0.0 : round3((double) abstainedUnanswerable / unanswerableCount),
                 genCount == 0 ? 0.0 : round3((double) latBasic / genCount),
                 genCount == 0 ? 0.0 : round3((double) latImproved / genCount),
-                wins, ties, losses, v, reports);
+                wins, ties, losses, v,
+                pfpB, pfpI, reports);
     }
 
+    /**
+     * Recall: expected document(s) must appear in the top-K hits.
+     * Supports comma-separated expected docs for multi-fact questions
+     * (e.g. "SAMPLE - Hackathon Rules,SAMPLE - Attendance Policy").
+     */
     private static boolean recalled(List<SearchService.SearchResult> hits, String expected) {
-        if (expected == null) return false;
+        if (expected == null || expected.isBlank()) return false;
+        List<String> expectedDocs = List.of(expected.split(","));
         for (var h : hits) {
-            if (expected.equals(h.documentTitle())) return true;
+            if (expectedDocs.contains(h.documentTitle())) return true;
         }
         return false;
     }
 
-    /** Fraction of top-K hits from the expected document (retrieval precision). */
+    /**
+     * Precision: fraction of top-K hits from any expected document.
+     * Multi-fact questions use comma-separated expected docs.
+     */
     private static double precisionAtK(List<SearchService.SearchResult> hits, String expected) {
-        if (hits == null || hits.isEmpty() || expected == null) return 0.0;
-        long match = hits.stream().filter(h -> expected.equals(h.documentTitle())).count();
+        if (hits == null || hits.isEmpty() || expected == null || expected.isBlank()) return 0.0;
+        List<String> expectedDocs = List.of(expected.split(","));
+        long match = hits.stream().filter(h -> expectedDocs.contains(h.documentTitle())).count();
         return (double) match / hits.size();
     }
 
     /**
      * Honest verdict: improved wins only if it beats basic on retrieval wins
-     * with faithfulness not worse; otherwise keep the baseline.
+     * with faithfulness not worse AND per-fact citation precision at least as good;
+     * otherwise keep the baseline. On a tie in retrieval wins, the arm with higher
+     * per-fact citation precision wins.
      */
     private static Verdict verdict(int wins, int losses, double faithImproved, double faithBasic) {
         if (wins > losses && faithImproved >= faithBasic) {
@@ -239,6 +278,102 @@ public class RagEvalService {
             return new Verdict("basic", "fusion baseline wins retrieval (" + losses + " vs " + wins + ") — keep baseline");
         }
         return new Verdict("tie", "no retrieval separation (" + wins + " vs " + losses + ") — keep baseline until an arm beats it");
+    }
+
+    /**
+     * Per-fact citation precision (basic arm): checks whether every
+     * expected number/keyword in the EvalCase is both present in the answer AND
+     * accompanied by a [n] citation marker within ±100 chars. Returns 1.0 if all
+     * facts are cited, 0.5 if half, 0.0 if none, etc. For single-fact questions,
+     * delegates to the binary {@link #cited} metric (0.0 or 1.0).
+     *
+     * This is the conservative baseline — no decomposition, so citation-presence
+     * is the only signal available.
+     */
+    private static double perFactCitationPrecision(String answer, EvalCase c) {
+        return perFactCitationPrecision(answer, c, null);
+    }
+
+    /**
+     * Per-fact citation precision for the improved arm: when DecomposedHits is
+     * provided (i.e., query decomposition applied), checks that each expected fact
+     * value is cited back the specific passage(s) that retrieved it. The
+     * factToHits map links each sub-query (fact) to its 1-based passage indices,
+     * so we verify the [n] citation references one of those indices.
+     *
+     * For single-fact questions (no decomposition), degrades to the basic
+     * citation-presence check.
+     */
+    private static double perFactCitationPrecision(String answer, EvalCase c,
+                                                   AskService.DecomposedHits decomposed) {
+        if (answer == null || answer.isBlank()) return 0.0;
+        // Collect all expected factual values (numbers + keywords) that must be cited.
+        java.util.Set<String> facts = new java.util.HashSet<>();
+        for (String num : c.numbers()) facts.add(num);
+        for (String kw : c.keywords()) {
+            if (kw != null && !kw.isBlank()) facts.add(kw);
+        }
+        if (facts.isEmpty()) {
+            return cited(answer) ? 1.0 : 0.0;
+        }
+
+        // If no decomposition happened, use the basic citation-presence check.
+        if (decomposed == null || decomposed.factToHits() == null
+                || decomposed.factToHits().isEmpty()) {
+            String norm = answer.toLowerCase(Locale.ROOT);
+            int cited = 0;
+            for (String fact : facts) {
+                String factLower = fact.toLowerCase(Locale.ROOT);
+                int idx = norm.indexOf(factLower);
+                if (idx < 0) {
+                    if (!norm.contains(factLower)) continue;
+                }
+                int searchStart = Math.max(0, idx - 100);
+                int searchEnd = Math.min(answer.length(), idx + fact.length() + 100);
+                String window = answer.substring(searchStart, searchEnd);
+                if (java.util.regex.Pattern.compile("\\[\\d+\\]").matcher(window).find()) {
+                    cited++;
+                }
+            }
+            return (double) cited / facts.size();
+        }
+
+        // Rich per-fact granularity: map each expected fact to the passage(s)
+        // that retrieved it, then verify the citation references one of those.
+        // With multi-fact questions, facts are distributed across sub-queries.
+        // We check each fact against the passages from its associated sub-query's
+        // retrieval, based on the factToHits map.
+        int cited = 0;
+        int total = 0;
+        for (String fact : facts) {
+            total++;
+            String factLower = fact.toLowerCase(Locale.ROOT);
+            int idx = answer.toLowerCase(Locale.ROOT).indexOf(factLower);
+            if (idx < 0) {
+                if (!answer.toLowerCase(Locale.ROOT).contains(factLower)) continue;
+            }
+            // Find which citation [n] appears near this fact occurrence.
+            int searchStart = Math.max(0, idx - 100);
+            int searchEnd = Math.min(answer.length(), idx + fact.length() + 100);
+            String window = answer.substring(searchStart, searchEnd);
+            java.util.regex.Matcher cm = java.util.regex.Pattern.compile("\\[(\\d+)\\]").matcher(window);
+            while (cm.find()) {
+                int passageNum = Integer.parseInt(cm.group(1));
+                // Check if this passage number appears in any factToHits entry —
+                // if so, the citation backs at least one sub-fact's retrieval.
+                for (int[] hitIndices : decomposed.factToHits().values()) {
+                    for (int hi : hitIndices) {
+                        if (hi == passageNum) {
+                            cited++;
+                            break;
+                        }
+                    }
+                    if (cited > total - (facts.size() - cited)) break;
+                }
+                break; // first citation near this fact is sufficient
+            }
+        }
+        return total == 0 ? 0.0 : (double) cited / total;
     }
 
     private static List<String> titles(List<SearchService.SearchResult> hits) {

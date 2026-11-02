@@ -141,10 +141,12 @@ public class ProjectToolService {
             if (matched.isEmpty()) continue;
             matches.add(new CandidateMatch(s.getId(), s.getName(), s.getBranch(), s.getYear(), s.getSkills(), s.getAvailability(), matched));
         }
-        // Trust-weighted: more endorsements on matched skills nudges up, reported students sink
+        // Trust-weighted: more endorsements on matched skills nudges up, reported students sink.
+        // NOTE: keep the endorsements .reversed() *inside* the thenComparing argument — an
+        // outer .reversed() would flip the whole chain, including the matched-skill sort.
         matches.sort(Comparator
                 .comparingInt((CandidateMatch c) -> c.matchedSkills().size()).reversed()
-                .thenComparingLong((CandidateMatch c) -> c.matchedSkills().stream().mapToLong(sk -> endorsementRepository.countByEndorseeIdAndSkillIgnoreCase(c.studentId(), sk)).sum()).reversed()
+                .thenComparing(Comparator.comparingLong((CandidateMatch c) -> c.matchedSkills().stream().mapToLong(sk -> endorsementRepository.countByEndorseeIdAndSkillIgnoreCase(c.studentId(), sk)).sum()).reversed())
                 .thenComparing(c -> hasOpenReport(c.studentId()) ? 1 : 0)
                 .thenComparing(c -> "AVAILABLE".equalsIgnoreCase(c.availability()) ? 0 : 1)
                 .thenComparing(c -> c.name().toLowerCase(Locale.ROOT)));

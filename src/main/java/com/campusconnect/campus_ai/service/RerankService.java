@@ -7,6 +7,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -14,8 +15,12 @@ import java.util.Set;
  *
  * No new dependencies — pure-Java lexical features fused with the semantic
  * similarity already computed at retrieval time:
- *   score = 0.45 * semantic + 0.25 * termOverlap + 0.15 * bigramOverlap
+ *   score = 0.45 * semantic + 0.25 * idfTermOverlap + 0.15 * bigramOverlap
  *         + 0.10 * exactPhrase + 0.05 * titleSectionMatch
+ *
+ * IDF weighting: terms that appear in many candidate chunks (common words)
+ * get lower weight, so query-specific terms like "2 to 4" or "hackathon"
+ * dominate the lexical signal over generic words like "the" or "student".
  *
  * Behind {@code rag.rerank-enabled} so basic (fusion order) vs reranked order
  * can be A/B-tested before keeping the extra stage. Never throws: on any
@@ -51,9 +56,14 @@ public class RerankService {
         try {
             List<String> terms = tokenize(query);
             String normalizedQuery = normalize(query);
+
+            // Compute IDF weights for each query term based on candidate pool frequency.
+            // Terms appearing in many chunks (generic words) get lower weight.
+            Map<String, Double> idfWeights = computeIdfWeights(terms, candidates);
+
             List<Scored> scored = new ArrayList<>();
             for (SearchService.SearchResult r : candidates) {
-                double score = score(r, terms, normalizedQuery);
+                double score = score(r, terms, normalizedQuery, idfWeights);
                 scored.add(new Scored(r, score));
             }
             scored.sort(Comparator
@@ -76,7 +86,29 @@ public class RerankService {
         }
     }
 
-    private double score(SearchService.SearchResult r, List<String> terms, String normalizedQuery) {
+    /**
+     * Compute IDF weight for each query term using the candidate pool as the corpus.
+     * idf(t) = log((N + 1) / (df(t) + 1)) + 1  — smoothed, always positive.
+     * Terms appearing in few chunks get higher weight (more discriminative).
+     */
+    private Map<String, Double> computeIdfWeights(List<String> terms,
+                                                   List<SearchService.SearchResult> candidates) {
+        Map<String, Double> weights = new java.util.HashMap<>();
+        if (terms.isEmpty() || candidates.isEmpty()) return weights;
+        double N = candidates.size();
+        for (String t : terms) {
+            int df = 0;
+            for (SearchService.SearchResult r : candidates) {
+                if (r.content() != null && tokenize(r.content()).contains(t)) df++;
+            }
+            double idf = Math.log((N + 1.0) / (df + 1.0)) + 1.0;
+            weights.put(t, idf);
+        }
+        return weights;
+    }
+
+    private double score(SearchService.SearchResult r, List<String> terms, String normalizedQuery,
+                         Map<String, Double> idfWeights) {
         double semantic = clamp01(r.similarity());
         if (terms.isEmpty()) return semantic;
 
@@ -84,11 +116,14 @@ public class RerankService {
         List<String> contentTokens = tokenize(contentNorm);
         Set<String> contentSet = new HashSet<>(contentTokens);
 
-        int matched = 0;
+        // IDF-weighted term overlap: sum of IDF weights for matched terms / total IDF sum
+        double matchedIdf = 0.0, totalIdf = 0.0;
         for (String t : terms) {
-            if (contentSet.contains(t)) matched++;
+            double idf = idfWeights.getOrDefault(t, 1.0);
+            totalIdf += idf;
+            if (contentSet.contains(t)) matchedIdf += idf;
         }
-        double termOverlap = (double) matched / terms.size();
+        double termOverlap = totalIdf > 0 ? matchedIdf / totalIdf : 0.0;
 
         double bigram = 0.0;
         if (terms.size() >= 2 && contentTokens.size() >= 2) {
