@@ -5,13 +5,11 @@ import type { DemoUser } from '../types'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 import { cn } from '../utils/cn'
+import { setIdentity, getId, getRole, ROLE_LABELS } from '../utils/identity'
 import { Bot, ArrowRight, CheckCircle2, MessagesSquare, FolderKanban, CalendarDays, AlertTriangle, Loader2 } from 'lucide-react'
 
-const ROLE_LABELS = {
-  student: 'Student',
-  alumni: 'Alumni',
-  recruiter: 'Recruiter',
-}
+/** Composite key: role and id together, so equally-numbered rows stay distinct. */
+const userKey = (u: { role: string; id: number }) => `${u.role}:${u.id}`
 
 const PILLARS = [
   { icon: MessagesSquare, label: 'Ask grounded answers' },
@@ -34,24 +32,22 @@ export default function LoginPage() {
   }, [])
 
   useEffect(() => {
-    const saved = localStorage.getItem('demoUserId')
-    if (saved && users.some(u => String(u.id) === saved)) {
-      setSelectedUser(saved)
+    const savedId = getId()
+    const savedRole = getRole()
+    const savedKey = savedId ? `${savedRole ?? 'student'}:${savedId}` : null
+    if (savedKey && users.some(u => userKey(u) === savedKey)) {
+      setSelectedUser(savedKey)
     } else if (users.length > 0) {
-      setSelectedUser(String(users[0].id))
+      setSelectedUser(userKey(users[0]))
     }
   }, [users])
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!selectedUser) return
-    const user = users.find(u => String(u.id) === selectedUser)
-    localStorage.setItem('demoUserId', selectedUser)
-    if (user?.role) {
-      localStorage.setItem('demoUserRole', user.role)
-    } else {
-      localStorage.removeItem('demoUserRole')
-    }
+    const [role, id] = selectedUser.split(':')
+    const user = users.find(u => userKey(u) === selectedUser)
+    setIdentity(id, role as 'student' | 'alumni' | 'recruiter', user?.name)
     navigate('/home')
   }
 
@@ -119,10 +115,11 @@ export default function LoginPage() {
 
             <div className="space-y-2 max-h-[320px] overflow-y-auto scrollbar-light pr-0.5" role="group" aria-label="Choose a demo user">
               {users.map(user => {
-                const active = selectedUser === String(user.id)
+                const key = userKey(user)
+                const active = selectedUser === key
                 return (
                   <label
-                    key={user.id}
+                    key={key}
                     className={cn(
                       'flex items-center gap-3 rounded-2xl border p-3.5 cursor-pointer transition-all duration-150 bg-white',
                       active
@@ -133,11 +130,11 @@ export default function LoginPage() {
                     <input
                       type="radio"
                       name="demoUser"
-                      value={String(user.id)}
+                      value={key}
                       checked={active}
-                      onChange={() => setSelectedUser(String(user.id))}
+                      onChange={() => setSelectedUser(key)}
                       className="h-4 w-4 accent-campus-600 flex-shrink-0"
-                      aria-label={`Sign in as ${user.name}`}
+                      aria-label={`Sign in as ${user.name} (${ROLE_LABELS[user.role]})`}
                     />
                     <span className={cn(
                       'flex h-10 w-10 items-center justify-center rounded-full font-display font-bold text-body-sm flex-shrink-0',

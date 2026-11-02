@@ -2,10 +2,11 @@ import { useState, useEffect } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
-import type { Student as StudentType } from '../types'
+import type { DemoUser } from '../types'
 import { Button } from '../components/ui/Button'
 import { Select } from '../components/ui/Select'
 import { PageHeader } from '../components/ui/PageState'
+import { getId, getRole, setIdentity, clearIdentity, authHeaderValue, ROLE_LABELS, type Role } from '../utils/identity'
 import { LogOut, Server, Database, Cpu, UserRound } from 'lucide-react'
 
 export default function SettingsPage() {
@@ -14,24 +15,36 @@ export default function SettingsPage() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['demo-users'],
-    queryFn: () => api.get<StudentType[]>('/demo/users'),
+    queryFn: () => api.get<DemoUser[]>('/demo/users'),
   })
 
   useEffect(() => {
-    setDemoUser(localStorage.getItem('demoUserId') ?? '')
+    const id = getId()
+    if (id) setDemoUser(`${getRole() ?? 'student'}:${id}`)
   }, [])
 
-  const handleUserChange = (id: string) => {
-    setDemoUser(id)
-    localStorage.setItem('demoUserId', id)
+  const handleUserChange = (key: string) => {
+    setDemoUser(key)
+    if (!key) {
+      clearIdentity()
+      return
+    }
+    const [role, id] = key.split(':')
+    const user = users.find(u => `${u.role}:${u.id}` === key)
+    setIdentity(id, role as Role, user?.name)
   }
 
   const handleLogout = () => {
-    localStorage.removeItem('demoUserId')
+    clearIdentity()
     navigate('/login')
   }
 
-  const current = users.find(u => String(u.id) === demoUser)
+  const current = users.find(u => `${u.role}:${u.id}` === demoUser)
+  const subtitle = current
+    ? [current.branch, current.year != null ? `year ${current.year}` : null, current.company, current.currentRole]
+        .filter(Boolean)
+        .join(' · ')
+    : ''
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -45,9 +58,11 @@ export default function SettingsPage() {
           <div className="min-w-0 flex-1">
             <p className="text-micro font-semibold text-surface-400 tracking-wide">ACTING AS</p>
             <p className="font-display font-semibold text-[18px] text-campus-950 tracking-tight truncate mt-0.5">
-              {current ? `${current.name} · ${current.branch}` : 'No user selected'}
+              {current ? `${current.name}${subtitle ? ` · ${subtitle}` : ''}` : 'No user selected'}
             </p>
-            <p className="text-caption text-surface-400 mt-0.5">Sent as X-Demo-User on every request · admin allow-list is user 1</p>
+            <p className="text-caption text-surface-400 mt-0.5">
+              Sent as <span className="font-medium text-surface-500">{authHeaderValue() ?? '—'}</span> on every request · admin allow-list is user 1
+            </p>
           </div>
         </div>
         <div className="px-5 sm:px-6 pb-5 sm:pb-6">
@@ -55,7 +70,10 @@ export default function SettingsPage() {
             label="Switch demo user"
             value={demoUser}
             onChange={e => handleUserChange(e.target.value)}
-            options={users.map(u => ({ value: String(u.id), label: `${u.name} (${u.branch}, year ${u.year})` }))}
+            options={users.map(u => ({
+              value: `${u.role}:${u.id}`,
+              label: `${u.name} (${ROLE_LABELS[u.role]}${u.company ? `, ${u.company}` : ''}${u.branch ? `, ${u.branch}` : ''})`,
+            }))}
             placeholder="Select a user"
           />
           <div className="mt-4">

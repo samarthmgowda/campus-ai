@@ -2,6 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
+import { getRole, ROLE_LABELS, type Role } from '../utils/identity'
 import { TrendingUp, CheckCircle2, Circle, Sparkles } from 'lucide-react'
 
 function Ring({ score }: { score: number }) {
@@ -32,20 +33,44 @@ function Ring({ score }: { score: number }) {
   )
 }
 
+interface FootprintStat { label: string; value: string }
+
+/** Curated stats from the student /me payload (nested { profile, connections, … }). */
+function studentFootprint(me: Record<string, any>): FootprintStat[] {
+  const num = (v: unknown): number | null => (typeof v === 'number' ? v : null)
+  const stat = (label: string, value: number | null): FootprintStat | null =>
+    value === null ? null : { label, value: String(value) }
+
+  return [
+    stat('Projects', num(me.projects?.count)),
+    stat('Invites', num(me.pendingInvites?.count)),
+    stat('Event RSVPs', num(me.rsvps?.count)),
+    stat('Posts', num(me.posts?.count)),
+    stat('Reviews', num(me.reputation?.reviewCount)),
+    stat('Followers', num(me.connections?.followers)),
+    stat('Following', num(me.connections?.following)),
+  ].filter((s): s is FootprintStat => s !== null)
+}
+
 export default function ProfilePage() {
+  const role: Role = getRole() ?? 'student'
+  const isStudent = role === 'student'
+
   const { data: me, isLoading: meLoading, error: meError, refetch } = useQuery({
-    queryKey: ['me'],
-    queryFn: () => api.get<Record<string, unknown>>('/me'),
+    queryKey: ['me', role],
+    queryFn: () => api.get<Record<string, any>>('/me'),
   })
 
   const { data: completeness } = useQuery({
     queryKey: ['completeness'],
     queryFn: () => api.get<{ score: number; missingFields: string[]; level: string }>('/me/completeness'),
+    enabled: isStudent,
   })
 
   const { data: recs } = useQuery({
     queryKey: ['recommendations'],
     queryFn: () => api.get<{ recommendations: { skill: string; count: number; reason: string }[] }>('/me/recommendations?limit=5'),
+    enabled: isStudent,
   })
 
   if (meLoading) {
@@ -65,12 +90,23 @@ export default function ProfilePage() {
     )
   }
 
-  const profile = me as Record<string, unknown> | undefined
-  const name = String(profile?.name ?? '—')
-  const skillList = profile?.skills ? String(profile.skills).split(',').map(s => s.trim()).filter(Boolean) : []
-  const counts = profile
-    ? Object.entries(profile).filter(([k]) => !['name', 'branch', 'year', 'bio', 'skills', 'id', 'suspended'].includes(k))
-    : []
+  // Students nest identity under `profile`; alumni/recruiter return it at the top level.
+  const profile: Record<string, any> = isStudent ? (me?.profile ?? {}) : (me ?? {})
+
+  const name = String(profile.name ?? '—')
+  const skillList = profile.skills ? String(profile.skills).split(',').map(s => s.trim()).filter(Boolean) : []
+  const attributeLine = isStudent
+    ? [profile.branch, profile.year != null ? `Year ${profile.year}` : null].filter(Boolean).join(' · ')
+    : [
+        profile.branch,
+        profile.graduationYear != null ? `Grad ${profile.graduationYear}` : null,
+        profile.currentRole,
+        profile.currentCompany,
+        profile.company,
+        profile.roleTitle,
+      ].filter(Boolean).join(' · ')
+
+  const footprint = isStudent && me ? studentFootprint(me) : []
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -84,11 +120,14 @@ export default function ProfilePage() {
             {name.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-display font-bold text-[24px] tracking-tight leading-tight">{name}</p>
-            <p className="text-body-sm text-white/60 mt-1">
-              {String(profile?.branch ?? '')}{profile?.year ? ` · Year ${String(profile.year)}` : ''}
-            </p>
-            {!!profile?.bio && <p className="text-body-sm text-white/80 mt-2.5 leading-relaxed">{String(profile.bio)}</p>}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              <p className="font-display font-bold text-[24px] tracking-tight leading-tight">{name}</p>
+              <span className="rounded-full bg-white/10 border border-white/15 px-2.5 py-0.5 text-micro font-medium text-campus-100">
+                {ROLE_LABELS[role]}
+              </span>
+            </div>
+            {attributeLine && <p className="text-body-sm text-white/60 mt-1">{attributeLine}</p>}
+            {!!profile.bio && <p className="text-body-sm text-white/80 mt-2.5 leading-relaxed">{profile.bio}</p>}
             {skillList.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3.5">
                 {skillList.map(s => (
@@ -97,11 +136,11 @@ export default function ProfilePage() {
               </div>
             )}
           </div>
-          {completeness && <Ring score={completeness.score} />}
+          {isStudent && completeness && <Ring score={completeness.score} />}
         </div>
       </div>
 
-      {completeness && (
+      {isStudent && completeness && (
         <section aria-label="Completeness" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 mb-4">
           <div className="flex items-center justify-between">
             <p className="font-display font-semibold text-[16px] text-campus-950">Profile completeness</p>
@@ -124,7 +163,7 @@ export default function ProfilePage() {
         </section>
       )}
 
-      {recs && recs.recommendations.length > 0 && (
+      {isStudent && recs && recs.recommendations.length > 0 && (
         <section aria-label="Recommended skills" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 mb-4">
           <p className="font-display font-semibold text-[16px] text-campus-950 flex items-center gap-2">
             <Sparkles className="h-4 w-4 text-accent-500" aria-hidden="true" /> Skills to grow
@@ -145,14 +184,14 @@ export default function ProfilePage() {
         </section>
       )}
 
-      {counts.length > 0 && (
+      {footprint.length > 0 && (
         <section aria-label="Activity" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5">
           <p className="font-display font-semibold text-[16px] text-campus-950 mb-3.5">Your footprint</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-            {counts.map(([k, v]) => (
-              <div key={k} className="rounded-xl bg-campus-50/60 border border-campus-100/60 px-3.5 py-3">
-                <p className="font-display font-bold text-[20px] text-campus-950 tabular-nums leading-none">{String(v)}</p>
-                <p className="text-caption text-surface-500 capitalize mt-1.5">{k.replace(/([A-Z])/g, ' $1')}</p>
+            {footprint.map(s => (
+              <div key={s.label} className="rounded-xl bg-campus-50/60 border border-campus-100/60 px-3.5 py-3">
+                <p className="font-display font-bold text-[20px] text-campus-950 tabular-nums leading-none">{s.value}</p>
+                <p className="text-caption text-surface-500 mt-1.5">{s.label}</p>
               </div>
             ))}
           </div>

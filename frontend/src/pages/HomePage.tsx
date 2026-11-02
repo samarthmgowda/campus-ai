@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { getName } from '../utils/identity'
 import { PageHeader, SkeletonCard } from '../components/ui/PageState'
 import { Badge } from '../components/ui/Badge'
 import {
@@ -35,8 +36,8 @@ function greeting() {
 export default function HomePage() {
   const meName = (() => {
     try {
-      const raw = localStorage.getItem('demoUserId')
-      return raw ? ` · user #${raw}` : ''
+      const name = getName()
+      return name ? `, ${name.split(' ')[0]}` : ''
     } catch { return '' }
   })()
 

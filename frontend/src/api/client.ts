@@ -1,8 +1,11 @@
+import { authHeaderValue } from '../utils/identity'
+
 const API_BASE = ''
 
 function getAuthHeader(): Record<string, string> {
-  const userId = localStorage.getItem('demoUserId')
-  return userId ? { 'X-Demo-User': userId } : {}
+  // Composite identity: "role:id" so the backend can pick the right table.
+  const value = authHeaderValue()
+  return value ? { 'X-Demo-User': value } : {}
 }
 
 async function request<T>(path: string, options: RequestInit = {}): Promise<T> {

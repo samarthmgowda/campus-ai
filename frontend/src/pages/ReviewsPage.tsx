@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { getId } from '../utils/identity'
 import type { Student } from '../types'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -28,7 +29,7 @@ interface ReviewBundle {
 }
 
 function myId(): number | null {
-  const v = localStorage.getItem('demoUserId')
+  const v = getId()
   return v ? Number(v) : null
 }
 

@@ -1,6 +1,7 @@
 // import { useState } from 'react'  // unused
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
+import { getId } from '../utils/identity'
 import { Badge } from '../components/ui/Badge'
 import { Card } from '../components/ui/Card'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
@@ -33,7 +34,7 @@ interface DashboardData {
 }
 
 function myId(): number | null {
-  const v = localStorage.getItem('demoUserId')
+  const v = getId()
   return v ? Number(v) : null
 }
 

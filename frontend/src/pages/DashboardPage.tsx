@@ -2,20 +2,21 @@ import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { api } from '../api/client'
+import { getId, getRole } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
 import { Briefcase, Calendar, Bell, Star, Award } from 'lucide-react'
 
 function myId(): number | null {
-  const v = localStorage.getItem('demoUserId')
+  const v = getId()
   return v ? Number(v) : null
 }
 
 export default function DashboardPage() {
   const navigate = useNavigate()
   const demoUserId = myId()
-  const role = localStorage.getItem('demoUserRole')
+  const role = getRole()
 
   // Redirect alumni / recruiters to their own dashboard routes
   useEffect(() => {

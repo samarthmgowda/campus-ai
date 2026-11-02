@@ -3,6 +3,7 @@ import { Outlet, NavLink, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { cn } from '../utils/cn'
+import { getName, getRole, getId, clearIdentity, ROLE_LABELS, type Role } from '../utils/identity'
 import {
   MessageSquare,
   FileText,
@@ -129,9 +130,11 @@ function NavBadge({ kind }: { kind: string }) {
   )
 }
 
-function SidebarContent({ onNavigate, demoUser, onLogout }: { onNavigate: () => void; demoUser: string; onLogout: () => void }) {
+function SidebarContent({ onNavigate, identity, onLogout }: { onNavigate: () => void; identity: { name: string; role: string } | null; onLogout: () => void }) {
   const location = useLocation()
   const [userMenuOpen, setUserMenuOpen] = useState(false)
+  const displayName = identity?.name || 'Demo User'
+  const roleLabel = identity ? ROLE_LABELS[identity.role as Role] ?? identity.role : ''
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2.5 px-4">
@@ -189,11 +192,11 @@ function SidebarContent({ onNavigate, demoUser, onLogout }: { onNavigate: () => 
               aria-haspopup="true"
             >
               <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-display font-bold text-body-sm flex-shrink-0" aria-hidden="true">
-                {(demoUser || 'D').charAt(0).toUpperCase()}
+                {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-campus-950 truncate">{demoUser ? `User #${demoUser}` : 'Demo User'}</p>
-                <p className="text-micro text-surface-400 truncate capitalize">{localStorage.getItem('demoUserRole') || 'student'} · MIT Mysore</p>
+                <p className="font-medium text-campus-950 truncate">{displayName}</p>
+                <p className="text-micro text-surface-400 truncate">{roleLabel ? `${roleLabel} · ` : ''}MIT Mysore</p>
               </div>
               <ChevronDown className={cn('h-4 w-4 text-surface-400 transition-transform', userMenuOpen && 'rotate-180')} />
             </button>
@@ -219,19 +222,21 @@ function SidebarContent({ onNavigate, demoUser, onLogout }: { onNavigate: () => 
 
 export default function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [demoUser, setDemoUser] = useState<string>('')
+  const [identity, setIdentityState] = useState<{ name: string; role: string } | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
 
   useEffect(() => {
-    const saved = localStorage.getItem('demoUserId')
-    if (saved) setDemoUser(saved)
+    const name = getName()
+    const role = getRole()
+    if (name || role) setIdentityState({ name: name ?? '', role: role ?? 'student' })
+    else setIdentityState(null)
     setSidebarOpen(false)
   }, [location.pathname])
 
   const handleLogout = () => {
-    localStorage.removeItem('demoUserId')
-    setDemoUser('')
+    clearIdentity()
+    setIdentityState(null)
     navigate('/login')
   }
 
@@ -256,7 +261,7 @@ export default function Layout() {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <SidebarContent onNavigate={() => setSidebarOpen(false)} demoUser={demoUser} onLogout={handleLogout} />
+        <SidebarContent onNavigate={() => setSidebarOpen(false)} identity={identity} onLogout={handleLogout} />
       </aside>
 
       <div className="lg:pl-[248px] min-h-screen flex flex-col">
@@ -276,7 +281,7 @@ export default function Layout() {
             <div className="ml-auto flex items-center gap-2">
               <span className="hidden md:inline-flex items-center gap-1.5 rounded-full border border-campus-900/10 bg-white/70 px-3 py-1.5 text-caption text-surface-600">
                 <Sparkles className="h-3.5 w-3.5 text-accent-500" aria-hidden="true" />
-                {demoUser ? `Signed in as #${demoUser} (${localStorage.getItem('demoUserRole') || 'student'})` : 'Demo mode'}
+                {identity ? `Signed in as ${identity.name || `#${getId()}`} (${identity.role})` : 'Demo mode'}
               </span>
             </div>
           </div>

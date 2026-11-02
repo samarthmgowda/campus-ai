@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { Student, ChatTurn, ChatSource, AgentResponse } from '../types'
+import type { DemoUser, ChatTurn, ChatSource, AgentResponse } from '../types'
+import { getId, getRole, setIdentity } from '../utils/identity'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 import { CitedAnswer } from '../components/CitedAnswer'
@@ -58,6 +59,7 @@ export default function ChatPage() {
   const queryClient = useQueryClient()
   const [question, setQuestion] = useState('')
   const [showHistory, setShowHistory] = useState(false)
+  // Composite "role:id" — matches the backend header so chat history is scoped per identity.
   const [demoUser, setDemoUser] = useState<string>('')
   const [activeAsk, setActiveAsk] = useState<string | null>(null)
   const [liveResponse, setLiveResponse] = useState<AgentResponse | null>(null)
@@ -67,7 +69,7 @@ export default function ChatPage() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['demo-users'],
-    queryFn: () => api.get<Student[]>('/demo/users'),
+    queryFn: () => api.get<DemoUser[]>('/demo/users'),
   })
 
   const { data: history = [], isLoading: historyLoading } = useQuery({
@@ -103,8 +105,8 @@ export default function ChatPage() {
   })
 
   useEffect(() => {
-    const saved = localStorage.getItem('demoUserId')
-    if (saved) setDemoUser(saved)
+    const id = getId()
+    if (id) setDemoUser(`${getRole() ?? 'student'}:${id}`)
   }, [])
 
   const scrollToBottom = useCallback(() => {
@@ -186,15 +188,18 @@ export default function ChatPage() {
               onChange={(e) => {
                 const val = e.target.value
                 setDemoUser(val)
-                localStorage.setItem('demoUserId', val)
+                if (val) {
+                  const [role, id] = val.split(':')
+                  setIdentity(id, role as 'student' | 'alumni' | 'recruiter')
+                }
               }}
               aria-label="Ask as user"
               className="appearance-none bg-white border border-campus-900/10 rounded-xl pl-3 pr-8 py-2 text-body-sm font-medium text-campus-900 focus:outline-none focus:ring-2 focus:ring-campus-500 cursor-pointer shadow-card max-w-[190px]"
             >
               <option value="">Ask as…</option>
               {users.map((u) => (
-                <option key={u.id} value={String(u.id)}>
-                  {u.name} · {u.branch}
+                <option key={`${u.role}:${u.id}`} value={`${u.role}:${u.id}`}>
+                  {u.name} · {u.branch ?? u.company ?? u.role}
                 </option>
               ))}
             </select>
