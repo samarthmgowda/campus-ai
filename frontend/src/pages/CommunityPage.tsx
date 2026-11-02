@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -126,7 +127,7 @@ export default function CommunityPage() {
   })
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <PageContainer width="form">
       <PageHeader
         title="Community"
         sub="The campus wall — questions, wins, and discussions"
@@ -324,6 +325,6 @@ export default function CommunityPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Alumni } from '../types'
@@ -83,7 +84,7 @@ export default function ReferralPage() {
   const pendingCount = myRequests.filter(r => r.status === 'PENDING').length
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Referrals"
         sub={myRequests.length > 0 ? `${pendingCount} awaiting reply · ${myRequests.length} total requests` : 'Job referrals from alumni who opt in'}
@@ -276,6 +277,6 @@ export default function ReferralPage() {
           </div>
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }

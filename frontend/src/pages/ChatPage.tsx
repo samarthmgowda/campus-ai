@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { DemoUser, ChatTurn, ChatSource, AgentResponse } from '../types'
@@ -171,7 +172,7 @@ export default function ChatPage() {
   const isEmpty = history.length === 0 && !liveResponse && !sendMutation.isPending && !activeAsk
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       {/* Top strip */}
       <div className="flex items-center gap-3 mb-5">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-card flex-shrink-0">
@@ -399,6 +400,6 @@ export default function ChatPage() {
           </p>
         )}
       </div>
-    </div>
+    </PageContainer>
   )
 }

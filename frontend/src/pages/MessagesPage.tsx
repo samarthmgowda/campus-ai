@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getId } from '../utils/identity'
@@ -116,7 +117,7 @@ export default function MessagesPage() {
   const totalUnread = inbox.reduce((s, c) => s + (c.unreadCount ?? 0), 0)
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Messages"
         sub={totalUnread > 0 ? `${totalUnread} unread across ${inbox.length} conversations` : 'Direct lines to your peers'}
@@ -309,6 +310,6 @@ export default function MessagesPage() {
           </div>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

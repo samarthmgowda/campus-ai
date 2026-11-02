@@ -1,10 +1,14 @@
 import { useQuery } from '@tanstack/react-query'
+import { Link } from 'react-router-dom'
 import { api } from '../api/client'
 import { getId } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
-import { Briefcase, Users, Bell, FileText } from 'lucide-react'
+import { PageContainer, PageSection } from '../components/ui/PageContainer'
+import { StatTile, StatGrid } from '../components/ui/Stat'
+import { Reveal } from '../components/ui/Reveal'
+import { Briefcase, Users, Bell, FileText, ArrowUpRight, Clock } from 'lucide-react'
 
 interface RecruiterPosting {
   id: number
@@ -39,125 +43,155 @@ export default function RecruiterDashboardPage() {
 
   if (userId == null) {
     return (
-      <div>
-        <PageHeader title="Recruiter Dashboard" sub="Recruiter overview" />
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4 mt-4">
+      <PageContainer>
+        <PageHeader title="Dashboard" sub="Recruiter overview" />
+        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4">
           <p className="text-body-sm text-amber-900">
             No demo user selected. Choose a recruiter from the login page.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   if (isError) {
     return (
-      <ErrorState
-        title="Could not load recruiter dashboard"
-        message={(error as Error)?.message || 'An unexpected error occurred'}
-        onRetry={() => refetch()}
-      />
+      <PageContainer>
+        <ErrorState
+          title="Could not load recruiter dashboard"
+          message={(error as Error)?.message || 'An unexpected error occurred'}
+          onRetry={() => refetch()}
+        />
+      </PageContainer>
     )
   }
 
   if (isLoading || !dash) {
     return (
-      <div>
-        <PageHeader title="Recruiter Dashboard" sub="Recruiter overview" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
-        </div>
-      </div>
+      <PageContainer>
+        <PageHeader title="Dashboard" sub="Recruiter overview" />
+        <StatGrid>
+          {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
+        </StatGrid>
+      </PageContainer>
     )
   }
 
+  const rawName = (dash.recruiterName ?? '') as string
   const identity = dash.identity as { role: string; userId: number } | undefined
   const postings = dash.postings as { count: number; items: RecruiterPosting[] } | undefined
+  const unread = (dash.unreadNotifications ?? 0) as number
 
   const openCount = postings?.items?.filter(p => p.status === 'OPEN').length || 0
   const closedCount = postings?.items?.filter(p => p.status === 'CLOSED').length || 0
   const totalApplicants = postings?.items?.reduce((sum, p) => sum + (p.applicantCount || 0), 0) || 0
+  const greetingName = rawName.split(' ')[0] || identity?.role || 'Recruiter'
 
   return (
-    <div>
+    <PageContainer>
       <PageHeader
-        title="Recruiter Dashboard"
-        sub={`Welcome back, ${dash.recruiterName || identity?.role || 'Recruiter'}`}
+        title={`Welcome back, ${greetingName}`}
+        sub="Your pipeline at a glance — postings, applicants, and what needs a reply"
+        actions={
+          <Link
+            to="/recruiter"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-campus-950 text-white px-4 py-2.5 text-body-sm font-semibold hover:bg-campus-900 transition-colors"
+          >
+            Manage careers <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+          </Link>
+        }
       />
 
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4 flex items-center gap-3">
-          <FileText className="h-7 w-7 text-campus-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{postings?.count || 0}</p>
-            <p className="text-sm text-surface-500">Total Postings</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <FileText className="h-7 w-7 text-green-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{openCount}</p>
-            <p className="text-sm text-surface-500">Open</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <FileText className="h-7 w-7 text-amber-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{closedCount}</p>
-            <p className="text-sm text-surface-500">Closed</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <Users className="h-7 w-7 text-purple-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{totalApplicants}</p>
-            <p className="text-sm text-surface-500">Total Applicants</p>
-          </div>
-        </Card>
-      </div>
+      <PageSection title="Pipeline" className="mb-6">
+        <StatGrid>
+          <StatTile icon={FileText} tint="brand" label="Total postings" value={postings?.count ?? 0} />
+          <StatTile
+            icon={Briefcase}
+            tint="emerald"
+            label="Open roles"
+            value={openCount}
+            hint={closedCount > 0 ? `${closedCount} closed` : 'All active'}
+          />
+          <StatTile icon={Users} tint="violet" label="Total applicants" value={totalApplicants} />
+          <StatTile
+            icon={Bell}
+            tint="amber"
+            label="Unread notifications"
+            value={unread}
+            hint={unread > 0 ? 'Something needs you' : 'Nothing new'}
+          />
+        </StatGrid>
+      </PageSection>
 
-      {/* Unread notifications */}
-      <Card className="p-4 flex items-center gap-3 mb-6">
-        <Bell className="h-6 w-6 text-amber-500" />
-        <div>
-          <p className="font-semibold text-surface-900">Unread Notifications</p>
-          <p className="text-sm text-surface-500">{dash.unreadNotifications ?? 0} new items</p>
-        </div>
-      </Card>
-
-      {/* Postings list */}
-      <Card className="p-5">
-        <h3 className="font-semibold text-surface-900 mb-3 flex items-center gap-2">
-          <Briefcase className="h-4 w-4" /> Your Postings
-        </h3>
-        {postings && postings.items && postings.items.length > 0 ? (
-          <div className="space-y-3">
-            {postings.items.map((p: RecruiterPosting) => (
-              <div key={p.id} className="rounded-xl border border-surface-200/70 px-4 py-3 hover:bg-surface-50/50">
-                <div className="flex items-center justify-between">
-                  <p className="font-medium text-surface-900">{p.title}</p>
-                  <Badge variant={p.status === 'OPEN' ? 'success' : 'default'} size="sm">
-                    {p.status}
-                  </Badge>
-                </div>
-                <p className="text-caption text-surface-500 mt-1 line-clamp-2">{p.description}</p>
-                {p.requiredSkills && (
-                  <p className="text-caption text-surface-400 mt-1">Skills: {p.requiredSkills}</p>
-                )}
-                <div className="flex items-center gap-4 mt-2 text-caption text-surface-400">
-                  <span className="flex items-center gap-1">
-                    <Users className="h-3 w-3" /> {p.applicantCount || 0} applicants
-                  </span>
-                  <span>Posted {new Date(p.createdAt).toLocaleDateString()}</span>
-                </div>
+      <Reveal>
+        <PageSection title="Your postings" description="Every role you have listed, newest first">
+          <Card className="p-0 overflow-hidden">
+            {postings?.items?.length ? (
+              <ul className="divide-y divide-campus-900/[0.05]">
+                {postings.items.map((p, i) => (
+                  <li
+                    key={p.id}
+                    style={{ ['--stagger' as string]: Math.min(i, 8) }}
+                    className="px-5 py-4 hover:bg-campus-50/40 transition-colors"
+                  >
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <p className="font-display font-semibold text-[15px] text-campus-950 tracking-tight">
+                            {p.title}
+                          </p>
+                          <Badge variant={p.status === 'OPEN' ? 'success' : 'outline'} size="sm">
+                            {p.status}
+                          </Badge>
+                        </div>
+                        {p.description && (
+                          <p className="text-body-sm text-surface-500 mt-1 line-clamp-2 leading-relaxed">
+                            {p.description}
+                          </p>
+                        )}
+                        {p.requiredSkills && (
+                          <div className="flex flex-wrap gap-1.5 mt-2">
+                            {p.requiredSkills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5).map(s => (
+                              <span
+                                key={s}
+                                className="rounded-full bg-campus-50 border border-campus-100 px-2.5 py-0.5 text-micro font-medium text-campus-700"
+                              >
+                                {s}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      <div className="text-right flex-shrink-0">
+                        <p className="font-display font-bold text-[22px] leading-none tabular-nums text-campus-950">
+                          {p.applicantCount || 0}
+                        </p>
+                        <p className="text-micro text-surface-400 mt-1">
+                          applicant{p.applicantCount === 1 ? '' : 's'}
+                        </p>
+                        <p className="text-micro text-surface-300 mt-2 inline-flex items-center gap-1 tabular-nums">
+                          <Clock className="h-3 w-3" aria-hidden="true" />
+                          {new Date(p.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <div className="px-5 py-12 text-center">
+                <p className="text-body-sm text-surface-400">No postings yet.</p>
+                <Link
+                  to="/recruiter"
+                  className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+                >
+                  Create your first posting <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+                </Link>
               </div>
-            ))}
-          </div>
-        ) : (
-          <p className="text-body-sm text-surface-400">No postings yet. Create one to get started.</p>
-        )}
-      </Card>
-    </div>
+            )}
+          </Card>
+        </PageSection>
+      </Reveal>
+    </PageContainer>
   )
 }

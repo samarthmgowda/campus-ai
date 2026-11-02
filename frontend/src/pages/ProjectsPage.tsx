@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -98,7 +99,7 @@ export default function ProjectsPage() {
   const active = projects.filter(p => p.status === 'ACTIVE').length
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Projects"
         sub={projects.length > 0 ? `${active} active · ${projects.length} total you own or joined` : 'Build together, ship together'}
@@ -282,6 +283,6 @@ export default function ProjectsPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

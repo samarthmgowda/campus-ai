@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useMutation } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -163,7 +164,7 @@ export default function EvalPage() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl space-y-8">
+    <PageContainer width="standard" className="space-y-8">
       <PageHeader
         title="Evaluation"
         sub="Research harness: RAG retrieval vs hybrid+rerank, and teammate arms vs overlap baseline. Admin only."
@@ -402,6 +403,6 @@ export default function EvalPage() {
           />
         )}
       </section>
-    </div>
+    </PageContainer>
   )
 }

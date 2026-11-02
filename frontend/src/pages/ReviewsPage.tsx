@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getId } from '../utils/identity'
@@ -90,7 +91,7 @@ export default function ReviewsPage() {
   const rep = bundle?.reputation
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       <PageHeader
         title="Reviews"
         sub="Peer reputation after projects and events — evidence, not opaque scores"
@@ -214,6 +215,6 @@ export default function ReviewsPage() {
           )}
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

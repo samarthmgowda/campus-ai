@@ -51,8 +51,11 @@ export default {
         },
       },
       fontFamily: {
-        sans: ["'Segoe UI'", 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
-        display: ["'Segoe UI'", 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
+        // Inter carries the interface; Space Grotesk carries the voice. The
+        // stylesheet has always preloaded Space Grotesk but this config never
+        // referenced it, so the display face silently fell back to Segoe UI.
+        sans: ['Inter', "'Segoe UI'", 'system-ui', '-apple-system', 'BlinkMacSystemFont', 'Roboto', 'sans-serif'],
+        display: ["'Space Grotesk'", 'Inter', "'Segoe UI'", 'system-ui', 'sans-serif'],
         mono: ['JetBrains Mono', 'Fira Code', 'Consolas', 'monospace'],
       },
       fontSize: {
@@ -93,6 +96,15 @@ export default {
         'scale-in': 'scaleIn 150ms ease-out',
         'pulse-soft': 'pulseSoft 2s ease-in-out infinite',
         'shimmer': 'shimmer 1.5s ease-in-out infinite',
+        // Landing / hero orchestration
+        'rise': 'rise 620ms cubic-bezier(0.16, 1, 0.3, 1) both',
+        'float': 'float 6s ease-in-out infinite',
+        'float-slow': 'float 9s ease-in-out infinite',
+        'marquee': 'marquee 42s linear infinite',
+        'drift': 'drift 18s ease-in-out infinite',
+        'wiggle': 'wiggle 420ms cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'caret': 'caret 1.05s step-end infinite',
+        'sweep': 'sweep 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite',
       },
       keyframes: {
         fadeIn: {
@@ -119,6 +131,37 @@ export default {
           '0%': { backgroundPosition: '-200% 0' },
           '100%': { backgroundPosition: '200% 0' },
         },
+        rise: {
+          '0%': { opacity: '0', transform: 'translateY(20px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        },
+        float: {
+          '0%, 100%': { transform: 'translateY(0)' },
+          '50%': { transform: 'translateY(-12px)' },
+        },
+        marquee: {
+          '0%': { transform: 'translateX(0)' },
+          '100%': { transform: 'translateX(-50%)' },
+        },
+        // Slow organic drift for the hero's background field.
+        drift: {
+          '0%, 100%': { transform: 'translate3d(0,0,0) scale(1)' },
+          '33%': { transform: 'translate3d(3%, -4%, 0) scale(1.06)' },
+          '66%': { transform: 'translate3d(-3%, 3%, 0) scale(0.97)' },
+        },
+        wiggle: {
+          '0%, 100%': { transform: 'rotate(0deg)' },
+          '25%': { transform: 'rotate(-7deg)' },
+          '75%': { transform: 'rotate(7deg)' },
+        },
+        caret: {
+          '0%, 100%': { opacity: '1' },
+          '50%': { opacity: '0' },
+        },
+        sweep: {
+          '0%': { transform: 'translateX(-100%)' },
+          '100%': { transform: 'translateX(300%)' },
+        },
       },
       transitionDuration: {
         'fast': '120ms',
@@ -127,6 +170,7 @@ export default {
       },
       transitionTimingFunction: {
         'spring': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+        'out-expo': 'cubic-bezier(0.16, 1, 0.3, 1)',
       },
     },
   },

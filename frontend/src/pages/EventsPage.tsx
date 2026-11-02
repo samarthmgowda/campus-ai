@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Event as CampusEvent } from '../types'
@@ -80,7 +81,7 @@ export default function EventsPage() {
   })
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Events"
         sub={joinedCount > 0 ? `You're in for ${joinedCount} · ${events.length} listed` : 'Hackathons, workshops, and campus gatherings'}
@@ -243,6 +244,6 @@ export default function EventsPage() {
       {(joinMutation.isError || leaveMutation.isError) && (
         <p className="mt-4" role="alert"><Badge variant="danger">{((joinMutation.error ?? leaveMutation.error) as Error)?.message}</Badge></p>
       )}
-    </div>
+    </PageContainer>
   )
 }

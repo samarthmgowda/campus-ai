@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../api/client'
@@ -47,7 +48,7 @@ export default function SettingsPage() {
     : ''
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       <PageHeader title="Settings" sub="Identity and environment for this demo" />
 
       <section aria-label="Acting as" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden mb-4">
@@ -100,6 +101,6 @@ export default function SettingsPage() {
           ))}
         </div>
       </section>
-    </div>
+    </PageContainer>
   )
 }

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageContainer } from '../components/ui/PageContainer'
 import { api } from '../api/client'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
 import { Badge } from '../components/ui/Badge'
@@ -65,7 +66,7 @@ export default function AnalyticsPage() {
     : []
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Analytics"
         sub="The pulse of your campus — engagement at a glance"
@@ -156,6 +157,6 @@ export default function AnalyticsPage() {
           </div>
         </>
       )}
-    </div>
+    </PageContainer>
   )
 }

@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -94,7 +95,7 @@ export default function RecruiterPage() {
   const anyError = createMutation.error ?? applyMutation.error ?? withdrawMutation.error ?? decideMutation.error ?? closeMutation.error
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Careers"
         sub={myApps.length > 0 ? `${myApps.length} application${myApps.length === 1 ? '' : 's'} out · ${postings.length} roles listed` : 'Open roles and your applications'}
@@ -279,6 +280,6 @@ export default function RecruiterPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

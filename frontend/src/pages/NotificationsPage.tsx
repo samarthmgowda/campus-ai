@@ -1,4 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { PageContainer } from '../components/ui/PageContainer'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
@@ -92,7 +93,7 @@ export default function NotificationsPage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <PageContainer width="form">
       <PageHeader
         title="Notifications"
         sub={unread > 0 ? `${unread} unread — newest first` : 'You are all caught up'}
@@ -178,6 +179,6 @@ export default function NotificationsPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

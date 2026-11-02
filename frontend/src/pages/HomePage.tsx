@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { getName } from '../utils/identity'
@@ -53,7 +54,7 @@ export default function HomePage() {
   const loading = inbox.isLoading && notifs.isLoading && events.isLoading
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title={`${greeting()}${meName}`}
         sub="Everything happening on your campus, in one glance"
@@ -199,6 +200,6 @@ export default function HomePage() {
           </section>
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

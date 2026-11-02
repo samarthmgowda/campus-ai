@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { Link } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
@@ -48,7 +49,7 @@ export default function SearchPage() {
   const loading = students.isLoading || alumni.isLoading
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       <PageHeader title="Search" sub="People, projects, events, and documents — one box" />
 
       <form
@@ -247,6 +248,6 @@ export default function SearchPage() {
           )}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

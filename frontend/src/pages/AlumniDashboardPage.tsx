@@ -4,7 +4,11 @@ import { getId } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
-import { GraduationCap, Briefcase, Bell, Users } from 'lucide-react'
+import { PageContainer, PageSection } from '../components/ui/PageContainer'
+import { StatTile, StatGrid } from '../components/ui/Stat'
+import { Reveal } from '../components/ui/Reveal'
+import { GraduationCap, Briefcase, Bell, Users, ArrowUpRight } from 'lucide-react'
+import { Link } from 'react-router-dom'
 
 interface Identity {
   name: string
@@ -60,35 +64,37 @@ export default function AlumniDashboardPage() {
 
   if (userId == null) {
     return (
-      <div>
-        <PageHeader title="Alumni Dashboard" sub="Alumni overview" />
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4 mt-4">
+      <PageContainer>
+        <PageHeader title="Dashboard" sub="Alumni overview" />
+        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4">
           <p className="text-body-sm text-amber-900">
             No demo user selected. Choose a user from the login page.
           </p>
         </div>
-      </div>
+      </PageContainer>
     )
   }
 
   if (isError) {
     return (
-      <ErrorState
-        title="Could not load alumni dashboard"
-        message={(error as Error)?.message || 'An unexpected error occurred'}
-        onRetry={() => refetch()}
-      />
+      <PageContainer>
+        <ErrorState
+          title="Could not load alumni dashboard"
+          message={(error as Error)?.message || 'An unexpected error occurred'}
+          onRetry={() => refetch()}
+        />
+      </PageContainer>
     )
   }
 
   if (isLoading || !dash) {
     return (
-      <div>
-        <PageHeader title="Alumni Dashboard" sub="Alumni overview" />
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-4">
-          {[1, 2, 3, 4].map(i => <SkeletonCard key={i} />)}
-        </div>
-      </div>
+      <PageContainer>
+        <PageHeader title="Dashboard" sub="Alumni overview" />
+        <StatGrid>
+          {[0, 1, 2, 3].map(i => <SkeletonCard key={i} />)}
+        </StatGrid>
+      </PageContainer>
     )
   }
 
@@ -96,111 +102,166 @@ export default function AlumniDashboardPage() {
   const mentorship = dash.mentorshipRequests as { count: number; items: MentorshipRequest[] } | undefined
   const referrals = dash.referralRequests as { count: number; items: ReferralRequest[] } | undefined
   const connections = dash.connections as Connections | undefined
+  const pendingMentorship = (mentorship?.items ?? []).filter(r => r.status === 'PENDING').length
 
   return (
-    <div>
+    <PageContainer>
       <PageHeader
-        title="Alumni Dashboard"
-        sub={`Welcome back, ${identity?.name || 'Alumni'}`}
+        title={`Welcome back, ${identity?.name?.split(' ')[0] || 'Alumni'}`}
+        sub="Everyone waiting on your guidance, in one place"
+        actions={
+          pendingMentorship > 0 ? (
+            <Badge variant="accent">{pendingMentorship} awaiting reply</Badge>
+          ) : (
+            <Badge variant="success">All caught up</Badge>
+          )
+        }
       />
 
-      {/* Identity card */}
-      <Card className="p-5 mb-6">
-        <div className="flex items-center gap-4">
-          <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] font-display font-bold text-xl text-white flex-shrink-0" aria-hidden="true">
-            {identity?.name?.charAt(0).toUpperCase() || '?'}
-          </span>
-          <div className="min-w-0 flex-1">
-            <p className="font-display font-bold text-[20px] text-campus-950">{identity?.name || '—'}</p>
-            <p className="text-body-sm text-surface-500 mt-0.5">
-              {identity?.currentRole} · {identity?.currentCompany}
-            </p>
-            <p className="text-caption text-surface-400 mt-0.5">
-              {identity?.branch} · Grad {identity?.graduationYear}
-            </p>
-          </div>
-          {identity?.availability && (
-            <Badge variant={identity.availability === 'UNAVAILABLE' ? 'default' : 'success'} size="sm">
-              {identity.availability}
-            </Badge>
-          )}
-        </div>
-      </Card>
-
-      {/* Quick stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <Card className="p-4 flex items-center gap-3">
-          <GraduationCap className="h-7 w-7 text-campus-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{mentorship?.count || 0}</p>
-            <p className="text-sm text-surface-500">Mentorship Requests</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <Briefcase className="h-7 w-7 text-purple-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{referrals?.count || 0}</p>
-            <p className="text-sm text-surface-500">Referral Requests</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <Users className="h-7 w-7 text-blue-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{connections?.followers || 0}</p>
-            <p className="text-sm text-surface-500">Followers</p>
-          </div>
-        </Card>
-        <Card className="p-4 flex items-center gap-3">
-          <Bell className="h-7 w-7 text-amber-500" />
-          <div>
-            <p className="text-2xl font-bold text-surface-900">{dash.unreadNotifications ?? 0}</p>
-            <p className="text-sm text-surface-500">Unread Notifications</p>
-          </div>
-        </Card>
-      </div>
-
-      {/* Detailed lists */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        {/* Pending mentorship requests */}
-        <Card className="p-5">
-          <h3 className="font-semibold text-surface-900 mb-3 flex items-center gap-2">
-            <GraduationCap className="h-4 w-4" /> Pending Mentorship
-          </h3>
-          {mentorship && mentorship.items && mentorship.items.length > 0 ? (
-            <div className="space-y-3">
-              {mentorship.items.map((r: MentorshipRequest) => (
-                <div key={r.id} className="rounded-xl bg-surface-50/70 border border-surface-200/70 px-3.5 py-3">
-                  <p className="font-medium text-surface-900 text-body-sm">{r.studentName}</p>
-                  <p className="text-caption text-surface-500 mt-1 line-clamp-2">{r.message}</p>
-                  <Badge variant="outline" size="sm" className="mt-2">{r.status}</Badge>
-                </div>
-              ))}
+      {/* Identity banner — carries the person, not just a number. */}
+      <Reveal>
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 sm:p-7 mb-5 shadow-card">
+          <div className="absolute -top-20 -right-14 h-56 w-56 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
+          <div className="relative flex items-center gap-4 flex-wrap">
+            <span
+              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 border border-white/20 font-display font-bold text-xl flex-shrink-0"
+              aria-hidden="true"
+            >
+              {identity?.name?.charAt(0).toUpperCase() || '?'}
+            </span>
+            <div className="min-w-0 flex-1">
+              <p className="font-display font-bold text-[20px] tracking-tight">{identity?.name || '—'}</p>
+              <p className="text-body-sm text-white/70 mt-0.5">
+                {identity?.currentRole}{identity?.currentCompany ? ` · ${identity.currentCompany}` : ''}
+              </p>
+              <p className="text-caption text-white/50 mt-0.5">
+                {identity?.branch} · Graduated {identity?.graduationYear}
+              </p>
             </div>
-          ) : (
-            <p className="text-body-sm text-surface-400">No pending mentorship requests.</p>
-          )}
-        </Card>
+            {identity?.availability && (
+              <span className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/15 px-3 py-1.5 text-caption font-semibold">
+                <span
+                  className={`h-1.5 w-1.5 rounded-full ${identity.availability === 'UNAVAILABLE' ? 'bg-white/40' : 'bg-emerald-300'}`}
+                  aria-hidden="true"
+                />
+                {identity.availability === 'UNAVAILABLE' ? 'Not taking requests' : 'Open to requests'}
+              </span>
+            )}
+          </div>
+        </section>
+      </Reveal>
 
-        {/* Pending referral requests */}
-        <Card className="p-5">
-          <h3 className="font-semibold text-surface-900 mb-3 flex items-center gap-2">
-            <Briefcase className="h-4 w-4" /> Pending Referrals
-          </h3>
-          {referrals && referrals.items && referrals.items.length > 0 ? (
-            <div className="space-y-3">
-              {referrals.items.map((r: ReferralRequest) => (
-                <div key={r.id} className="rounded-xl bg-surface-50/70 border border-surface-200/70 px-3.5 py-3">
-                  <p className="font-medium text-surface-900 text-body-sm">{r.studentName}</p>
-                  <p className="text-caption text-surface-500 mt-1">{r.company} · {r.role}</p>
-                  <Badge variant="outline" size="sm" className="mt-2">{r.status}</Badge>
-                </div>
-              ))}
-            </div>
-          ) : (
-            <p className="text-body-sm text-surface-400">No pending referral requests.</p>
-          )}
-        </Card>
+      <PageSection title="Your activity" className="mb-6">
+        <StatGrid>
+          <StatTile
+            icon={GraduationCap}
+            tint="brand"
+            label="Mentorship requests"
+            value={mentorship?.count ?? 0}
+            hint={pendingMentorship > 0 ? `${pendingMentorship} pending` : 'None pending'}
+          />
+          <StatTile
+            icon={Briefcase}
+            tint="accent"
+            label="Referral requests"
+            value={referrals?.count ?? 0}
+            hint="Students hoping for a warm intro"
+          />
+          <StatTile
+            icon={Users}
+            tint="sky"
+            label="Followers"
+            value={connections?.followers ?? 0}
+            hint={`Following ${connections?.following ?? 0}`}
+          />
+          <StatTile
+            icon={Bell}
+            tint="amber"
+            label="Unread notifications"
+            value={dash.unreadNotifications ?? 0}
+          />
+        </StatGrid>
+      </PageSection>
+
+      <div className="grid gap-4 lg:grid-cols-2">
+        <PageSection
+          title="Mentorship requests"
+          description="Students who asked you for guidance"
+          action={
+            <Link
+              to="/mentorship"
+              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+            >
+              Manage <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          }
+        >
+          <Card className="p-4 h-full">
+            {mentorship?.items?.length ? (
+              <div className="space-y-2.5 stagger">
+                {mentorship.items.map((r, i) => (
+                  <div
+                    key={r.id}
+                    style={{ ['--stagger' as string]: Math.min(i, 6) }}
+                    className="rounded-xl border border-campus-100 bg-campus-50/60 px-3.5 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-body-sm text-campus-950">{r.studentName}</p>
+                      <Badge variant={r.status === 'PENDING' ? 'warning' : 'outline'} size="sm">
+                        {r.status}
+                      </Badge>
+                    </div>
+                    {r.message && (
+                      <p className="text-caption text-surface-500 mt-1 line-clamp-2 leading-relaxed">{r.message}</p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-body-sm text-surface-400 text-center py-6">No mentorship requests yet.</p>
+            )}
+          </Card>
+        </PageSection>
+
+        <PageSection
+          title="Referral requests"
+          description="Warm intros students are hoping for"
+          action={
+            <Link
+              to="/referrals"
+              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+            >
+              Manage <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
+            </Link>
+          }
+        >
+          <Card className="p-4 h-full">
+            {referrals?.items?.length ? (
+              <div className="space-y-2.5 stagger">
+                {referrals.items.map((r, i) => (
+                  <div
+                    key={r.id}
+                    style={{ ['--stagger' as string]: Math.min(i, 6) }}
+                    className="rounded-xl border border-accent-100 bg-accent-50/50 px-3.5 py-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <p className="font-semibold text-body-sm text-campus-950">{r.studentName}</p>
+                      <Badge variant={r.status === 'PENDING' ? 'warning' : 'outline'} size="sm">
+                        {r.status}
+                      </Badge>
+                    </div>
+                    <p className="text-caption text-surface-500 mt-1">
+                      {r.role} at {r.company}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-body-sm text-surface-400 text-center py-6">No referral requests yet.</p>
+            )}
+          </Card>
+        </PageSection>
       </div>
-    </div>
+    </PageContainer>
   )
 }

@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query'
+import { PageContainer } from '../components/ui/PageContainer'
 import { api } from '../api/client'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
@@ -75,18 +76,18 @@ export default function ProfilePage() {
 
   if (meLoading) {
     return (
-      <div className="mx-auto max-w-3xl space-y-4">
+      <PageContainer width="reading" className="space-y-4">
         <SkeletonCard /><SkeletonCard />
-      </div>
+      </PageContainer>
     )
   }
 
   if (meError) {
     return (
-      <div className="mx-auto max-w-3xl">
+      <PageContainer width="reading">
         <PageHeader title="Profile" sub="Your campus identity" />
         <ErrorState message={(meError as Error).message} onRetry={() => refetch()} />
-      </div>
+      </PageContainer>
     )
   }
 
@@ -109,7 +110,7 @@ export default function ProfilePage() {
   const footprint = isStudent && me ? studentFootprint(me) : []
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       <PageHeader title="Profile" sub="Your campus identity and growth signals" />
 
       <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 sm:p-8 mb-5">
@@ -197,6 +198,6 @@ export default function ProfilePage() {
           </div>
         </section>
       )}
-    </div>
+    </PageContainer>
   )
 }

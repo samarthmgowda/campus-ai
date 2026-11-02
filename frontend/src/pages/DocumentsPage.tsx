@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Document as CampusDocument } from '../types'
@@ -71,7 +72,7 @@ export default function DocumentsPage() {
   )
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Library"
         sub="The knowledge Campus AI answers from — curated documents only"
@@ -242,6 +243,6 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

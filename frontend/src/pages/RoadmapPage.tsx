@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
@@ -72,7 +73,7 @@ export default function RoadmapPage() {
   }
 
   return (
-    <div className="mx-auto max-w-3xl">
+    <PageContainer width="reading">
       <PageHeader
         title="Career roadmaps"
         sub="Step-by-step guides written by alumni who walked the path"
@@ -200,6 +201,6 @@ export default function RoadmapPage() {
           })}
         </div>
       )}
-    </div>
+    </PageContainer>
   )
 }

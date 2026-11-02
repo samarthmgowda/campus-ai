@@ -1,4 +1,5 @@
 import { useState } from 'react'
+import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Document, Event as CampusEvent } from '../types'
@@ -88,7 +89,7 @@ export default function AdminPage() {
   const openCount = stats ? (stats.OPEN ?? stats.open ?? 0) : reports.filter(r => r.status === 'OPEN').length
 
   return (
-    <div className="mx-auto max-w-5xl">
+    <PageContainer width="standard">
       <PageHeader
         title="Admin"
         sub={openCount > 0 ? `${openCount} reports need review — requires admin user` : 'Keep the community healthy'}
@@ -303,6 +304,6 @@ export default function AdminPage() {
           )}
         </div>
       </section>
-    </div>
+    </PageContainer>
   )
 }
