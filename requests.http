@@ -1,3 +1,20 @@
+### Environment Setup
+# X-Demo-User: 1 (admin), 2 (student), 3 (alumni), or recruiter ID after seeding
+
+### Seed dev data
+POST http://localhost:8080/dev/seed
+X-Demo-User: 1
+
+###
+
+POST http://localhost:8080/dev/seed-skills
+X-Demo-User: 1
+
+###
+
+GET http://localhost:8080/demo/users
+
+### A. Documents / RAG Core
 POST http://localhost:8080/documents
 Content-Type: application/json
 
@@ -6,34 +23,475 @@ Content-Type: application/json
   "content": "Each team must contain between 2 and 4 students."
 }
 
-### Chat orchestrator endpoint
-POST http://localhost:8080/api/chat
+###
+GET http://localhost:8080/documents
+Accept: text/html
+
+###
+POST http://localhost:8080/documents/{id}/chunks
+Content-Type: application/json
+
+{
+  "content": "chunk text",
+  "pageNumber": 1,
+  "section": "Intro"
+}
+
+###
+GET http://localhost:8080/search?q=How%20many%20students%20can%20be%20in%20a%20hackathon%20team&limit=5
+
+###
+GET http://localhost:8080/ask?q=How%20many%20students%20can%20be%20in%20a%20hackathon%20team
+X-Demo-User: 1
+
+### multi-fact question — exercises query decomposition (AND-split → two sub-queries)
+GET http://localhost:8080/ask?q=How%20many%20students%20can%20be%20in%20a%20hackathon%20team%20and%20how%20much%20attendance%20is%20needed%20for%20exams
+X-Demo-User: 1
+
+### out-of-scope question (should be gated)
+GET http://localhost:8080/ask?q=Tell%20me%20a%20joke
+X-Demo-User: 1
+
+### B. Chat History
+GET http://localhost:8080/ask?q=hello
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/ask/history?limit=5
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/ask/history/count
+X-Demo-User: 1
+
+###
+DELETE http://localhost:8080/ask/history
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/ask?q=show%20my%20chat%20history
+X-Demo-User: 1
+
+### C. Profile
+GET http://localhost:8080/me/completeness
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/me/recommendations?limit=5
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/profile/1/recommendations
+
+###
+GET http://localhost:8080/ask?q=how%20complete%20is%20my%20profile
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/ask?q=recommend%20skills
+X-Demo-User: 1
+
+### D. Skill Glossary
+GET http://localhost:8080/skills/glossary?skill=js
+
+###
+GET http://localhost:8080/skills/search?q=rea&limit=5
+
+###
+GET http://localhost:8080/ask?q=glossary%20for%20js
+X-Demo-User: 1
+
+### E. Project Create / Add Member
+POST http://localhost:8080/projects
 X-Demo-User: 1
 Content-Type: application/json
 
 {
-  "question": "How many students can be in a hackathon team?",
-  "forceRag": true
+  "name": "UniqueProj123",
+  "description": "desc",
+  "domain": "AI",
+  "requiredSkills": "Java, React"
 }
 
-### Ask endpoint (GET-based)
-GET http://localhost:8080/ask?q=How+many+students+can+be+in+a+hackathon+team
-X-Demo-User: 1
-
-### Agent endpoint (POST - Phase 3 execution loop)
-POST http://localhost:8080/api/agent
+### duplicate project name (should 409)
+POST http://localhost:8080/projects
 X-Demo-User: 1
 Content-Type: application/json
 
 {
-  "question": "Find teammates for my project"
+  "name": "UniqueProj123",
+  "description": "desc",
+  "domain": "AI",
+  "requiredSkills": "Java, React"
 }
 
-### Agent: RAG fallback
-POST http://localhost:8080/api/agent
+###
+POST http://localhost:8080/projects/{id}/members
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "studentId": 2
+}
+
+### E13 via chat
+GET http://localhost:8080/ask?q=create%20project
+X-Demo-User: 1
+
+### F. Student Event Create + Approval
+POST http://localhost:8080/events
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "title": "My Hack",
+  "type": "HACKATHON",
+  "eventDate": "2026-11-20",
+  "description": "desc",
+  "location": "Hall A"
+}
+
+### admin: list all events (includes pending)
+GET http://localhost:8080/events/admin/all
+X-Demo-User: 1
+
+### admin: publish event
+POST http://localhost:8080/events/admin/{id}/visibility
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "hidden": false
+}
+
+### student: join event
+POST http://localhost:8080/events/{id}/join
 X-Demo-User: 2
+
+### F16 via chat
+GET http://localhost:8080/ask?q=upcoming%20events
+X-Demo-User: 1
+
+### G. Mentorship Handshake
+POST http://localhost:8080/mentorship/request
+X-Demo-User: 1
 Content-Type: application/json
 
 {
-  "question": "What is the attendance policy?"
+  "alumniId": 1,
+  "message": "hi"
 }
+
+### alumni responds
+POST http://localhost:8080/mentorship/{id}/alumni-respond
+Content-Type: application/json
+
+{
+  "action": "ACCEPT"
+}
+
+###
+GET http://localhost:8080/mentorship/my?status=PENDING
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/mentorship/alumni/1?status=PENDING
+X-Demo-User: 1
+
+### D. Skill glossary
+POST http://localhost:8080/dev/seed-skills
+X-Demo-User: 1
+
+### H. Recruiter Posting / Shortlist
+POST http://localhost:8080/dev/seed-recruiter
+X-Demo-User: 1
+
+### create posting
+POST http://localhost:8080/recruiter/postings
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "title": "Backend Intern",
+  "description": "Java role",
+  "requiredSkills": "Java, Spring"
+}
+
+### apply (student)
+POST http://localhost:8080/recruiter/postings/{id}/apply
+X-Demo-User: 2
+
+### owner: list applications
+GET http://localhost:8080/recruiter/postings/{id}/applications
+X-Demo-User: 1
+
+### owner: decide (SHORTLIST/REJECT)
+POST http://localhost:8080/recruiter/postings/{id}/applications/{appId}/decide
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "action": "SHORTLIST"
+}
+
+### student: my applications
+GET http://localhost:8080/recruiter/applications/my
+X-Demo-User: 2
+
+### student: withdraw application
+POST http://localhost:8080/recruiter/applications/{appId}/withdraw
+X-Demo-User: 2
+
+### close posting
+POST http://localhost:8080/recruiter/postings/{id}/close
+X-Demo-User: 1
+
+### chat: open postings
+GET http://localhost:8080/ask?q=open%20postings
+X-Demo-User: 2
+
+### I. Admin Moderation Actions
+POST http://localhost:8080/reports
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "targetType": "POST",
+  "targetId": 1,
+  "reason": "SPAM"
+}
+
+### admin: resolve report (hide/suspend)
+POST http://localhost:8080/reports/{id}/resolve
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "action": "RESOLVED"
+}
+
+### J. Document Upload Manager
+POST http://localhost:8080/documents/upload
+X-Demo-User: 1
+Content-Type: multipart/form-data; boundary=----WebKitFormBoundary
+
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="guide.txt"
+Content-Type: text/plain
+
+College attendance policy: 75% required to sit for exams.
+------WebKitFormBoundary--
+
+### document stats
+GET http://localhost:8080/documents/stats/overview
+X-Demo-User: 1
+
+### my uploads
+GET http://localhost:8080/documents/my/uploads
+X-Demo-User: 1
+
+### admin: all documents (includes hidden)
+GET http://localhost:8080/documents/admin/all
+X-Demo-User: 1
+
+### toggle visibility
+POST http://localhost:8080/documents/admin/{id}/visibility
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "hidden": true
+}
+
+### delete document
+DELETE http://localhost:8080/documents/admin/{id}
+X-Demo-User: 1
+
+### chat: visible documents
+GET http://localhost:8080/ask?q=visible%20documents
+X-Demo-User: 1
+
+### chat: my uploads
+GET http://localhost:8080/ask?q=my%20uploads
+X-Demo-User: 1
+
+### chat: document count
+GET http://localhost:8080/ask?q=how%20many%20documents
+X-Demo-User: 1
+
+### K. Other Thin-Tool Spot Checks
+GET http://localhost:8080/messages/inbox
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/analytics/summary
+
+###
+POST http://localhost:8080/bookmarks/toggle
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "type": "POST",
+  "refId": 1
+}
+
+###
+POST http://localhost:8080/endorsements/give
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "skill": "JavaScript"
+}
+
+###
+POST http://localhost:8080/follow/1
+X-Demo-User: 2
+
+###
+GET http://localhost:8080/activity
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/events/my
+X-Demo-User: 1
+
+### L. Roadmaps
+GET http://localhost:8080/roadmaps
+
+###
+POST http://localhost:8080/roadmaps
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "alumniId": 1,
+  "title": "Backend Developer Roadmap",
+  "targetRole": "Backend Engineer",
+  "description": "1. Learn Java... 2. Learn Spring..."
+}
+
+###
+GET http://localhost:8080/roadmaps?role=backend
+
+###
+GET http://localhost:8080/roadmaps/{id}
+
+### chat: roadmap for backend
+GET http://localhost:8080/ask?q=roadmap%20for%20backend
+X-Demo-User: 1
+
+### UI: /roadmaps page (SPA)
+GET http://localhost:8080/roadmaps
+Accept: text/html
+
+### M. Referrals
+POST http://localhost:8080/referrals/request
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "alumniId": 1,
+  "message": "hi",
+  "company": "Infosys",
+  "role": "Intern"
+}
+
+### alumni respond
+POST http://localhost:8080/referrals/{id}/alumni-respond
+Content-Type: application/json
+
+{
+  "alumniId": 1,
+  "action": "ACCEPT"
+}
+
+###
+GET http://localhost:8080/referrals/my?status=PENDING
+X-Demo-User: 1
+
+### UI: /referrals page (SPA)
+GET http://localhost:8080/referrals
+Accept: text/html
+
+### N. Reviews + Search
+POST http://localhost:8080/reviews
+X-Demo-User: 1
+Content-Type: application/json
+
+{
+  "revieweeId": 2,
+  "rating": 5,
+  "comment": "great"
+}
+
+###
+GET http://localhost:8080/reviews/student/2
+
+### search fans out
+GET http://localhost:8080/search?q=java&limit=5
+
+### SPA fallback (HTML → index.html, JSON → API)
+GET http://localhost:8080/reviews
+Accept: text/html
+
+###
+GET http://localhost:8080/reviews
+Accept: application/json
+
+### O. Weighted Teammate + Eval
+GET http://localhost:8080/dev/tools/teammates-weighted?projectId=1&availableOnly=true&semantic=false
+X-Demo-User: 1
+
+### three-way eval
+POST http://localhost:8080/eval/teammates/run?availableOnly=true&includeSemantic=false
+X-Demo-User: 1
+
+### with semantic (needs Ollama)
+POST http://localhost:8080/eval/teammates/run?availableOnly=true&includeSemantic=true
+X-Demo-User: 1
+
+### non-admin eval (should 403)
+POST http://localhost:8080/eval/teammates/run?availableOnly=true
+X-Demo-User: 2
+
+### P. RAG Eval Harness (admin only)
+GET http://localhost:8080/eval/rag/cases
+X-Demo-User: 1
+
+### run RAG eval — retrieval-only (fast, no Ollama needed)
+POST http://localhost:8080/eval/rag/run?retrievalOnly=true
+X-Demo-User: 1
+
+### run RAG eval — full generation (needs Ollama for answer scoring)
+POST http://localhost:8080/eval/rag/run?retrievalOnly=false
+X-Demo-User: 1
+
+### Q. Phase 2 M5 — Role Dashboards
+GET http://localhost:8080/dashboard/student
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/dashboard/alumni?alumniId=2
+X-Demo-User: 1
+
+###
+GET http://localhost:8080/dashboard/recruiter
+X-Demo-User: 1
+
+### chat: my dashboard
+GET http://localhost:8080/ask?q=my+dashboard
+X-Demo-User: 1
+
+### skill graph dashboard
+GET http://localhost:8080/skills/dashboard
+X-Demo-User: 1
+
+### UI: /dashboard (SPA)
+GET http://localhost:8080/dashboard/student
+Accept: text/html
+
+### UI: /skills-graph (SPA)
+GET http://localhost:8080/skills-graph
+Accept: text/html

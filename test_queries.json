@@ -1,0 +1,307 @@
+{
+  "metadata": {
+    "description": "Comprehensive AI chatbot test query catalog for Campus AI",
+    "endpoints": {
+      "rag_chatbot": "/ask (GET, ?q=<question>)",
+      "agent_orchestrator": "/api/agent (POST, body: {question})",
+      "chat_history": "/ask/history (GET, DELETE)",
+      "eval": "/eval/rag/run (POST, admin only)"
+    },
+    "auth": "X-Demo-User header (1=admin, 2=student, 3=alumni, 4=recruiter)",
+    "total_queries": 25
+  },
+
+  "category_a_single_fact_rag": {
+    "description": "Single-fact RAG questions — direct retrieval from seeded documents",
+    "endpoint": "/ask",
+    "queries": [
+      {
+        "id": "A1",
+        "question": "How many students can be in a hackathon team?",
+        "expected_document": "SAMPLE - Hackathon Rules",
+        "expected_keywords": ["team", "students"],
+        "expected_numbers": ["2", "4"],
+        "category": "single_fact",
+        "notes": "Core team-size question — must cite exact numbers"
+      },
+      {
+        "id": "A2",
+        "question": "What happens to plagiarised or pre-built hackathon projects?",
+        "expected_document": "SAMPLE - Hackathon Rules",
+        "expected_keywords": ["plagiarised", "disqualification"],
+        "expected_numbers": [],
+        "category": "single_fact",
+        "notes": "Conduct violation — must mention disqualification"
+      },
+      {
+        "id": "A3",
+        "question": "How much attendance is needed to be eligible for semester exams?",
+        "expected_document": "SAMPLE - Attendance Policy",
+        "expected_keywords": ["attendance", "eligible"],
+        "expected_numbers": ["75"],
+        "category": "single_fact",
+        "notes": "Must cite 75% figure"
+      },
+      {
+        "id": "A4",
+        "question": "What documents do I need for medical leave absence?",
+        "expected_document": "SAMPLE - Attendance Policy",
+        "expected_keywords": ["medical", "certificate"],
+        "expected_numbers": [],
+        "category": "single_fact",
+        "notes": ""
+      },
+      {
+        "id": "A5",
+        "question": "Who can attend campus placement drives?",
+        "expected_document": "SAMPLE - Placement Guidelines",
+        "expected_keywords": ["backlogs", "eligible"],
+        "expected_numbers": [],
+        "category": "single_fact",
+        "notes": "Eligibility criteria"
+      },
+      {
+        "id": "A6",
+        "question": "When does technical fest registration close?",
+        "expected_document": "SAMPLE - Technical Fest Information",
+        "expected_keywords": ["registration", "week"],
+        "expected_numbers": [],
+        "category": "single_fact",
+        "notes": "Time constraint answer"
+      },
+      {
+        "id": "A7",
+        "question": "Who evaluates the hackathon projects?",
+        "expected_document": "SAMPLE - Hackathon Rules",
+        "expected_keywords": ["judging", "panel"],
+        "expected_numbers": [],
+        "category": "single_fact",
+        "notes": ""
+      }
+    ]
+  },
+
+  "category_b_multi_fact_rag": {
+    "description": "Multi-fact RAG questions — query decomposition should retrieve multiple docs",
+    "endpoint": "/ask",
+    "queries": [
+      {
+        "id": "B1",
+        "question": "How many students can be in a hackathon team and how much attendance is needed for exams?",
+        "expected_document": "SAMPLE - Hackathon Rules, SAMPLE - Attendance Policy",
+        "expected_keywords": ["team", "attendance", "students"],
+        "expected_numbers": ["2", "4", "75"],
+        "category": "multi_fact",
+        "notes": "Tests decomposeAndSearch — should split into 2 sub-queries"
+      },
+      {
+        "id": "B2",
+        "question": "What are the two plagiarism consequences and which document governs attendance policy?",
+        "expected_document": "SAMPLE - Hackathon Rules, SAMPLE - Attendance Policy",
+        "expected_keywords": ["disqualification", "attendance"],
+        "expected_numbers": [],
+        "category": "multi_fact",
+        "notes": "Tests per-fact citation precision"
+      },
+      {
+        "id": "B3",
+        "question": "Who can attend placement drives and when does technical fest registration close?",
+        "expected_document": "SAMPLE - Placement Guidelines, SAMPLE - Technical Fest Information",
+        "expected_keywords": ["backlogs", "registration", "week"],
+        "expected_numbers": [],
+        "category": "multi_fact",
+        "notes": ""
+      }
+    ]
+  },
+
+  "category_c_unanswerable": {
+    "description": "Unanswerable / out-of-scope questions — system should abstain (answered: false)",
+    "endpoint": "/ask",
+    "queries": [
+      {
+        "id": "C1",
+        "question": "What is the hostel curfew timing on weekends?",
+        "expected_document": null,
+        "expected_keywords": [],
+        "expected_numbers": [],
+        "category": "unanswerable",
+        "notes": "In-scope phrasing but nothing in documents"
+      },
+      {
+        "id": "C2",
+        "question": "How do I apply for a semester exchange program?",
+        "expected_document": null,
+        "expected_keywords": [],
+        "expected_numbers": [],
+        "category": "unanswerable",
+        "notes": "Nothing in seeded docs about exchange programs"
+      },
+      {
+        "id": "C3",
+        "question": "Tell me a joke about databases.",
+        "expected_document": null,
+        "expected_keywords": [],
+        "expected_numbers": [],
+        "category": "out_of_scope",
+        "notes": "Should be gated by AskService"
+      },
+      {
+        "id": "C4",
+        "question": "What's the weather like in Mumbai today?",
+        "expected_document": null,
+        "expected_keywords": [],
+        "expected_numbers": [],
+        "category": "out_of_scope",
+        "notes": "Completely outside campus domain"
+      }
+    ]
+  },
+
+  "category_d_structured_tools": {
+    "description": "Structured intent — DB-backed tool dispatches (no LLM generation for data)",
+    "endpoint": "/api/agent",
+    "header": "X-Demo-User: 1",
+    "queries": [
+      {
+        "id": "D1",
+        "question": "show my projects",
+        "expected_tool": "ProjectTool",
+        "expected_behavior": "Lists projects for user 1 or shows empty state",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D2",
+        "question": "find teammates",
+        "expected_tool": "ProjectTeammateTool",
+        "expected_behavior": "Shows skill gaps + candidate suggestions",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D3",
+        "question": "upcoming events",
+        "expected_tool": "EventTool",
+        "expected_behavior": "Lists approved upcoming events",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D4",
+        "question": "my bookmarks",
+        "expected_tool": "BookmarkTool",
+        "expected_behavior": "Lists saved bookmarks or empty state",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D5",
+        "question": "notifications",
+        "expected_tool": "NotificationTool",
+        "expected_behavior": "Shows unread count + recent notifications",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D6",
+        "question": "who knows Java",
+        "expected_tool": "SearchStudentsTool",
+        "expected_behavior": "Lists students with Java skill",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D7",
+        "question": "glossary for js",
+        "expected_tool": "SkillGraphTool",
+        "expected_behavior": "Shows canonical skill: JavaScript with aliases",
+        "category": "tool_structured"
+      },
+      {
+        "id": "D8",
+        "question": "skill graph dashboard",
+        "expected_tool": "SkillGraphTool",
+        "expected_behavior": "Shows top skills on campus with stats",
+        "category": "tool_structured"
+      }
+    ]
+  },
+
+  "category_e_followup": {
+    "description": "Follow-up questions — requires conversation memory (run A3 first, then E1)",
+    "endpoint": "/api/agent",
+    "header": "X-Demo-User: 1",
+    "prerequisite": "First ask A3, then ask E1 with same header — E1 should reference prior turn",
+    "queries": [
+      {
+        "id": "E1",
+        "question": "what?",
+        "expected_behavior": "IsLikelyFollowup detects it, delegates to tryFollowup, prepends context reference",
+        "category": "followup"
+      },
+      {
+        "id": "E2",
+        "question": "and for hackathons?",
+        "expected_behavior": "Pattern-matched follow-up, expands to full question",
+        "category": "followup"
+      },
+      {
+        "id": "E3",
+        "question": "details",
+        "expected_behavior": "Bare 'details' keyword triggers follow-up via tryFollowup -> tryRagFallback",
+        "category": "followup"
+      }
+    ]
+  },
+
+  "category_f_edge_cases": {
+    "description": "Edge cases and negative tests",
+    "endpoint": "/ask",
+    "queries": [
+      {
+        "id": "F1",
+        "question": "hello",
+        "expected_behavior": "Minimal response or clarification",
+        "category": "edge_case"
+      },
+      {
+        "id": "F2",
+        "question": "",
+        "expected_behavior": "Clarification: 'Could you rephrase your request?'",
+        "category": "edge_case",
+        "notes": "Test with /api/agent body: {question: ''}"
+      },
+      {
+        "id": "F3",
+        "question": "create project called MyProject for AI needing Java, React",
+        "expected_behavior": "Tool route to CreateProjectTool, hints at POST /projects",
+        "category": "edge_case",
+        "notes": "Tests tool trigger matching"
+      },
+      {
+        "id": "F4",
+        "question": "complete my profile",
+        "expected_behavior": "Profile completeness summary from processIntent priority check",
+        "category": "edge_case"
+      },
+      {
+        "id": "F5",
+        "question": "what is the maximum team size for hackathons and how does that compare to attendance requirements",
+        "expected_behavior": "Should answer both facts from different documents",
+        "category": "multi_fact",
+        "notes": "Slightly different phrasing of B1"
+      }
+    ]
+  },
+
+  "test_parameters": {
+    "auth_header": "X-Demo-User",
+    "admin_user": "1",
+    "test_run_order": [
+      "1. Seed data: POST /dev/seed, /dev/seed-skills, /dev/seed-recruiter",
+      "2. Run Category A (single-fact RAG) via /ask",
+      "3. Run Category B (multi-fact RAG) via /ask",
+      "4. Run Category C (unanswerable) via /ask — verify answered=false",
+      "5. Run Category D (structured tools) via /api/agent with X-Demo-User: 1",
+      "6. Run Category E (follow-up) — first seed history with a question, then ask follow-up",
+      "7. Run Category F (edge cases) via /ask and /api/agent",
+      "8. Run admin eval: POST /eval/rag/run?retrievalOnly=true and retrievalOnly=false"
+    ],
+    "output_format": "test_results.csv with columns: id, category, query, endpoint, status_code, answered, answer_preview, sources, correct, notes"
+  }
+}

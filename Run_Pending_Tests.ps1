@@ -56,6 +56,13 @@ $stamp = Get-Date -Format "HHmmss"
 $projName = "AutoProj$stamp"
 $eventTitle = "Auto Hack $stamp"
 
+# ---------- Seed dev data ----------
+Write-Host "`n[0] Seeding dev data" -ForegroundColor Cyan
+$sd = Call POST "/dev/seed"
+if ($sd.ok) { Ok "dev/seed documents" } else { Note "seed documents: $($sd.status) $($sd.raw)" }
+$ss = Call POST "/dev/seed-skills"
+if ($ss.ok) { Ok "dev/seed-skills (skills $($ss.data.skillsCreated), aliases $($ss.data.aliasesCreated), coOCCs $($ss.data.coOccurrencesCreated))" } else { Note "seed-skills: $($ss.status) $($ss.raw)" }
+
 # ---------- C. Profile polish ----------
 Write-Host "`n[C] Profile polish" -ForegroundColor Cyan
 $r = Call GET "/me/completeness" 1
@@ -321,6 +328,17 @@ $ena = Call POST "/eval/teammates/run?availableOnly=true&includeSemantic=false" 
 if (-not $ena.ok -and $ena.status -eq 403) { Ok "O40 non-admin 403" } else { Note "non-admin eval: status $($ena.status)" }
 $es = Call POST "/eval/teammates/run?availableOnly=true&includeSemantic=true" 1
 if ($es.ok) { Ok "O40-semantic third arm" } else { Note "semantic eval: $($es.status) (needs Ollama)" }
+
+# ---------- P. RAG Eval Harness ----------
+Write-Host "`n[P] RAG eval harness" -ForegroundColor Cyan
+$rc = Call GET "/eval/rag/cases" 1
+if ($rc.ok -and $rc.data.Count -gt 0) { Ok "P cases ($($rc.data.Count) cases)" } else { Note "rag cases: $($rc.status) $($rc.raw)" }
+$r1 = Call POST "/eval/rag/run?retrievalOnly=true" 1
+if ($r1.ok -and $r1.data.cases) { Ok "P RAG eval retrieval-only ($($r1.data.improvedWins) wins, $($r1.data.ties) ties)" } else { Note "rag eval: $($r1.status) $($r1.raw) (needs admin 1)" }
+$r2 = Call POST "/eval/rag/run?retrievalOnly=false" 2
+if (-not $r2.ok -and $r2.status -eq 403) { Ok "P non-admin 403" } else { Note "non-admin rag eval: status $($r2.status)" }
+$r3 = Call GET "/eval/rag/run?retrievalOnly=false" 1
+if (-not $r3.ok -and $r3.status -eq 405) { Ok "P GET method not allowed (POST only)" } else { Note "rag eval GET: status $($r3.status) (expected 405)" }
 
 Write-Host "`n=== RESULT: $($script:pass) passed, $($script:fail) failed, $($script:skipped) skipped ===" -ForegroundColor Cyan
 Note "B6 note: 'Your chat history (1 turn...)' already verified PASS just before this script was built."

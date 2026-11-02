@@ -16,6 +16,8 @@ Health: `GET http://localhost:8080/documents` → 200 `[]` or list (visible only
 
 Header note for every authed call: Header tab → `X-Demo-User: 1` (not in URL). Value is student/recruiter id. Admin allow-list is `campus.admin-ids=1` so user 1 is admin.
 
+Seed dev data before testing: `POST /dev/seed` (documents) and `POST /dev/seed-skills` (canonical skills + aliases + co-occurrences). These are idempotent. `POST /dev/seed-recruiter` for section H.
+
 ## A. Documents / RAG core (still gates everything)
 
 1. `POST /documents` body `{"title":"Hackathon Rules","content":"Each team must contain between 2 and 4 students."}` → 200, then `GET /documents` shows it. Duplicate title handling via `findByTitle`.

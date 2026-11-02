@@ -45,3 +45,5 @@ dist/
 .DS_Store
 Thumbs.db
 node_modules*/
+### Claude working folder ###
+outputs/
