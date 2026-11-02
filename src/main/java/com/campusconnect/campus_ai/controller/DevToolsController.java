@@ -3,6 +3,7 @@ package com.campusconnect.campus_ai.controller;
 import com.campusconnect.campus_ai.service.ProjectToolService;
 import com.campusconnect.campus_ai.service.TeammateMatchingService;
 import com.campusconnect.campus_ai.service.ToolRegistry;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,7 +33,7 @@ public class DevToolsController {
             @RequestParam Long projectId) {
         Long userId;
         try {
-            userId = header == null ? null : Long.valueOf(header.trim());
+            userId = DemoIdentity.parseId(header);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }
@@ -54,7 +55,7 @@ public class DevToolsController {
             @RequestParam(defaultValue = "false") boolean semantic) {
         Long userId;
         try {
-            userId = header == null ? null : Long.valueOf(header.trim());
+            userId = DemoIdentity.parseId(header);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }

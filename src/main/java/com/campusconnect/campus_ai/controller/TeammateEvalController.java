@@ -2,6 +2,7 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.DocumentService;
 import com.campusconnect.campus_ai.service.TeammateEvalService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 /**
@@ -36,7 +37,8 @@ public class TeammateEvalController {
     }
 
     private Long requireHeader(String header) {
-        if (header != null && !header.isBlank()) try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        Long resolved = DemoIdentity.parseId(header);
+        if (resolved != null) return resolved;
         throw new IllegalArgumentException("X-Demo-User header required");
     }
 }

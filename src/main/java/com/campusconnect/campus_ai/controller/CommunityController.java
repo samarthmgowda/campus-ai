@@ -3,6 +3,7 @@ package com.campusconnect.campus_ai.controller;
 import com.campusconnect.campus_ai.entity.CommunityPost;
 import com.campusconnect.campus_ai.entity.PostComment;
 import com.campusconnect.campus_ai.service.CommunityService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -81,7 +82,8 @@ public class CommunityController {
 
     private Long resolveUser(String header, Map<String, Object> body) {
         if (header != null) {
-            try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+            Long resolved = DemoIdentity.parseId(header);
+            if (resolved != null) return resolved;
         }
         if (body != null) {
             Object v = body.get("authorId");

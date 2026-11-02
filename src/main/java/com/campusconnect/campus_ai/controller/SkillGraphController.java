@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.SkillGraphService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -92,7 +93,7 @@ public class SkillGraphController {
     @GetMapping("/dashboard")
     public Map<String, Object> dashboard(@RequestHeader(value = "X-Demo-User", required = false) String header) {
         Long userId = null;
-        if (header != null && !header.isBlank()) try { userId = Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        userId = DemoIdentity.parseId(header);
         return skillGraphService.getDashboardData(userId);
     }
 

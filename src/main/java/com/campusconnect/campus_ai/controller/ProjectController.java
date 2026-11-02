@@ -6,6 +6,7 @@ import com.campusconnect.campus_ai.repository.ProjectMemberRepository;
 import com.campusconnect.campus_ai.repository.ProjectRepository;
 import com.campusconnect.campus_ai.service.CurrentUserService;
 import com.campusconnect.campus_ai.service.ProjectToolService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -40,7 +41,7 @@ public class ProjectController {
     public List<Map<String, Object>> mine(@RequestHeader(value = "X-Demo-User", required = false) String header) {
         Long userId;
         try {
-            userId = header == null ? null : Long.valueOf(header.trim());
+            userId = DemoIdentity.parseId(header);
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }
@@ -108,7 +109,7 @@ public class ProjectController {
 
     private Long requireUser(String header) {
         if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        try { return Long.valueOf(header.trim()); } catch (NumberFormatException e) { throw new IllegalArgumentException("Invalid X-Demo-User"); }
+        return DemoIdentity.requireId(header);
     }
 
     private Long toLong(Object v) {

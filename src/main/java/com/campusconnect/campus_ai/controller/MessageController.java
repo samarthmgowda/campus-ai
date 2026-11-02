@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.MessageService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -67,11 +68,12 @@ public class MessageController {
 
     private Long requireHeader(String header) {
         if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        try { return Long.valueOf(header.trim()); } catch (NumberFormatException e) { throw new IllegalArgumentException("Invalid X-Demo-User"); }
+        return DemoIdentity.requireId(header);
     }
 
     private Long resolve(String header, Map<String, Object> body, String bodyKey) {
-        if (header != null && !header.isBlank()) try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        Long resolved = DemoIdentity.parseId(header);
+        if (resolved != null) return resolved;
         if (body != null) {
             Long v = toLong(body.get(bodyKey));
             if (v != null) return v;

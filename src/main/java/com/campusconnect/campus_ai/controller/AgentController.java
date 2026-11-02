@@ -3,6 +3,7 @@ package com.campusconnect.campus_ai.controller;
 import com.campusconnect.campus_ai.service.AgentOrchestrator;
 import com.campusconnect.campus_ai.service.AgentOrchestrator.AgentResponse;
 import com.campusconnect.campus_ai.service.ChatHistoryService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -33,7 +34,7 @@ public class AgentController {
             @RequestBody Map<String, Object> body) {
         Long userId = null;
         if (header != null) {
-            try { userId = Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+            userId = DemoIdentity.parseId(header);
         }
 
         String intent = body != null && body.get("question") instanceof String s ? s : null;

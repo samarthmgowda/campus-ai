@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ModerationService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -60,7 +61,7 @@ public class ModerationController {
             @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
         Long actorId = null;
-        if (header != null && !header.isBlank()) try { actorId = Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        actorId = DemoIdentity.parseId(header);
         if (actorId == null) throw new IllegalArgumentException("X-Demo-User header required");
         String action = body != null && body.get("action") instanceof String a ? a : (body != null && body.get("status") instanceof String s ? s : "RESOLVED");
         String resolution = body != null && body.get("resolution") instanceof String r ? r : null;
@@ -68,7 +69,8 @@ public class ModerationController {
     }
 
     private Long requireHeader(String header, Map<String, Object> body) {
-        if (header != null && !header.isBlank()) try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        Long resolved = DemoIdentity.parseId(header);
+        if (resolved != null) return resolved;
         if (body != null) {
             Object v = body.get("reporterId");
             if (v instanceof Number n) return n.longValue();

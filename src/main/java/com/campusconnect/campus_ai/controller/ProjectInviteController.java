@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ProjectInviteService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -68,7 +69,8 @@ public class ProjectInviteController {
     }
 
     private Long requireHeader(String header, Map<String, Object> body) {
-        if (header != null && !header.isBlank()) try { return Long.valueOf(header.trim()); } catch (NumberFormatException ignored) {}
+        Long resolved = DemoIdentity.parseId(header);
+        if (resolved != null) return resolved;
         if (body != null) {
             Object v = body.get("inviterId");
             if (v instanceof Number n) return n.longValue();

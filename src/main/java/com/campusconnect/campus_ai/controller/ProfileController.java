@@ -2,7 +2,9 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.entity.Student;
 import com.campusconnect.campus_ai.repository.StudentRepository;
+import com.campusconnect.campus_ai.service.CurrentUserService;
 import com.campusconnect.campus_ai.service.ProfileService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -11,6 +13,7 @@ import java.util.*;
 public class ProfileController {
 
     private final ProfileService profileService;
+    private final CurrentUserService currentUserService;
     private final StudentRepository studentRepository;
 
     private static final Set<String> EDITABLE_FIELDS = Set.of(
@@ -22,16 +25,27 @@ public class ProfileController {
     private static final int MAX_FIELD_LENGTH = 2000;
 
     public ProfileController(ProfileService profileService,
+                             CurrentUserService currentUserService,
                              StudentRepository studentRepository) {
         this.profileService = profileService;
+        this.currentUserService = currentUserService;
         this.studentRepository = studentRepository;
     }
 
-    /** GET /me with X-Demo-User — aggregated profile header (private + counts) */
+    /**
+     * GET /me with X-Demo-User — the acting user's profile.
+     *
+     * Students get the full aggregated profile (counts, recommendations, …).
+     * Alumni and recruiters get their own identity header, since their rows
+     * live in different tables.
+     */
     @GetMapping("/me")
     public Map<String, Object> me(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long studentId = requireHeader(header);
-        return profileService.getMe(studentId);
+        DemoIdentity identity = DemoIdentity.require(header);
+        if (!identity.isStudent()) {
+            return currentUserService.resolveProfile(header);
+        }
+        return profileService.getMe(identity.id());
     }
 
     /** GET /profile/{studentId} — public profile */
@@ -124,6 +138,6 @@ public class ProfileController {
 
     private Long requireHeader(String header) {
         if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        try { return Long.valueOf(header.trim()); } catch (NumberFormatException e) { throw new IllegalArgumentException("Invalid X-Demo-User"); }
+        return DemoIdentity.requireId(header);
     }
 }

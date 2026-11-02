@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ReferralService;
+import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -79,7 +80,7 @@ public class ReferralController {
 
     private Long requireHeader(String header) {
         if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        try { return Long.valueOf(header.trim()); } catch (NumberFormatException e) { throw new IllegalArgumentException("Invalid X-Demo-User"); }
+        return DemoIdentity.requireId(header);
     }
 
     private Long toLong(Object v) {
