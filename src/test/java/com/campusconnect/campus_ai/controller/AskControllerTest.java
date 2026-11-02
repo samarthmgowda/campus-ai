@@ -113,4 +113,42 @@ class AskControllerTest {
 
         verify(chatHistoryService, never()).save(anyLong(), any(), any(), anyBoolean());
     }
+
+    /**
+     * Composite "role:id" header (e.g. "student:1") resolves to the same user id
+     * as the bare number — chat history stays scoped to the acting user.
+     */
+    @Test
+    void askWithCompositeRoleHeaderResolvesUserId() throws Exception {
+        AskService.AskResponse resp = new AskService.AskResponse(
+                true, "Answers are grounded.", List.of());
+        when(askService.ask(any(), anyLong())).thenReturn(resp);
+
+        mockMvc.perform(get("/ask")
+                        .param("q", "hackathon team size")
+                        .header("X-Demo-User", "student:1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.answered").value(true));
+
+        verify(chatHistoryService).save(1L, "hackathon team size", "Answers are grounded.", true);
+    }
+
+    /**
+     * An unknown role in the header is not a valid identity — treated as anonymous
+     * rather than silently resolving against the wrong table.
+     */
+    @Test
+    void askWithUnknownRoleHeaderTreatsAsAnonymous() throws Exception {
+        when(askService.ask(any(), isNull())).thenReturn(
+                new AskService.AskResponse(false, "abstain", List.of()));
+
+        mockMvc.perform(get("/ask")
+                        .param("q", "hello")
+                        .header("X-Demo-User", "professor:1")
+                        .accept(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        verify(chatHistoryService, never()).save(anyLong(), any(), any(), anyBoolean());
+    }
 }
