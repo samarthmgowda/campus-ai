@@ -28,6 +28,64 @@ class AnswerSanitizeAndFollowupTest {
         assertTrue(out.contains("85%"));
     }
 
+    /**
+     * Regression: the label stripper used to be anchored to the start of each
+     * segment, so a label the model emitted after a citation ("... [2] Fact 2: ...")
+     * survived and leaked into the answer. Seen in the recorded eval runs.
+     */
+    @Test
+    void stripsFactLabelAfterCitation() {
+        String raw = "In a hackathon, the number of students that can be in a team is between 2 and 4 [1] [2] " +
+                     "Fact 2: Students need at least 75% attendance to be eligible for semester exams [3].";
+        String out = AskService.sanitizeAnswer(raw);
+        assertFalse(out.toLowerCase().contains("fact 2"), "label after a citation should be stripped: " + out);
+        assertTrue(out.contains("2 and 4"), out);
+        assertTrue(out.contains("75%"), out);
+    }
+
+    /**
+     * Regression: the multi-fact prompt asks the model to tag each fact with the
+     * sub-query it answered — 'Fact 1 (sub-query: "...")' — which is scaffolding too.
+     * The whole parenthetical and the label must both go.
+     */
+    @Test
+    void stripsSubQueryParentheticalLabel() {
+        String raw = "Fact 1 (sub-query: \"What is the minimum attendance percentage\"): " +
+                     "passages [3] indicate that the minimum attendance percentage is 75%.";
+        String out = AskService.sanitizeAnswer(raw);
+        assertFalse(out.toLowerCase().contains("sub-query"), "sub-query scaffolding should be stripped: " + out);
+        assertFalse(out.toLowerCase().contains("fact 1"), "label should be stripped: " + out);
+        assertTrue(out.contains("75%"), out);
+    }
+
+    /**
+     * Verbatim answers that the recorded 2026-11-03 eval runs persisted WITH their
+     * "Fact N:" scaffolding still in them. This is the bug being fixed, so the fix is
+     * pinned against the real strings rather than a hand-written approximation.
+     */
+    @Test
+    void stripsLabelsFromRecordedEvalAnswers() {
+        String[] leaked = {
+                "In a hackathon team, passages [1] and [2] state that each team must contain between 2 and 4 " +
+                        "students. [1] [2]\nFact 2: For semester exams, according to passage [3], students need " +
+                        "at least 75 percent attendance. [3]",
+                "In the hackathon, teams must contain between 2 and 4 students. [1] [2]\nFact 2: Students need " +
+                        "at least 75% attendance to be eligible for semester exams. [3] [5]",
+                "Fact 1 (sub-query: \"What is the minimum attendance percentage\"): passages [3] [5] [4] " +
+                        "indicate that the minimum attendance percentage required for semester exams is 75%."
+        };
+        for (String raw : leaked) {
+            String out = AskService.sanitizeAnswer(raw);
+            assertFalse(out.toLowerCase().matches("(?s).*\\b(fact|answer)\\s*\\d.*"),
+                    "scaffolding leaked through sanitizeAnswer: " + out);
+            assertFalse(out.toLowerCase().contains("sub-query"),
+                    "sub-query scaffolding leaked through: " + out);
+            assertTrue(out.contains("75") || out.contains("2 and 4"),
+                    "the grounded values must survive: " + out);
+            assertFalse(out.contains("\n"), "newlines should be collapsed: " + out);
+        }
+    }
+
     @Test
     void dropsContradictoryAbstainAfterAssertion() {
         String raw = "Fact 1: The 2nd and 3rd internals require at least 80% and 85% attendance respectively. " +

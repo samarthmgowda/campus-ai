@@ -365,16 +365,26 @@ public class AskService {
         String s = raw.strip();
         if (s.isEmpty()) return s;
 
-        // 2. Split into sentence-ish segments, strip scaffolding labels.
-        //    Labels appear as "Fact 1:" / "Fact 2:" / "Answer:" at the start of a
-        //    segment, optionally after a bullet or dash.
-        String[] segments = s.split("(?<=[.!?])\\s+");
+        // 2. Split on sentence ends AND newlines, so a label the model put on its
+        //    own line is still the head of a segment. Labels appear as
+        //    "Fact 1:" / "Fact 2:" / "Answer:", optionally after a bullet; the
+        //    multi-fact prompt also tags them with the sub-query they answered —
+        //    e.g. "Fact 1 (sub-query: ...)" — which is scaffolding too, and is stripped.
+        String[] segments = s.split("(?<=[.!?])\\s+|\\R+");
         List<String> cleaned = new ArrayList<>();
         boolean assertedValue = false;
         for (String seg : segments) {
             String t = seg.strip();
             if (t.isEmpty()) continue;
-            String noLabel = t.replaceFirst("(?i)^\\s*(?:[-*•]\\s*)?(?:fact|answer|point)\\s*\\d*\\s*[:.)-]\\s*", "").strip();
+            // Non-anchored replaceAll, not replaceFirst: the model often emits a citation
+            // before the next label ("... between 2 and 4 [1] [2] Fact 2: ..."), so an
+            // anchored strip misses it and the raw "Fact 2:" leaks into the answer the
+            // user sees. The (sub-query: ...) parenthetical the multi-fact prompt invites
+            // is dropped with the label.
+            String noLabel = t.replaceAll(
+                    "(?i)(?:^|[.\\]]|\\)\\s*)\\s*(?:[-*\\u2022]\\s*)?(?:fact|answer|point)\\s*\\d*\\s*(?:\\([^)]*\\)\\s*)?[:.)-]\\s*",
+                    " ")
+                    .strip();
             if (noLabel.isEmpty()) continue;
             if (isAbstainSegment(noLabel)) {
                 // Drop an abstain sentence that contradicts an assertion we already made.
