@@ -145,14 +145,32 @@ function Compare-Summary($base, $curr, $tolerance, $latencyTolerance) {
     # real numbers produces four phantom regressions every time.
     $baseMode = ""
     $currMode = ""
-    if ($base.PSObject.Properties.Name -contains "retrievalOnly") {
+    $baseHasMode = ($base.PSObject.Properties.Name -contains "retrievalOnly")
+    $currHasMode = ($curr.PSObject.Properties.Name -contains "retrievalOnly")
+    if ($baseHasMode) {
         if ([bool]$base.retrievalOnly) { $baseMode = "retrieval-only" } else { $baseMode = "full generation" }
     }
-    if ($curr.PSObject.Properties.Name -contains "retrievalOnly") {
+    if ($currHasMode) {
         if ([bool]$curr.retrievalOnly) { $currMode = "retrieval-only" } else { $currMode = "full generation" }
     }
-    if ($baseMode -ne "" -and $currMode -ne "" -and $baseMode -ne $currMode) {
+    if ($baseHasMode -and $currHasMode -and $baseMode -ne $currMode) {
         $mismatch += "run mode changed  $baseMode -> $currMode"
+    }
+
+    # A baseline written before the retrievalOnly field existed cannot be
+    # classified, so the mode check above is silently skipped on one side. That
+    # is the worst case for the phantom-regression guard: a retrieval-only run
+    # compared against a pre-field baseline produces zeros on the left and real
+    # numbers on the right, and every one of those zeros reads as a catastrophic
+    # regression. Detect it from the run itself instead of trusting the field.
+    # A retrieval-only run scores exactly 0 for correctness and faithfulness
+    # because it never generates text, so zero on both, alongside a non-zero
+    # recall, is diagnostic of the mode rather than of a quality collapse.
+    if (-not $baseHasMode -and $currHasMode -and $currMode -eq "retrieval-only") {
+        $mismatch += "this run is retrieval-only, but the baseline does not record its" + [Environment]::NewLine +
+                     "  mode, so the generation metrics cannot be compared against it" + [Environment]::NewLine +
+                     "  (a retrieval-only run scores 0 for correctness and faithfulness by" + [Environment]::NewLine +
+                     "  construction, not because quality dropped)"
     }
 
     if ($mismatch.Count -gt 0) {
@@ -174,7 +192,31 @@ function Compare-Summary($base, $curr, $tolerance, $latencyTolerance) {
     foreach ($m in $metrics) {
         $hasBase = $base.PSObject.Properties.Name -contains $m.n
         $hasCurr = $curr.PSObject.Properties.Name -contains $m.n
-        if (-not ($hasBase -and $hasCurr)) { continue }
+
+        # A metric that is missing from BOTH sides is a shape change, not a
+        # quality change - the field was renamed or dropped. It cannot be
+        # compared, but it must not disappear from the report either: a silently
+        # skipped metric is one whose regression nobody will ever see.
+        if (-not $hasBase -and -not $hasCurr) {
+            $lines += ("{0,-34} not present in either run" -f $m.label)
+            continue
+        }
+        # Present on one side only is the dangerous case. The run may be
+        # measuring something the baseline never recorded (a metric added to
+        # this list, or a summary field added since the baseline was written),
+        # and a regression in it is invisible precisely because there is nothing
+        # to regress against. Reported as advisory so the verdict is withheld
+        # rather than issued on a partial comparison.
+        if (-not $hasBase) {
+            $lines += ("{0,-34} not in the baseline - not compared" -f $m.label)
+            $skipped += "$($m.label): the baseline does not record this metric"
+            continue
+        }
+        if (-not $hasCurr) {
+            $lines += ("{0,-34} not in this run - not compared" -f $m.label)
+            $skipped += "$($m.label): the run did not report this metric"
+            continue
+        }
 
         # A null, empty-string or non-numeric value is not a number, and coercing
         # it to 0.0 would invent a catastrophic regression out of a serialization
