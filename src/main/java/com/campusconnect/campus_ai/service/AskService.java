@@ -143,27 +143,36 @@ public class AskService {
         }
 
         // Build numbered context so the model can cite passages as [1], [2], ...
-        StringBuilder context = new StringBuilder();
-        for (int i = 0; i < results.size(); i++) {
-            var r = results.get(i);
-            context.append(String.format(
-                    "[%d] Document: %s | Section: %s | Page: %s | Content: %s\n",
-                    i + 1, r.documentTitle(), r.section(),
-                    r.pageNumber() == null ? "?" : r.pageNumber().toString(),
-                    r.content()));
-        }
+        //
+        // Budgeted against the model's context window first. Ollama truncates an
+        // over-long prompt silently, and the passages sit at the END of the user
+        // message — so without this the model could lose the very passages it is
+        // asked to cite, with no error raised anywhere. Dropping the lowest-ranked
+        // passages here keeps the failure deliberate and visible instead.
+        BudgetedContext budgeted = buildBudgetedContext(question, results, systemPromptLengthEstimate());
+        String budgetedContext = budgeted.text();
 
         // If multi-hop decomposition applied, inject per-fact hint guidance into the
         // system prompt so the LLM knows which passages back each sub-fact.
+        //
+        // The indices in factToHits are 1-based positions in the ORIGINAL hit list,
+        // but the prompt may have dropped trailing passages and renumbered what
+        // remains. They must be remapped to the budgeted numbering, or the hint
+        // points the model at passage numbers it cannot see — and a fact whose only
+        // passages were dropped has to fall back to the open-ended wording rather
+        // than cite something that is not in the prompt.
         StringBuilder factHint = new StringBuilder();
         if (subQueries.size() > 1) {
             factHint.append("\n\nThis question contains multiple independent facts. For each fact below, ground your answer in the passages listed, and cite them as [n]:\n");
             for (int f = 0; f < subQueries.size(); f++) {
                 String sq = subQueries.get(f);
                 int[] hitIndices = factToHits.getOrDefault(f, new int[0]);
-                if (hitIndices.length > 0) {
-                    StringBuilder refs = new StringBuilder();
-                    for (int hi : hitIndices) refs.append("[").append(hi).append("] ");
+                StringBuilder refs = new StringBuilder();
+                for (int hi : hitIndices) {
+                    int mapped = budgeted.remap(hi);
+                    if (mapped > 0) refs.append("[").append(mapped).append("] ");
+                }
+                if (!refs.isEmpty()) {
                     factHint.append(String.format("  Fact %d (sub-query: \"%s\"): passages %s\n", f + 1, sq, refs));
                 } else {
                     factHint.append(String.format("  Fact %d (sub-query: \"%s\"): answer from any passage that contains it\n", f + 1, sq));
@@ -190,7 +199,7 @@ public class AskService {
                         "question asks about criterion B, answer with Y, not X." +
                         factHint;
 
-        String userPrompt = "Context:\n" + context + "\nQuestion: " + question;
+        String userPrompt = "Context:\n" + budgetedContext + "\nQuestion: " + question;
 
         String answer = sanitizeAnswer(chatService.chat(systemPrompt, userPrompt));
 
@@ -208,7 +217,7 @@ public class AskService {
             // multi-fact compound sentence (e.g. only answered the first IA criterion).
             if (contextContainsRelevantTerms(question, results)) {
                 String retryAnswer = chatService.chat(systemPrompt,
-                        "Context:\n" + context +
+                        "Context:\n" + budgetedContext +
                         "\n\n" + (subQueries.size() > 1
                                 ? "This question contains multiple facts. Search the context carefully\n" +
                                   "and extract the exact value for EACH fact mentioned in the question.\n" +
@@ -234,6 +243,107 @@ public class AskService {
             return new AskResponse(false, buildNoAnswerResponse(question), sources);
         }
         return new AskResponse(true, answer, sources);
+    }
+
+    /**
+     * The rendered context block plus the mapping from original passage positions
+     * to the positions the model actually sees.
+     *
+     * @param text   the numbered "Context:" block
+     * @param remap  maps a 1-based index in the original hit list to its 1-based
+     *               index in the prompt, or 0 if that passage was dropped
+     */
+    private record BudgetedContext(String text, java.util.Map<Integer, Integer> remap) {
+        /** Prompt position for an original 1-based index, or 0 when dropped. */
+        int remap(int originalIndex) {
+            Integer mapped = remap.get(originalIndex);
+            return mapped == null ? 0 : mapped;
+        }
+    }
+
+    /**
+     * Render the retrieved passages into the numbered "Context:" block, dropping
+     * the lowest-ranked ones if the prompt would otherwise exceed the model's
+     * context window.
+     *
+     * Numbering is assigned AFTER selection so the markers stay contiguous
+     * ([1], [2], ...) and a citation in the answer always indexes the passage the
+     * model actually saw. Renumbering after a drop is intentional: if passage 4
+     * were dropped and passages 5+ kept their original numbers, the model would
+     * cite [5] for what is now the fourth block, and the citation would be wrong.
+     *
+     * @param question      the user's question (counted against the budget)
+     * @param results       retrieved passages, best-first
+     * @param roughPromptTokens estimated size of the system prompt + template text
+     */
+    private BudgetedContext buildBudgetedContext(String question, List<SearchService.SearchResult> results,
+                                                 int roughPromptTokens) {
+        // Reserve a slice of the window for the model's own output; a prompt that
+        // fills the window exactly leaves no room to generate.
+        int window = chatService.contextWindow();
+
+        // A non-positive window means the client could not report one (e.g. a test
+        // double, or a misconfigured value). Budgeting against it would silently
+        // reduce every prompt to a single passage, so skip budgeting entirely and
+        // render everything — recovering the previous behaviour rather than
+        // inventing a destructive one.
+        if (window <= 0) {
+            StringBuilder all = new StringBuilder();
+            java.util.Map<Integer, Integer> identity = new java.util.LinkedHashMap<>();
+            for (int i = 0; i < results.size(); i++) {
+                all.append(renderPassage(results.get(i), i + 1));
+                identity.put(i + 1, i + 1);
+            }
+            return new BudgetedContext(all.toString(), identity);
+        }
+
+        int reserveForOutput = Math.max(window / 4, 256);
+        int overhead = roughPromptTokens
+                + ContextBudget.estimateTokens(question)
+                + ContextBudget.estimateTokens("Context:\n\nQuestion: ");
+        int contextBudget = Math.max(window - reserveForOutput - overhead, 128);
+
+        ContextBudget.Sized<SearchService.SearchResult> sized = ContextBudget.fit(
+                results, r -> renderPassage(r, 1), contextBudget);
+
+        if (sized.truncated()) {
+            System.out.println("[AskService] context budget: kept " + sized.kept().size()
+                    + " of " + results.size() + " passages (dropped " + sized.dropped()
+                    + ") to fit the " + window + "-token window");
+        }
+
+        // Build the rendered block and, in the same pass, record where each kept
+        // passage moved to. Doing both here is what keeps the numbering and the
+        // remap from drifting apart.
+        StringBuilder context = new StringBuilder();
+        java.util.Map<Integer, Integer> remap = new java.util.LinkedHashMap<>();
+        int promptIndex = 1;
+        for (SearchService.SearchResult r : sized.kept()) {
+            context.append(renderPassage(r, promptIndex));
+            int originalIndex = results.indexOf(r);
+            if (originalIndex >= 0) remap.put(originalIndex + 1, promptIndex);
+            promptIndex++;
+        }
+        return new BudgetedContext(context.toString(), remap);
+    }
+
+    /** A passage as it appears in the prompt, numbered. */
+    private static String renderPassage(SearchService.SearchResult r, int index) {
+        return String.format(
+                "[%d] Document: %s | Section: %s | Page: %s | Content: %s\n",
+                index, r.documentTitle(), r.section(),
+                r.pageNumber() == null ? "?" : r.pageNumber().toString(),
+                r.content());
+    }
+
+    /**
+     * Approximate the fixed prompt overhead (system prompt + scaffolding) so the
+     * passage budget can subtract it. Uses the current worst-case system prompt
+     * text; exactness is not required because {@link ContextBudget} biases toward
+     * over-estimating and one passage is always kept.
+     */
+    private static int systemPromptLengthEstimate() {
+        return 900;
     }
 
     /**
@@ -326,9 +436,22 @@ public class AskService {
      */
     /* package-visible for RagEvalService */
     DecomposedHits decomposeAndSearch(String question) {
+        return decomposeAndSearch(question, topK);
+    }
+
+    /**
+     * As {@link #decomposeAndSearch(String)}, but retrieving {@code overrideTopK}
+     * passages instead of the configured {@code rag.top-k}.
+     *
+     * Exists so the eval harness can sweep K without a restart and without editing
+     * properties — "is 3 too tight for multi-fact questions?" is only answerable if
+     * K can be varied and re-measured in one session.
+     */
+    DecomposedHits decomposeAndSearch(String question, int overrideTopK) {
+        int k = overrideTopK >= 1 ? overrideTopK : topK;
         List<String> subQueries = decompose(question);
         if (subQueries.size() <= 1) {
-            List<SearchService.SearchResult> hits = searchService.search(question, topK);
+            List<SearchService.SearchResult> hits = searchService.search(question, k);
             return new DecomposedHits(subQueries, hits, Map.of());
         }
         // Retrieve each sub-query with a wider pool, then merge-dedup + rerank.
@@ -340,7 +463,7 @@ public class AskService {
 
         for (int fi = 0; fi < subQueries.size(); fi++) {
             String sq = subQueries.get(fi);
-            List<SearchService.SearchResult> hits = searchService.search(sq, topK * 2);
+            List<SearchService.SearchResult> hits = searchService.search(sq, k * 2);
             for (SearchService.SearchResult r : hits) {
                 subHitsIndex.get(fi).add(r.id());
                 SearchService.SearchResult existing = merged.get(r.id());
@@ -356,7 +479,7 @@ public class AskService {
         allHits.sort(Comparator
                 .<SearchService.SearchResult>comparingDouble(r -> r.rerankScore() != null
                         ? r.rerankScore() : r.hybridScore()).reversed());
-        List<SearchService.SearchResult> finalHits = allHits.size() > topK ? allHits.subList(0, topK) : allHits;
+        List<SearchService.SearchResult> finalHits = allHits.size() > k ? allHits.subList(0, k) : allHits;
 
         // Build factToHits: map factIndex -> array of 1-based indices into finalHits
         Map<Integer, int[]> factToHits = new LinkedHashMap<>();
@@ -606,13 +729,21 @@ public class AskService {
         StringBuilder sb = new StringBuilder();
         for (String token : s.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
             if (token.isEmpty()) continue;
-            String t = token;
-            if (t.endsWith("ies") && t.length() > 4) t = t.substring(0, t.length() - 3) + "y";
-            else if (t.endsWith("es") && t.length() > 4) t = t.substring(0, t.length() - 2);
-            else if (t.endsWith("s") && t.length() > 3) t = t.substring(0, t.length() - 1);
-            sb.append(t).append(' ');
+            sb.append(normalizeToken(token)).append(' ');
         }
         return sb.toString().trim();
+    }
+
+    /**
+     * Coarse suffix strip shared by {@link #stem} and the token matchers, so
+     * "students"→"student", "policies"→"policy". Applied per token; kept
+     * deliberately light — a heavy stemmer would over-merge unrelated words.
+     */
+    private static String normalizeToken(String t) {
+        if (t.endsWith("ies") && t.length() > 4) return t.substring(0, t.length() - 3) + "y";
+        if (t.endsWith("es") && t.length() > 4) return t.substring(0, t.length() - 2);
+        if (t.endsWith("s") && t.length() > 3) return t.substring(0, t.length() - 1);
+        return t;
     }
 
     // Backward-compatible overload without question (uses null; term overlap
@@ -654,24 +785,68 @@ public class AskService {
         }
 
         // (2) Term overlap: fraction of answer terms present in context.
+        //    Matched as whole tokens, not substrings. Substring matching let
+        //    short answer terms match inside unrelated context words — "art"
+        //    inside "start", "act" inside "contact" — which inflated the overlap
+        //    score and let unsupported answers clear the threshold.
         java.util.Set<String> answerTerms = contentTerms(strippedAnswer);
         if (answerTerms.isEmpty()) return new FaithfulnessResult(false, false, false);
+        java.util.Set<String> contextTokens = wordTokens(contextNorm);
         int hits = 0;
         for (String t : answerTerms) {
-            if (contextNorm.contains(t)) hits++;
+            if (contextTokens.contains(t)) hits++;
         }
         boolean termsOk = (double) hits / answerTerms.size() >= faithfulnessMinOverlap;
 
         // (3) Number check: every number in the answer must appear verbatim in context.
-        // Strip citation markers first — "[1]" is a reference, not a factual claim.
+        //    Compared as whole numeric tokens. Substring matching was wrong here in a
+        //    way that mattered: an answer asserting "5" was satisfied by a context
+        //    containing "75" or "2021", so a model could swap the value that belongs
+        //    to a different criterion and still pass the groundedness gate.
+        //    Citation markers are stripped first — "[1]" is a reference, not a claim.
         String noCites = strippedAnswer.replaceAll("\\[\\d+\\]", " ");
+        java.util.Set<String> contextNumbers = numericTokens(contextNorm);
         java.util.regex.Matcher nm = java.util.regex.Pattern.compile("\\d+(?:\\.\\d+)?").matcher(noCites);
         boolean numbersOk = true;
         while (nm.find()) {
-            if (!contextNorm.contains(nm.group())) { numbersOk = false; break; }
+            if (!contextNumbers.contains(nm.group())) { numbersOk = false; break; }
         }
 
         return new FaithfulnessResult(cited, termsOk, numbersOk);
+    }
+
+    /**
+     * Lowercased word tokens of a text: split on anything that is not a letter or
+     * digit, drop empties, reduce each to its coarse stem. Used for whole-token
+     * (not substring) term matching.
+     *
+     * Tokens are stemmed for the same reason {@code looseContains} is: without it,
+     * whole-token equality is *stricter* than the substring check it replaced in a
+     * way that costs real answers — an answer saying "students" would not match a
+     * context saying "student", so a faithfully grounded answer would be flagged
+     * unfaithful and suppressed. Stemming restores that recall without reopening
+     * the substring hole the token boundary closed.
+     */
+    private static java.util.Set<String> wordTokens(String text) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (text == null) return out;
+        for (String p : text.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
+            if (!p.isEmpty()) out.add(normalizeToken(p));
+        }
+        return out;
+    }
+
+    /**
+     * Standalone numeric tokens of a text, decimals kept whole ("3.5" stays one
+     * token rather than splitting into "3" and "5"). Only the fractional form is
+     * merged — a value like "2 to 4" is correctly two tokens.
+     */
+    private static java.util.Set<String> numericTokens(String text) {
+        java.util.Set<String> out = new java.util.HashSet<>();
+        if (text == null) return out;
+        java.util.regex.Matcher m = java.util.regex.Pattern.compile("\\d+(?:\\.\\d+)?").matcher(text);
+        while (m.find()) out.add(m.group());
+        return out;
     }
 
     private record FaithfulnessResult(boolean cited, boolean termsOk, boolean numbersOk) {}
@@ -679,7 +854,7 @@ public class AskService {
     private static java.util.Set<String> contentTerms(String text) {
         java.util.Set<String> out = new java.util.HashSet<>();
         for (String p : text.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
-            if (p.length() >= 3 && !FAITHFULNESS_STOPWORDS.contains(p)) out.add(p);
+            if (p.length() >= 3 && !FAITHFULNESS_STOPWORDS.contains(p)) out.add(normalizeToken(p));
         }
         return out;
     }
@@ -694,7 +869,7 @@ public class AskService {
         if (question == null || results == null) return false;
         java.util.Set<String> qTerms = new java.util.HashSet<>();
         for (String p : question.toLowerCase(Locale.ROOT).split("[^a-z0-9]+")) {
-            if (p.length() >= 3 && !FAITHFULNESS_STOPWORDS.contains(p)) qTerms.add(p);
+            if (p.length() >= 3 && !FAITHFULNESS_STOPWORDS.contains(p)) qTerms.add(normalizeToken(p));
         }
         if (qTerms.isEmpty()) return false;
         StringBuilder ctx = new StringBuilder();
@@ -703,10 +878,13 @@ public class AskService {
             if (r.section() != null) ctx.append(r.section()).append(' ');
             if (r.documentTitle() != null) ctx.append(r.documentTitle()).append(' ');
         }
-        String contextNorm = ctx.toString().toLowerCase(Locale.ROOT);
+        // Whole-token matching, for the same reason as the faithfulness check:
+        // substring matching counts "art" as present in "start" and would send an
+        // unnecessary retry to the model.
+        java.util.Set<String> contextTokens = wordTokens(ctx.toString().toLowerCase(Locale.ROOT));
         int hits = 0;
         for (String t : qTerms) {
-            if (contextNorm.contains(t)) hits++;
+            if (contextTokens.contains(t)) hits++;
         }
         return (double) hits / qTerms.size() >= 0.5;
     }
