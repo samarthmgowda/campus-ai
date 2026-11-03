@@ -29,15 +29,24 @@ public class RagEvalController {
     }
 
     /**
-     * POST /eval/rag/run?retrievalOnly=true — admin: Recall@K per arm (+win/tie/loss);
-     * retrievalOnly=false adds full /ask generation per arm (correctness, faithfulness,
-     * citations, latency, abstention rate). Needs Ollama up; run on Windows JDK 22.
+     * POST /eval/rag/run?retrievalOnly=true&topK=5 — admin: Recall@K per arm
+     * (+win/tie/loss); retrievalOnly=false adds full /ask generation per arm
+     * (correctness, faithfulness, citations, latency, abstention rate).
+     * Needs Ollama up; run on Windows JDK 22.
+     *
+     * {@code topK} is optional and defaults to the configured {@code rag.top-k}.
+     * Pass it to sweep K without editing properties or restarting — e.g. run the
+     * same eval at topK=3 and topK=5 and compare recall/correctness.
      */
     @PostMapping("/run")
     public RagEvalService.EvalSummary run(
             @RequestHeader(value = "X-Demo-User", required = false) String header,
-            @RequestParam(defaultValue = "true") boolean retrievalOnly) {
+            @RequestParam(defaultValue = "true") boolean retrievalOnly,
+            @RequestParam(required = false) Integer topK) {
         documentService.requireAdmin(requireHeader(header));
+        if (topK != null) {
+            return evalService.run(retrievalOnly, topK);
+        }
         return evalService.run(retrievalOnly);
     }
 

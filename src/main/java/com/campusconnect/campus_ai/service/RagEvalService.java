@@ -50,6 +50,7 @@ public class RagEvalService {
                               double avgLatencyImprovedMs, int improvedWins,
                               int ties, int basicWins, Verdict verdict,
                               double perFactCitationPrecisionBasic, double perFactCitationPrecisionImproved,
+                              int topK, boolean rerankEnabled, String chatModel,
                               List<CaseReport> cases) {}
 
     private static final List<EvalCase> CASES = List.of(
@@ -85,17 +86,42 @@ public class RagEvalService {
                     null, List.of(), List.of(), false),
             // Out-of-scope entirely.
             new EvalCase("Tell me a joke about databases.",
+                    null, List.of(), List.of(), false),
+            // --- Grounding edge cases ---------------------------------------
+            // Two numbers that must come from two different documents. Exercises
+            // the context budget and the per-fact citation map at once: if either
+            // passage is dropped, one number goes missing.
+            new EvalCase("What is the minimum attendance percentage and how many students can form a hackathon team?",
+                    "SAMPLE - Attendance Policy,SAMPLE - Hackathon Rules",
+                    List.of("attendance", "team"), List.of("75", "2", "4"), true),
+            // Near-miss number: the answer must cite 75, never a bare 5 or 7. A
+            // substring-matching groundedness check would accept a swapped value
+            // here, so this case guards the fix in AskService.
+            new EvalCase("Exactly what attendance percentage is required for exam eligibility?",
+                    "SAMPLE - Attendance Policy", List.of("attendance", "percent"),
+                    List.of("75"), true),
+            // In-scope vocabulary that is NOT in the corpus. The words look like
+            // library content, so a naive retriever returns passages and the model
+            // may answer from adjacency; the correct behaviour is to abstain. This
+            // measures abstention PRECISION, not just recall.
+            new EvalCase("What is the fee for the semester exchange programme?",
                     null, List.of(), List.of(), false));
 
     private final SearchService searchService;
     private final AskService askService;
+    private final OllamaChatService chatService;
     private final int topK;
+    private final boolean rerankEnabled;
 
     public RagEvalService(SearchService searchService, AskService askService,
-                          @Value("${rag.top-k}") int topK) {
+                          OllamaChatService chatService,
+                          @Value("${rag.top-k}") int topK,
+                          @Value("${rag.rerank-enabled:true}") boolean rerankEnabled) {
         this.searchService = searchService;
         this.askService = askService;
+        this.chatService = chatService;
         this.topK = topK;
+        this.rerankEnabled = rerankEnabled;
     }
 
     public List<Map<String, Object>> cases() {
@@ -113,6 +139,20 @@ public class RagEvalService {
     }
 
     public EvalSummary run(boolean retrievalOnly) {
+        return run(retrievalOnly, topK);
+    }
+
+    /**
+     * As {@link #run(boolean)}, but retrieving {@code overrideTopK} passages per
+     * query instead of the configured {@code rag.top-k}.
+     *
+     * Lets a K sweep run against one server instance: "is rag.top-k=3 too tight?"
+     * is answerable only by varying K and re-measuring, and editing properties
+     * between runs introduces a restart (and a different warm cache) into the
+     * comparison.
+     */
+    public EvalSummary run(boolean retrievalOnly, int overrideTopK) {
+        int k = overrideTopK >= 1 ? overrideTopK : topK;
         List<CaseReport> reports = new ArrayList<>();
         int recallBasic = 0, recallImproved = 0;
         int correctBasic = 0, correctImproved = 0;
@@ -130,10 +170,10 @@ public class RagEvalService {
         int pfpCount = 0;
 
         for (EvalCase c : CASES) {
-            int k = Math.max(topK, 3);
-            List<SearchService.SearchResult> basicHits = searchService.searchWithoutRerank(c.question(), k);
+            int caseK = Math.max(k, 3);
+            List<SearchService.SearchResult> basicHits = searchService.searchWithoutRerank(c.question(), caseK);
             // Improved arm: hybrid+rerank + query decomposition for multi-fact questions.
-            AskService.DecomposedHits improvedDecomposed = askService.decomposeAndSearch(c.question());
+            AskService.DecomposedHits improvedDecomposed = askService.decomposeAndSearch(c.question(), caseK);
             List<SearchService.SearchResult> improvedHits = improvedDecomposed.hits();
 
             boolean recB = recalled(basicHits, c.expectedDocument());
@@ -235,7 +275,8 @@ public class RagEvalService {
                 genCount == 0 ? 0.0 : round3((double) latBasic / genCount),
                 genCount == 0 ? 0.0 : round3((double) latImproved / genCount),
                 wins, ties, losses, v,
-                pfpB, pfpI, reports);
+                pfpB, pfpI, k, rerankEnabled, chatService.model(),
+                reports);
     }
 
     /**
