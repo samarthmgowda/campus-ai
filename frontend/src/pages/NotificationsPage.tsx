@@ -106,6 +106,14 @@ export default function NotificationsPage() {
         }
       />
 
+      {/* Marking read is optimistic-feeling but not optimistic: if the request
+          fails the dot stays, so say so rather than leaving a dead click. */}
+      {(readMutation.isError || readAllMutation.isError) && (
+        <p className="mb-4 text-body-sm text-red-600" role="alert">
+          {((readMutation.error ?? readAllMutation.error) as Error)?.message}
+        </p>
+      )}
+
       {unread > 0 && (
         <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white px-5 py-4 mb-6 shadow-card animate-fade-in">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 flex-shrink-0" aria-hidden="true">

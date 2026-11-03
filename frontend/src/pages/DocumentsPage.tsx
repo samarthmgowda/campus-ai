@@ -190,6 +190,14 @@ export default function DocumentsPage() {
         )}
       </div>
 
+      {/* Row-level actions (hide/unhide, delete) have no form to attach an error
+          to, so a failure here would otherwise look like the click did nothing. */}
+      {(visibilityMutation.isError || deleteMutation.isError) && (
+        <p className="mb-4 text-body-sm text-red-600" role="alert">
+          {((visibilityMutation.error ?? deleteMutation.error) as Error)?.message}
+        </p>
+      )}
+
       {isLoading ? (
         <div className="grid gap-3 sm:grid-cols-2"><SkeletonCard /><SkeletonCard /><SkeletonCard /><SkeletonCard /></div>
       ) : error ? (
