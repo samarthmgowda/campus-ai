@@ -50,7 +50,7 @@ public class RagEvalService {
                               double avgLatencyImprovedMs, int improvedWins,
                               int ties, int basicWins, Verdict verdict,
                               double perFactCitationPrecisionBasic, double perFactCitationPrecisionImproved,
-                              int topK, boolean rerankEnabled, String chatModel,
+                              int topK, boolean rerankEnabled, boolean retrievalOnly, String chatModel,
                               List<CaseReport> cases) {}
 
     private static final List<EvalCase> CASES = List.of(
@@ -275,7 +275,7 @@ public class RagEvalService {
                 genCount == 0 ? 0.0 : round3((double) latBasic / genCount),
                 genCount == 0 ? 0.0 : round3((double) latImproved / genCount),
                 wins, ties, losses, v,
-                pfpB, pfpI, k, rerankEnabled, chatService.model(),
+                pfpB, pfpI, k, rerankEnabled, retrievalOnly, chatService.model(),
                 reports);
     }
 
