@@ -1,5 +1,5 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom'
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
+import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
@@ -32,7 +32,16 @@ import ProfilePage from './pages/ProfilePage'
 import SettingsPage from './pages/SettingsPage'
 import './index.css'
 
+// The home dashboard is a read-only fan-out over data other pages mutate
+// (events, projects, notifications, the feed). It cannot know which page
+// changed what, so any successful mutation anywhere drops it here and it
+// refetches on next visit rather than showing a stale count.
 const queryClient = new QueryClient({
+  mutationCache: new MutationCache({
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home'] })
+    },
+  }),
   defaultOptions: {
     queries: {
       staleTime: 30_000,

@@ -42,12 +42,14 @@ export default function HomePage() {
     } catch { return '' }
   })()
 
-  const inbox = useQuery({ queryKey: ['home-inbox'], queryFn: () => api.get<Conversation[]>('/messages/inbox') })
-  const notifs = useQuery({ queryKey: ['home-notifs'], queryFn: () => api.get<Notification[]>('/notifications') })
-  const events = useQuery({ queryKey: ['home-events'], queryFn: () => api.get<CampusEvent[]>('/events?upcoming=true') })
-  const projects = useQuery({ queryKey: ['home-projects'], queryFn: () => api.get<Project[]>('/projects/mine') })
-  const feed = useQuery({ queryKey: ['home-feed'], queryFn: () => api.get<FeedPost[]>('/community/feed?limit=3') })
-  const postings = useQuery({ queryKey: ['home-postings'], queryFn: () => api.get<Posting[]>('/recruiter/postings?status=OPEN') })
+  // Keyed under `home` so a single ['home'] invalidation (see App.tsx) refreshes
+  // the whole dashboard whenever any mutation succeeds elsewhere in the app.
+  const inbox = useQuery({ queryKey: ['home', 'inbox'], queryFn: () => api.get<Conversation[]>('/messages/inbox') })
+  const notifs = useQuery({ queryKey: ['home', 'notifs'], queryFn: () => api.get<Notification[]>('/notifications') })
+  const events = useQuery({ queryKey: ['home', 'events'], queryFn: () => api.get<CampusEvent[]>('/events?upcoming=true') })
+  const projects = useQuery({ queryKey: ['home', 'projects'], queryFn: () => api.get<Project[]>('/projects/mine') })
+  const feed = useQuery({ queryKey: ['home', 'feed'], queryFn: () => api.get<FeedPost[]>('/community/feed?limit=3') })
+  const postings = useQuery({ queryKey: ['home', 'postings'], queryFn: () => api.get<Posting[]>('/recruiter/postings?status=OPEN') })
 
   const unreadMsg = (inbox.data ?? []).reduce((s, c) => s + (c.unreadCount ?? 0), 0)
   const unreadNotif = (notifs.data ?? []).filter(n => !n.readFlag).length
