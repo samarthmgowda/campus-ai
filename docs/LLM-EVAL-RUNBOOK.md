@@ -6,6 +6,16 @@ Everything here runs against **your** machine: the sandbox that wrote these
 changes has no Ollama and no Postgres, so the numbers have to come from a real
 run. Nothing in this document requires a code change to execute.
 
+The quickest path is the script — it does all of the below, saves the result,
+and diffs it against the baseline:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File "C:\PROJECTS\campus-ai\Run_Eval_Diff.ps1"
+```
+
+The rest of this section is what that script does, for when you want to run it
+by hand or understand a step it took.
+
 ---
 
 ## 0. Before you start
@@ -187,7 +197,96 @@ adjacency rather than evidence.
 
 ---
 
-## 7. What was already verified offline
+## 7. Running it on a schedule
+
+`Run_Eval_Diff.ps1` exits non-zero when it finds a regression, so it is safe to
+run unattended. Its exit codes:
+
+| Code | Meaning |
+|---|---|
+| 0 | Ran, no regressions (or first run, which becomes the baseline) |
+| 1 | Ran, and a metric regressed beyond tolerance |
+| 2 | No verdict available — app down, header rejected, corrupt baseline, malformed summary, metrics that could not be compared, or a config mismatch with the baseline |
+
+Exit 2 is deliberately distinct from 1. Three outcomes are possible and
+collapsing them would make each indistinguishable from the others: the run
+measured a regression (1), the run measured nothing wrong (0), or the run could
+not measure at all (2). Only 1 means "the code got worse".
+
+Exit 2 covers more than a crash, and the message says which case it is:
+
+- **Config differs from the baseline** (`chatModel`, `topK`, `rerankEnabled`, or
+  run mode). A regression computed across a model swap or a K change is a
+  difference in config, not in code, so no verdict is issued. If the change is
+  intended, record it with `-SetBaseline`.
+- **Corrupt or empty baseline.** The script will not overwrite it — a corrupt
+  baseline is usually a truncated write, and silently replacing it would discard
+  the reference point you are measuring against. Fix it or pass `-SetBaseline`.
+- **Malformed or empty run summary**, or **metrics that were not numeric**.
+  Missing numbers are never coerced to 0, which would fabricate a regression out
+  of a serialization glitch.
+
+Mixing a retrieval-only run with a full-generation baseline is the easiest way to
+hit this by accident: the retrieval run reports `0.0` for correctness,
+faithfulness, abstention and latency *by construction*, so diffing it against a
+full baseline would otherwise report four phantom regressions.
+
+**Important — where the task must run.** A Cowork scheduled task runs in the
+Linux sandbox, which has **no network route to your `localhost:8080`** (verified:
+no `host.docker.internal`, and the sandbox gateway refuses port 8080). A
+scheduled task cannot curl the eval endpoint, and one that tries will fail
+silently. So schedule on **Windows**, where the app actually runs:
+
+```powershell
+# Register a nightly run at 02:00, logging to evals\scheduled.log
+$inner   = '& ''C:\PROJECTS\campus-ai\Run_Eval_Diff.ps1'' *>> ''C:\PROJECTS\campus-ai\evals\scheduled.log''; exit $LASTEXITCODE'
+$action  = New-ScheduledTaskAction -Execute "powershell.exe" `
+           -Argument ('-NoProfile -ExecutionPolicy Bypass -Command "{0}"' -f $inner)
+$trigger = New-ScheduledTaskTrigger -Daily -At 2am
+Register-ScheduledTask -TaskName "CampusAI-Eval" -Action $action -Trigger $trigger
+```
+
+Task Scheduler launches the process directly — there is no shell — and that
+changes two things about how the command has to be written:
+
+- **The redirection must be parsed by PowerShell, not passed to `-File`.** With
+  no shell in the chain, `-File script.ps1 *>> log` delivers `*>>` and the log
+  path as two ordinary arguments; `Run_Eval_Diff.ps1` ignores them and no log is
+  ever created. Wrapping the call in `-Command "& 'script' *>> 'log'"` gives
+  PowerShell something to parse the redirection.
+- **Quote the inner paths with single quotes.** The argument is already wrapped
+  in double quotes, so double quotes inside it nest badly and the command fails
+  to parse. Single quotes avoid that entirely. (The doubled `''` in the
+  PowerShell string above is just how you write one single quote inside a
+  single-quoted PowerShell string.)
+
+The exit code reaches Task Scheduler's Last Run Result, so Task History shows a
+non-zero result when the eval finds a regression. Verify the whole thing once by
+hand before trusting the schedule:
+
+```powershell
+schtasks /Query /TN "CampusAI-Eval" /V /FO LIST
+```
+
+The run needs the backend already up when it fires, so either start the app as a
+service or accept that an app-down run exits 2 with the reason logged.
+
+Useful flags:
+
+- `-RetrievalOnly` — fast, no Ollama; checks that the right passage is found.
+- `-TopK 5` — sweep K for this run only.
+- `-SetBaseline` — accept this run as the new baseline.
+- `-FromFile <path>` — re-diff a saved run without calling the server.
+- `-Tolerance 0.05` — loosen the regression threshold (default 0.02).
+
+Caveat worth knowing before you trust a scheduled run: the same code can score
+differently run to run, because generation samples. A single-run regression of
+one or two cases is closer to noise than signal — re-run before believing it,
+and prefer `-Tolerance` slightly above the observed jitter to the default.
+
+---
+
+## 8. What was already verified offline
 
 These were checked in the sandbox and need no re-run:
 
