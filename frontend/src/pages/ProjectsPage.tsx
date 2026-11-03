@@ -40,7 +40,6 @@ export default function ProjectsPage() {
   const [addMemberFor, setAddMemberFor] = useState<number | null>(null)
   const [memberSearch, setMemberSearch] = useState('')
   const [searchResults, setSearchResults] = useState<{ id: number; name: string; branch: string; skills: string }[]>([])
-  const [, setIsSearching] = useState(false) // isSearching unused, only setter used for search feedback
 
   const { data: projects = [], isLoading, error, refetch } = useQuery({
     queryKey: ['my-projects'],
@@ -53,7 +52,6 @@ export default function ProjectsPage() {
       setSearchResults([])
       return
     }
-    setIsSearching(true)
     try {
       // Reusing the general students search endpoint
       const all = await api.get<{ id: number; name: string; branch: string; skills: string }[]>('/students')
@@ -64,8 +62,6 @@ export default function ProjectsPage() {
       setSearchResults(filtered)
     } catch (err) {
       console.error('Search failed', err)
-    } finally {
-      setIsSearching(false)
     }
   }
 
@@ -85,16 +81,6 @@ export default function ProjectsPage() {
       setAddMemberFor(null); setMemberSearch(''); setSearchResults([])
     },
   })
-
-  const removeMemberMutation = useMutation({
-    mutationFn: ({ projectId, studentId }: { projectId: number; studentId: number }) =>
-      api.delete(`/projects/${projectId}/members/${studentId}`),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['my-projects'] })
-    },
-  })
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  void removeMemberMutation
 
   const active = projects.filter(p => p.status === 'ACTIVE').length
 
