@@ -1,5 +1,6 @@
 package com.campusconnect.campus_ai.service;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
@@ -15,8 +16,13 @@ import java.util.Set;
  *
  * No new dependencies — pure-Java lexical features fused with the semantic
  * similarity already computed at retrieval time:
- *   score = 0.45 * semantic + 0.25 * idfTermOverlap + 0.15 * bigramOverlap
- *         + 0.10 * exactPhrase + 0.05 * titleSectionMatch
+ *   score = wSemantic * semantic + wTerms * idfTermOverlap + wBigram * bigramOverlap
+ *         + wPhrase * exactPhrase + wTitle * titleSectionMatch
+ *
+ * The weights default to the tuned values (0.45 / 0.25 / 0.15 / 0.10 / 0.05) but
+ * are injected so they can be swept from {@code application.properties} and
+ * re-measured with the eval harness without a recompile. Change ONE at a time:
+ * the harness verdicts on win/tie/loss, so a combined change is uninterpretable.
  *
  * IDF weighting: terms that appear in many candidate chunks (common words)
  * get lower weight, so query-specific terms like "2 to 4" or "hackathon"
@@ -29,11 +35,25 @@ import java.util.Set;
 @Service
 public class RerankService {
 
-    private static final double W_SEMANTIC = 0.45;
-    private static final double W_TERMS = 0.25;
-    private static final double W_BIGRAM = 0.15;
-    private static final double W_PHRASE = 0.10;
-    private static final double W_TITLE = 0.05;
+    private final double wSemantic;
+    private final double wTerms;
+    private final double wBigram;
+    private final double wPhrase;
+    private final double wTitle;
+
+    public RerankService(
+            @Value("${rag.rerank.w-semantic:0.45}") double wSemantic,
+            @Value("${rag.rerank.w-terms:0.25}") double wTerms,
+            @Value("${rag.rerank.w-bigram:0.15}") double wBigram,
+            @Value("${rag.rerank.w-phrase:0.10}") double wPhrase,
+            @Value("${rag.rerank.w-title:0.05}") double wTitle
+    ) {
+        this.wSemantic = wSemantic;
+        this.wTerms = wTerms;
+        this.wBigram = wBigram;
+        this.wPhrase = wPhrase;
+        this.wTitle = wTitle;
+    }
 
     private static final Set<String> STOPWORDS = Set.of(
             "a", "an", "the", "and", "or", "but", "in", "on", "at", "to", "for",
@@ -66,10 +86,19 @@ public class RerankService {
                 double score = score(r, terms, normalizedQuery, idfWeights);
                 scored.add(new Scored(r, score));
             }
-            scored.sort(Comparator
-                    .comparingDouble(Scored::score).reversed()
-                    .thenComparing((Scored s) -> s.result().hybridScore(), Comparator.reverseOrder())
-                    .thenComparing(s -> s.result().id()));
+            // Order: rerank score desc, then hybrid score desc, then chunk id asc as
+            // a deterministic final tiebreak. Written with explicit reversed()
+            // comparators on each key rather than mixing `.reversed()` on the chain
+            // with a `Comparator.reverseOrder()` on one key — that mix is how a
+            // trailing `.reversed()` silently inverts an entire chain.
+            Comparator<Scored> byScoreDesc =
+                    Comparator.comparingDouble(Scored::score).reversed();
+            Comparator<Scored> byHybridDesc =
+                    Comparator.comparingDouble((Scored s) ->
+                            s.result().hybridScore()).reversed();
+            Comparator<Scored> byIdAsc =
+                    Comparator.comparingLong(s -> s.result().id());
+            scored.sort(byScoreDesc.thenComparing(byHybridDesc).thenComparing(byIdAsc));
             List<SearchService.SearchResult> out = new ArrayList<>();
             for (int i = 0; i < Math.min(limit, scored.size()); i++) {
                 Scored s = scored.get(i);
@@ -154,8 +183,8 @@ public class RerankService {
             title = (double) tMatched / terms.size();
         }
 
-        return W_SEMANTIC * semantic + W_TERMS * termOverlap + W_BIGRAM * bigram
-                + W_PHRASE * phrase + W_TITLE * title;
+        return wSemantic * semantic + wTerms * termOverlap + wBigram * bigram
+                + wPhrase * phrase + wTitle * title;
     }
 
     private static List<String> tokenize(String text) {

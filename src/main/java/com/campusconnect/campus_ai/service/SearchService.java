@@ -21,22 +21,26 @@ public class SearchService {
     private final boolean rerankEnabled;
     private final int rerankPool;
 
+    // Reciprocal-rank-fusion constant (standard k=60) and per-branch weights.
+    private static final double RRF_K = 60.0;
+    private final double semanticWeight;
+    private final double keywordWeight;
+
     public SearchService(DocumentChunkRepository chunkRepository,
                          EmbeddingService embeddingService,
                          RerankService rerankService,
                          @Value("${rag.rerank-enabled:true}") boolean rerankEnabled,
-                         @Value("${rag.rerank-pool:10}") int rerankPool) {
+                         @Value("${rag.rerank-pool:10}") int rerankPool,
+                         @Value("${rag.fusion.semantic-weight:0.5}") double semanticWeight,
+                         @Value("${rag.fusion.keyword-weight:0.5}") double keywordWeight) {
         this.chunkRepository = chunkRepository;
         this.embeddingService = embeddingService;
         this.rerankService = rerankService;
         this.rerankEnabled = rerankEnabled;
         this.rerankPool = rerankPool;
+        this.semanticWeight = semanticWeight;
+        this.keywordWeight = keywordWeight;
     }
-
-    // Reciprocal-rank-fusion constant (standard k=60) and per-branch weights.
-    private static final double RRF_K = 60.0;
-    private static final double SEMANTIC_WEIGHT = 0.5;
-    private static final double KEYWORD_WEIGHT = 0.5;
 
     /**
      * Hybrid retrieval: semantic (pgvector) + keyword (Postgres full-text) fused
@@ -126,8 +130,8 @@ public class SearchService {
             Long id = entry.getKey();
             Object[] row = entry.getValue();
             double score = 0.0;
-            if (semanticRank.containsKey(id)) score += SEMANTIC_WEIGHT / (RRF_K + semanticRank.get(id));
-            if (keywordRank.containsKey(id)) score += KEYWORD_WEIGHT / (RRF_K + keywordRank.get(id));
+            if (semanticRank.containsKey(id)) score += semanticWeight / (RRF_K + semanticRank.get(id));
+            if (keywordRank.containsKey(id)) score += keywordWeight / (RRF_K + keywordRank.get(id));
 
             fused.add(new SearchResult(
                     id,
