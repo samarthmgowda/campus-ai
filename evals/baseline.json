@@ -1,0 +1,25 @@
+{
+  "_provenance": "Recorded on the developer's machine on 2026-10-12, before the LLM tuning work. NOT produced by Run_Eval_Diff.ps1 and NOT verifiable offline. See docs/LLM-EVAL-RUNBOOK.md section 8.",
+  "_note": "The first real run of Run_Eval_Diff.ps1 exits 2 against this file, by design: the script sees no retrievalOnly key and so cannot tell that this was a full-generation run, and it withholds a verdict rather than calling the tuning work a regression. Run it with -SetBaseline to replace this with a real machine-written baseline.",
+  "date": "2026-10-12",
+  "mode": "full generation",
+  "chatModel": "qwen2.5:3b",
+  "topK": 3,
+  "rerankEnabled": true,
+  "recallAtKBasic": 0.667,
+  "recallAtKImproved": 0.667,
+  "precisionAtKBasic": 0.722,
+  "precisionAtKImproved": 0.778,
+  "correctnessBasic": 0.333,
+  "correctnessImproved": 0.333,
+  "faithfulnessBasic": 0.667,
+  "faithfulnessImproved": 0.667,
+  "abstentionRate": 1.0,
+  "improvedWins": 0,
+  "ties": 9,
+  "basicWins": 0,
+  "verdict": {
+    "winner": "tie",
+    "reason": "Neither arm wins or loses on any of the 9 cases."
+  }
+}
