@@ -225,6 +225,14 @@ Exit 2 covers more than a crash, and the message says which case it is:
 - **Malformed or empty run summary**, or **metrics that were not numeric**.
   Missing numbers are never coerced to 0, which would fabricate a regression out
   of a serialization glitch.
+- **A retrieval-only run against a baseline that does not record its mode.**
+  The script detects the run mode from the `retrievalOnly` field, so a baseline
+  written before that field existed cannot be classified. That is the one case
+  where the phantom-regression guard has nothing to work with: the run's zeros
+  for correctness and faithfulness are structural, and against real baseline
+  numbers they read as three or four catastrophic regressions. So a
+  retrieval-only run is refused outright when the baseline is unclassified,
+  rather than diffed on a guess.
 
 Mixing a retrieval-only run with a full-generation baseline is the easiest way to
 hit this by accident: the retrieval run reports `0.0` for correctness,
@@ -286,7 +294,98 @@ and prefer `-Tolerance` slightly above the observed jitter to the default.
 
 ---
 
-## 8. What was already verified offline
+## 8. The baseline that is already in the repo
+
+`evals/baseline.json` is committed and already holds the last real numbers
+recorded by hand (2026-10-12). They are the values quoted in section 2, so the
+to-do list below is small. But read this before you run the script, or the first
+run will surprise you.
+
+**The first run exits 2.** The old numbers exist as prose in this document and
+in the eval notes, not as the JSON the harness emits, so `baseline.json` is a
+hand-transcribed file. It carries the fields a pasted summary carries and none
+of the ones the script added later, which trips two separate guards.
+
+The first is the config check. The script compares config before it compares
+metrics, and run mode is part of the config: it detects "full generation" by
+reading `retrievalOnly` from the summary, and this file has no such field. A
+retrieval-only run against an unclassified baseline is refused outright rather
+than diffed on a guess (see the last bullet in section 7). A full-generation run
+gets past that check.
+
+The second is metrics the baseline does not record. `perFactCitationPrecisionImproved`
+and `avgLatencyImprovedMs` postdate the October run, so they are present in the
+run and absent from the baseline. There is no way to know from one side alone
+whether such a metric improved or regressed — which is exactly the condition
+under which it must not be silently skipped — so the script reports them and
+exits 2 with the comparison marked incomplete.
+
+Neither exit 2 is a failure. Both are the script declining to issue a verdict it
+cannot support. Your first run is therefore two runs:
+
+```powershell
+# 1. establish a real baseline - the file above is prose-derived, this is not
+.\Run_Eval_Diff.ps1 -SetBaseline
+
+# 2. from here on, every run compares against machine-written numbers
+.\Run_Eval_Diff.ps1
+```
+
+If step 1's run disagrees with the 2026-10-12 numbers, believe step 1. A real
+run on your machine outranks a figure transcribed from a chat log — the corpus
+has been reseeded and the case list has grown since October, so the deltas are
+most likely real corpus changes rather than a quality change.
+
+The two missing metrics, and what that costs:
+
+- `perFactCitationPrecisionImproved` — added with the multi-hop work. Its first
+  real baseline is your own run.
+- `avgLatencyImprovedMs` — recorded, but machine-specific and not worth
+  comparing across machines at all.
+
+Until `baseline.json` has been written by a real run, no comparison against it
+can be complete. After `-SetBaseline`, every metric in the list is present on
+both sides and the normal exit 0/1 behaviour applies.
+
+Once `baseline.json` has been written by a real run, none of this applies: the
+script overwrites it only with `-SetBaseline`, and it never overwrites a corrupt
+one at all.
+
+---
+
+## 9. Checking the checker
+
+`Run_Eval_Diff.ps1` is what decides whether a change made the product worse, so
+it is worth being able to test on its own:
+
+```powershell
+.\Verify_Eval_Diff.ps1
+```
+
+No server, no Ollama, no database — it drives the script through 24 scenarios
+built from JSON fixtures and checks the exit code and the message each one
+produces. Run it after any change to the diff logic.
+
+What it pins, and why each one is a rule rather than a preference:
+
+| Scenario | Expected | Why |
+|---|---|---|
+| No change; within-tolerance jitter, up and down | exit 0 | Generation samples; small movement is noise, not a regression |
+| Correctness collapse | exit 1 | The ordinary regression case |
+| Latency triples | exit 1 | Only metric where lower is better, and compared as a ratio |
+| Chat model swapped | exit 2 | A difference in config, not in code |
+| Retrieval-only vs classified baseline | exit 2 | Zeros are structural, would read as three regressions |
+| Retrieval-only vs baseline with no mode recorded | exit 2 | The guard cannot classify it, so it must not guess |
+| Metric present in neither run | reported, exit 0 | A renamed field is a shape change, not a quality change |
+| Metric present in only one run | exit 2 | Cannot be compared, and must not vanish silently |
+| `null`, `""`, `"n/a"` as a metric value | exit 2 | Each coerces to a number that invents or hides a regression |
+| Corrupt baseline / malformed run | exit 2 | Nothing to compare; the corrupt baseline is left alone |
+
+The last five are the ones worth re-reading. They are all cases where the
+tempting behaviour is to produce a verdict anyway, and every one of them would
+either fabricate a regression or hide one.
+
+## 10. What was already verified offline
 
 These were checked in the sandbox and need no re-run:
 
@@ -295,7 +394,12 @@ These were checked in the sandbox and need no re-run:
   because the context contains `75`; `art` matched inside `start`) and too
   strict (a truthful `students` rejected against a source saying `student`).
 - Context-budget fitting and token estimation — 14 unit tests.
-- The full offline suite: 144 passed, 0 failed (the Spring context test is
+- The diff script's guards — 24 scenarios in `Verify_Eval_Diff.ps1`. They were
+  themselves checked by mutation: nine deliberate breakages of the script (the
+  unclassified-baseline guard, the one-sided-metric guard, the coercion guards,
+  the tolerance comparison, the latency direction, the config check, and three
+  baseline-protection branches) and all nine are detected.
+- The full offline suite: 145 tests, 0 failures (the Spring context test is
   excluded because it needs Postgres).
 
 What is **not** verified, and is what this runbook is for: whether any of it

@@ -4,6 +4,11 @@ Output from `Run_Eval_Diff.ps1`, plus the committed baseline.
 
 - `baseline.json` — the run to compare against. Committed, so everyone measures
   against the same numbers. Replaced only deliberately, with `-SetBaseline`.
+  The version in the repo is transcribed by hand from the 2026-10-12 run, not
+  written by the script, so the script will refuse to compare against it (exit 2,
+  "NOT COMPARABLE") and will not replace it on its own. Establish a
+  machine-written one with `-SetBaseline` on your first run; see section 8 of
+  `docs/LLM-EVAL-RUNBOOK.md` for why, and for the two metrics it does not carry.
 - `YYYY-MM-DD-HHmmss-<mode>.json` — one raw result per run, where `<mode>` is
   `full` (generation, needs Ollama) or `retrieval` (fast, no LLM). These are
   gitignored: they are machine- and moment-specific output.
