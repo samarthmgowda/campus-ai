@@ -215,7 +215,15 @@ public class AskService {
             // question, regenerate with a more explicit prompt that highlights the
             // relevant passage. This handles cases where the LLM missed a fact in a
             // multi-fact compound sentence (e.g. only answered the first IA criterion).
+            //
+            // This is a SECOND generation, so it costs a second LLM round-trip. It is
+            // the one path that makes a case's latency depend on the answer rather than
+            // the prompt, which is why the eval counts it separately: an arm that hits
+            // this path more often looks slower without being slower per call.
             if (contextContainsRelevantTerms(question, results)) {
+                // The second call happens on this line; whether it is accepted or not,
+                // the arm paid for it, so the flag is set before we know the outcome.
+                boolean retried = true;
                 String retryAnswer = chatService.chat(systemPrompt,
                         "Context:\n" + budgetedContext +
                         "\n\n" + (subQueries.size() > 1
@@ -226,8 +234,9 @@ public class AskService {
                                   "State the value exactly as written in the context.\n") +
                         "Question: " + question);
                 if (retryAnswer != null && !retryAnswer.strip().equals(ABSTAIN_ANSWER) && isFaithful(retryAnswer, question, results)) {
-                    return new AskResponse(true, sanitizeAnswer(retryAnswer), sources);
+                    return new AskResponse(true, sanitizeAnswer(retryAnswer), sources, true);
                 }
+                return new AskResponse(false, buildNoAnswerResponse(question), sources, retried);
             }
             // Route through the same friendly fallback the empty-results path uses.
             // Returning the bare ABSTAIN_ANSWER here made the reply a dead end
@@ -620,7 +629,20 @@ public class AskService {
         return ask(question, null);
     }
 
-    public record AskResponse(boolean answered, String answer, List<SourceInfo> sources) {}
+    /**
+     * @param retried whether a second generation ran because the first abstained while
+     *                the retrieved context still contained the question's own terms.
+     *                Surfaced so the eval can count it: it is the one path where a
+     *                case's latency reflects two LLM round-trips instead of one, and it
+     *                fires far more often on one arm than the other — so an arm with
+     *                more retries looks slower without being slower per call.
+     */
+    public record AskResponse(boolean answered, String answer, List<SourceInfo> sources, boolean retried) {
+        /** Backward-compatible constructor for the many callers that never retry. */
+        public AskResponse(boolean answered, String answer, List<SourceInfo> sources) {
+            this(answered, answer, sources, false);
+        }
+    }
     public record SourceInfo(Long documentId, String documentTitle, String section,
                              Integer pageNumber, double similarity,
                              double hybridScore, Double rerankScore) {

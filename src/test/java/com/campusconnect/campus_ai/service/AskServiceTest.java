@@ -192,4 +192,53 @@ class AskServiceTest {
 
         verify(chatService, atLeastOnce()).chat(any(), any());
     }
+
+    /**
+     * The retry is a SECOND generation: abstain first, then regenerate because the
+     * context still holds the question's terms. The eval reports it, so the response
+     * must say whether it happened — a case that retried cost two round-trips and its
+     * latency is not comparable to one that did not.
+     */
+    @Test
+    void retryAfterAbstain_flagsRetried() {
+        // Content deliberately carries the question's own terms ("attendance", "exams")
+        // so the contextContainsRelevantTerms gate — 50% stemmed overlap — passes and
+        // the retry actually fires.
+        var hit = new SearchService.SearchResult(
+                1L, 1L, "SAMPLE - Attendance Policy",
+                "Students must maintain at least 75 percent attendance in each subject. Exams require attendance records.",
+                1, "Eligibility", 0.9, 0.9);
+        // First call abstains; the retry returns the grounded value.
+        when(chatService.chat(any(), any()))
+                .thenReturn("I don't have that information in the college documents.")
+                .thenReturn("At least 75 percent attendance is required for exams [1].");
+
+        var resp = askService.answerWithHits(
+                "how much attendance is needed for exams", null, List.of(hit));
+
+        assertTrue(resp.retried(), "a second generation ran, so retried must be true");
+        assertTrue(resp.answered(), "the grounded retry answer should be accepted");
+        verify(chatService, times(2)).chat(any(), any());
+    }
+
+    /**
+     * A normal single-shot answer must NOT be flagged as retried, or the eval's retry
+     * counter would report every call.
+     */
+    @Test
+    void firstShotAnswer_isNotFlaggedRetried() {
+        var hit = new SearchService.SearchResult(
+                1L, 1L, "SAMPLE - Attendance Policy",
+                "Students must maintain at least 75 percent attendance in each subject.",
+                1, "Eligibility", 0.9, 0.9);
+        when(chatService.chat(any(), any()))
+                .thenReturn("At least 75 percent attendance is required [1].");
+
+        var resp = askService.answerWithHits(
+                "how much attendance is needed for exams", null, List.of(hit));
+
+        assertTrue(resp.answered());
+        assertFalse(resp.retried(), "no retry happened, so the flag must stay false");
+        verify(chatService, times(1)).chat(any(), any());
+    }
 }

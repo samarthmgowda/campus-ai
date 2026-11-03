@@ -343,6 +343,29 @@ The two missing metrics, and what that costs:
 - `avgLatencyImprovedMs` — recorded, but machine-specific and not worth
   comparing across machines at all.
 
+Two more were added on 2026-11-03, so the hand-written baseline is missing them
+as well and the diff will list them as "not in the baseline":
+
+- `avgLatencyAnsweredImprovedMs` — latency over answered cases only. The
+  all-case `avgLatencyImprovedMs` includes the unanswerable cases, which abstain
+  at the similarity gate in ~3ms without ever calling the model; those pull both
+  arms' means toward zero and compress the difference between them, so the
+  all-case figure understates how far apart the arms really are.
+- `retriesImproved` — how many cases needed a second generation because the first
+  abstained while the retrieved context still held the question's own terms. That
+  retry is asymmetric by arm, so it is the main reason a latency delta can appear
+  without the arms differing per call. It is not good or bad on its own.
+
+### Reading latency honestly
+
+Until 2026-11-03 the harness ran basic first and improved second on every case,
+and did not warm the model. An arm therefore looked seconds faster merely for
+going second — on cases where both arms retrieved byte-identical hits. Now a
+warmup generation runs before the timed loop (its time discarded) and the arm
+order alternates by case index, so the first-slot cost lands on both arms. If you
+compare a run from before that change against one after, the latency columns are
+not comparable at all.
+
 Until `baseline.json` has been written by a real run, no comparison against it
 can be complete. After `-SetBaseline`, every metric in the list is present on
 both sides and the normal exit 0/1 behaviour applies.

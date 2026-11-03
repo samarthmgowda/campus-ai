@@ -35,7 +35,7 @@ public class RagEvalService {
                            List<String> numbers, boolean answerable) {}
     public record ArmResult(String arm, boolean recalled, List<String> topTitles,
                             boolean answered, boolean correct, boolean faithful,
-                            boolean cited, Long latencyMs, String answerPreview,
+                            boolean cited, Long latencyMs, boolean retried, String answerPreview,
                             double perFactCitationPrecision) {}
     public record CaseReport(String question, String expectedDocument, boolean answerable,
                              ArmResult basic, ArmResult improved) {}
@@ -50,6 +50,15 @@ public class RagEvalService {
                               double avgLatencyImprovedMs, int improvedWins,
                               int ties, int basicWins, Verdict verdict,
                               double perFactCitationPrecisionBasic, double perFactCitationPrecisionImproved,
+                              // Latency over ANSWERED cases only. The all-case figures above
+                              // include ~3ms abstentions that never called the model, which
+                              // drag both arms' means toward zero and compress the difference
+                              // between them. These two are the honest per-answer cost.
+                              double avgLatencyAnsweredBasicMs, double avgLatencyAnsweredImprovedMs,
+                              // Cases where a second generation ran (abstain → context still
+                              // had the question's terms). Reported so the asymmetric retry
+                              // cost is visible rather than buried inside the latency means.
+                              int retriesBasic, int retriesImproved,
                               int topK, boolean rerankEnabled, boolean retrievalOnly, String chatModel,
                               List<CaseReport> cases) {}
 
@@ -164,11 +173,30 @@ public class RagEvalService {
         double precisionSumBasic = 0.0, precisionSumImproved = 0.0;
         int answerableTotal = (int) CASES.stream().filter(EvalCase::answerable).count();
         long latBasic = 0, latImproved = 0;
+        // Latency accumulated over answered cases only, so abstentions (which never
+        // called the model) cannot dilute the per-answer cost.
+        long latAnsBasic = 0, latAnsImproved = 0;
+        int retriesBasic = 0, retriesImproved = 0;
         int genCount = 0;
         int wins = 0, ties = 0, losses = 0;
         double pfpSumBasic = 0.0, pfpSumImproved = 0.0;
         int pfpCount = 0;
 
+        // Warm the model once before any timed call. The very first generation pays a
+        // cost — loading weights, filling an empty KV cache — that is charged to
+        // whichever arm runs first and is not a property of that arm. A warmup whose
+        // time is discarded removes it from the comparison instead of redistributing it.
+        if (!retrievalOnly) {
+            try {
+                chatService.chat("You are a warmup. Reply with the single word: ok.",
+                        "Reply with the single word: ok.");
+            } catch (RuntimeException e) {
+                // A warmup failure must not kill the run: if the model is unreachable
+                // the real calls below surface it with a proper error.
+            }
+        }
+
+        int caseIndex = 0;
         for (EvalCase c : CASES) {
             int caseK = Math.max(k, 3);
             List<SearchService.SearchResult> basicHits = searchService.searchWithoutRerank(c.question(), caseK);
@@ -194,22 +222,40 @@ public class RagEvalService {
             double pfpB = 0.0, pfpI = 0.0;
             if (retrievalOnly) {
                 basic = new ArmResult("basic", recB, titles(basicHits),
-                        false, false, false, false, null, null, 0.0);
+                        false, false, false, false, null, false, null, 0.0);
                 improved = new ArmResult("improved", recI, titles(improvedHits),
-                        false, false, false, false, null, null, 0.0);
+                        false, false, false, false, null, false, null, 0.0);
             } else {
                 // Per-arm generation over fixed hits: same prompt + faithfulness path,
                 // so basic vs improved differ only in their retrieval ordering.
                 // (LLM cost ×2 per case — acceptable for a 9-case harness.)
-                long t0 = System.currentTimeMillis();
-                AskService.AskResponse rB = askService.answerWithHits(c.question(), null, basicHits);
-                long lb = System.currentTimeMillis() - t0;
-                long t1 = System.currentTimeMillis();
-                AskService.AskResponse rI = askService.answerWithHits(c.question(), null, improvedDecomposed);
-                long li = System.currentTimeMillis() - t1;
+                //
+                // WHICH ARM RUNS FIRST ALTERNATES BY CASE. Running basic first every
+                // time made its latency absorb the cost of (re)touching the model and
+                // its KV cache, so an arm could look seconds faster purely because it
+                // went second — on cases where the two arms retrieved byte-identical
+                // hits. Alternating gives each arm the first slot on half the cases, so
+                // that cost lands on both and the latency delta reflects the arms.
+                boolean basicFirst = (caseIndex % 2 == 0);
+                AskService.AskResponse rB;
+                AskService.AskResponse rI;
+                long lb, li;
+                if (basicFirst) {
+                    long t0 = System.currentTimeMillis();
+                    rB = askService.answerWithHits(c.question(), null, basicHits);
+                    lb = System.currentTimeMillis() - t0;
+                    long t1 = System.currentTimeMillis();
+                    rI = askService.answerWithHits(c.question(), null, improvedDecomposed);
+                    li = System.currentTimeMillis() - t1;
+                } else {
+                    long t0 = System.currentTimeMillis();
+                    rI = askService.answerWithHits(c.question(), null, improvedDecomposed);
+                    li = System.currentTimeMillis() - t0;
+                    long t1 = System.currentTimeMillis();
+                    rB = askService.answerWithHits(c.question(), null, basicHits);
+                    lb = System.currentTimeMillis() - t1;
+                }
 
-                // askWith reuses one retrieval's hits; add both latencies to their own arms.
-                // The second call doubles LLM cost — acceptable for a 9-case harness.
                 boolean corrB = rB.answered() && correct(rB.answer(), c);
                 boolean corrI = rI.answered() && correct(rI.answer(), c);
                 boolean faithB = rB.answered() && askService.isFaithful(rB.answer(), c.question(), basicHits);
@@ -226,9 +272,9 @@ public class RagEvalService {
                 pfpSumImproved += pfpI;
                 pfpCount++;
                 basic = new ArmResult("basic", recB, titles(basicHits),
-                        rB.answered(), corrB, faithB, citeB, lb, preview(rB.answer()), pfpB);
+                        rB.answered(), corrB, faithB, citeB, lb, rB.retried(), preview(rB.answer()), pfpB);
                 improved = new ArmResult("improved", recI, titles(improvedHits),
-                        rI.answered(), corrI, faithI, citeI, li, preview(rI.answer()), pfpI);
+                        rI.answered(), corrI, faithI, citeI, li, rI.retried(), preview(rI.answer()), pfpI);
 
                 if (corrB) correctBasic++;
                 if (corrI) correctImproved++;
@@ -236,8 +282,16 @@ public class RagEvalService {
                 if (faithI) faithfulImproved++;
                 if (citeB) citedBasic++;
                 if (citeI) citedImproved++;
-                if (rB.answered()) answeredBasic++;
-                if (rI.answered()) answeredImproved++;
+                if (rB.answered()) {
+                    answeredBasic++;
+                    latAnsBasic += lb;
+                }
+                if (rI.answered()) {
+                    answeredImproved++;
+                    latAnsImproved += li;
+                }
+                if (rB.retried()) retriesBasic++;
+                if (rI.retried()) retriesImproved++;
                 latBasic += lb;
                 latImproved += li;
                 genCount++;
@@ -250,6 +304,7 @@ public class RagEvalService {
                 }
             }
             reports.add(new CaseReport(c.question(), c.expectedDocument(), c.answerable(), basic, improved));
+            caseIndex++;
         }
 
         int n = CASES.size();
@@ -275,7 +330,11 @@ public class RagEvalService {
                 genCount == 0 ? 0.0 : round3((double) latBasic / genCount),
                 genCount == 0 ? 0.0 : round3((double) latImproved / genCount),
                 wins, ties, losses, v,
-                pfpB, pfpI, k, rerankEnabled, retrievalOnly, chatService.model(),
+                pfpB, pfpI,
+                answeredBasic == 0 ? 0.0 : round3((double) latAnsBasic / answeredBasic),
+                answeredImproved == 0 ? 0.0 : round3((double) latAnsImproved / answeredImproved),
+                retriesBasic, retriesImproved,
+                k, rerankEnabled, retrievalOnly, chatService.model(),
                 reports);
     }
 

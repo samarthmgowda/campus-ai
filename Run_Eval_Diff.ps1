@@ -186,7 +186,13 @@ function Compare-Summary($base, $curr, $tolerance, $latencyTolerance) {
         @{ n = "precisionAtKImproved";       up = $true;  rate = $true;  label = "precision@K (improved arm)" },
         @{ n = "perFactCitationPrecisionImproved"; up = $true; rate = $true; label = "per-fact citation precision" },
         @{ n = "abstentionRate";             up = $true;  rate = $true;  label = "abstention rate" },
-        @{ n = "avgLatencyImprovedMs";       up = $false; rate = $false; label = "avg latency (improved, ms)" }
+        @{ n = "avgLatencyImprovedMs";       up = $false; rate = $false; label = "avg latency (improved, ms)" },
+        # Latency over answered cases only - the all-case figure above folds in ~3ms
+        # abstentions that never called the model, which compress the gap between arms.
+        @{ n = "avgLatencyAnsweredImprovedMs"; up = $false; rate = $false; label = "avg latency, answered only (improved, ms)" },
+        # More retries is not better or worse on its own, but a large swing moves the
+        # latency columns, so it is surfaced for the human to reason about.
+        @{ n = "retriesImproved";            up = $false; rate = $false; label = "retries (improved arm)" }
     )
 
     foreach ($m in $metrics) {
@@ -563,7 +569,9 @@ $rows = @(
     @{ k = "faithfulness";      v = "$($summary.faithfulnessBasic) basic  ->  $($summary.faithfulnessImproved) improved" },
     @{ k = "abstentionRate";    v = "$($summary.abstentionRate)" },
     @{ k = "wins/ties/losses";  v = "$($summary.improvedWins) / $($summary.ties) / $($summary.basicWins)" },
-    @{ k = "avgLatency";        v = "$($summary.avgLatencyBasicMs) basic  ->  $($summary.avgLatencyImprovedMs) improved (ms)" },
+    @{ k = "avgLatency";        v = "$($summary.avgLatencyBasicMs) basic  ->  $($summary.avgLatencyImprovedMs) improved (ms, all cases)" },
+    @{ k = "avgLatencyAnswered"; v = "$($summary.avgLatencyAnsweredBasicMs) basic  ->  $($summary.avgLatencyAnsweredImprovedMs) improved (ms, answered only)" },
+    @{ k = "retries";           v = "$($summary.retriesBasic) basic  ->  $($summary.retriesImproved) improved (2nd LLM call after abstain)" },
     @{ k = "verdict";           v = "$($summary.verdict.winner)" }
 )
 foreach ($r in $rows) { "  {0,-20} {1}" -f $r.k, $r.v | Write-Host }
