@@ -1,0 +1,6 @@
+# Timestamped eval runs are machine- and moment-specific, so they are not
+# committed - they are output, not source.
+*
+!.gitignore
+!baseline.json
+!README.md
