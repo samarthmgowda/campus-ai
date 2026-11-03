@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { FileText, Upload, Plus, X, Search, LibraryBig, CheckCircle2, Eye, EyeOff, Trash2 } from 'lucide-react'
 
 export default function DocumentsPage() {
@@ -16,6 +17,7 @@ export default function DocumentsPage() {
   const [title, setTitle] = useState('')
   const [content, setContent] = useState('')
   const [uploadFile, setUploadFile] = useState<File | null>(null)
+  const [pendingDelete, setPendingDelete] = useState<CampusDocument | null>(null)
 
   const { data: docs = [], isLoading, error, refetch } = useQuery({
     queryKey: ['documents'],
@@ -229,7 +231,7 @@ export default function DocumentsPage() {
                     {d.hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                   <button
-                    onClick={() => { if (confirm(`Delete "${d.title}" and its chunks?`)) deleteMutation.mutate(d.id) }}
+                    onClick={() => setPendingDelete(d)}
                     aria-label={`Delete ${d.title}`}
                     title="Delete"
                     className="p-2 rounded-lg text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
@@ -243,6 +245,28 @@ export default function DocumentsPage() {
           ))}
         </div>
       )}
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.title ?? ''}"?`}
+        body="This removes the document and every chunk the AI embedded from it. Answers that cited it will stop finding it."
+        confirmLabel="Delete"
+        pending={deleteMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          // Close on settle, not on click, so `pending` actually renders — the
+          // delete round-trips through the embedding reindex and is not instant.
+          // A failure surfaces in the role="alert" above rather than here.
+          try {
+            await deleteMutation.mutateAsync(pendingDelete.id)
+          } catch {
+            /* shown by the page-level alert */
+          } finally {
+            setPendingDelete(null)
+          }
+        }}
+      />
     </PageContainer>
   )
 }

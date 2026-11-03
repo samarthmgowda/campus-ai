@@ -7,6 +7,7 @@ import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { ShieldAlert, Eye, EyeOff, Trash2, FileText, ShieldCheck, Flag, CalendarPlus } from 'lucide-react'
 import { cn } from '../utils/cn'
 
@@ -31,6 +32,7 @@ export default function AdminPage() {
   const [reportStatus, setReportStatus] = useState<string>('OPEN')
   const [resolvingId, setResolvingId] = useState<number | null>(null)
   const [resolution, setResolution] = useState('')
+  const [pendingDelete, setPendingDelete] = useState<{ id: number; title: string } | null>(null)
 
   const { data: stats } = useQuery({
     queryKey: ['report-stats'],
@@ -291,7 +293,7 @@ export default function AdminPage() {
                     {d.hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
                   <button
-                    onClick={() => { if (confirm(`Delete "${d.title}" and its chunks?`)) deleteDocMutation.mutate(d.id) }}
+                    onClick={() => setPendingDelete({ id: d.id, title: d.title })}
                     aria-label={`Delete ${d.title}`}
                     title="Delete"
                     className="p-2 rounded-lg text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
@@ -304,6 +306,27 @@ export default function AdminPage() {
           )}
         </div>
       </section>
+
+      <ConfirmDialog
+        open={pendingDelete !== null}
+        title={`Delete "${pendingDelete?.title ?? ''}"?`}
+        body="This removes the document and every chunk the AI embedded from it. Answers that cited it will stop finding it."
+        confirmLabel="Delete"
+        pending={deleteDocMutation.isPending}
+        onCancel={() => setPendingDelete(null)}
+        onConfirm={async () => {
+          if (!pendingDelete) return
+          // Same deal as the Library page: hold the dialog open through the
+          // round-trip so the spinner is visible. Errors land in `anyError`.
+          try {
+            await deleteDocMutation.mutateAsync(pendingDelete.id)
+          } catch {
+            /* shown by the page-level alert */
+          } finally {
+            setPendingDelete(null)
+          }
+        }}
+      />
     </PageContainer>
   )
 }

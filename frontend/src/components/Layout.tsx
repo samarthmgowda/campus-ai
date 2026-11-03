@@ -174,6 +174,15 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
+      {/* First thing in the tab order. Without it a keyboard user walks all 23
+          nav links before reaching the content on every single page. */}
+      <a
+        href="#main-content"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2.5 focus:text-body-sm focus:font-semibold focus:shadow-elevated"
+      >
+        Skip to content
+      </a>
+
       {sidebarOpen && (
         <div
           className="fixed inset-0 z-40 bg-campus-950/40 backdrop-blur-[2px] lg:hidden"
@@ -265,7 +274,8 @@ export default function Layout() {
           </div>
         </header>
 
-        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 animate-fade-in" id="main-content" role="main">
+        {/* tabIndex={-1} so the skip link moves focus here, not just the scroll. */}
+        <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 animate-fade-in" id="main-content" tabIndex={-1}>
           <Outlet />
         </main>
       </div>

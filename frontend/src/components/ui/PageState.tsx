@@ -15,7 +15,9 @@ export function PageHeader({
   return (
     <div className="flex items-start justify-between gap-4 flex-wrap mb-6">
       <div className="min-w-0">
-        <h2 className="font-display font-bold text-[26px] leading-tight tracking-tight text-campus-950">{title}</h2>
+        {/* One h1 per route: every authenticated page leads with this header,
+            and PageHeader is never rendered twice on a page. */}
+        <h1 className="font-display font-bold text-[26px] leading-tight tracking-tight text-campus-950">{title}</h1>
         {sub && <p className="text-body-sm text-surface-500 mt-1 max-w-[60ch]">{sub}</p>}
       </div>
       {actions && <div className="flex items-center gap-2 flex-shrink-0">{actions}</div>}

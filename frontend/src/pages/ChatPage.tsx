@@ -8,6 +8,7 @@ import { getId, getRole, setIdentity } from '../utils/identity'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 import { CitedAnswer } from '../components/CitedAnswer'
+import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { cn } from '../utils/cn'
 import {
   Send,
@@ -65,6 +66,7 @@ export default function ChatPage() {
   const [demoUser, setDemoUser] = useState<string>('')
   const [activeAsk, setActiveAsk] = useState<string | null>(null)
   const [liveResponse, setLiveResponse] = useState<AgentResponse | null>(null)
+  const [confirmClear, setConfirmClear] = useState(false)
   const messagesEndRef = useRef<HTMLDivElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
   const lastQuestionRef = useRef<string | null>(null)
@@ -166,8 +168,11 @@ export default function ChatPage() {
   }
 
   const handleClearHistory = async () => {
-    if (!confirm('Clear all chat history for this user?')) return
-    await clearMutation.mutateAsync()
+    try {
+      await clearMutation.mutateAsync()
+    } finally {
+      setConfirmClear(false)
+    }
   }
 
   const isEmpty = history.length === 0 && !liveResponse && !sendMutation.isPending && !activeAsk
@@ -231,7 +236,7 @@ export default function ChatPage() {
           <div className="flex items-center justify-between px-4 py-3 border-b border-campus-900/[0.06] bg-campus-50/60">
             <p className="font-display font-semibold text-body-sm text-campus-950">Recent conversations</p>
             <div className="flex items-center gap-1.5">
-              <Button variant="ghost" size="sm" onClick={handleClearHistory} aria-label="Clear history">
+              <Button variant="ghost" size="sm" onClick={() => setConfirmClear(true)} aria-label="Clear history">
                 <Trash2 className="h-4 w-4" />
               </Button>
               <Button variant="ghost" size="sm" onClick={() => setShowHistory(false)} aria-label="Close history">
@@ -408,6 +413,16 @@ export default function ChatPage() {
           </p>
         )}
       </div>
+
+      <ConfirmDialog
+        open={confirmClear}
+        title="Clear all chat history?"
+        body="Every question and answer for this user is deleted. The knowledge base is untouched — new questions still answer from it."
+        confirmLabel="Clear history"
+        pending={clearMutation.isPending}
+        onCancel={() => setConfirmClear(false)}
+        onConfirm={handleClearHistory}
+      />
     </PageContainer>
   )
 }
