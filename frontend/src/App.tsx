@@ -99,7 +99,9 @@ function App() {
                 visible instead of quietly dumping the visitor somewhere else. */}
             <Route path="*" element={<NotFoundPage />} />
           </Routes>
-          <ReactQueryDevtools initialIsOpen={false} />
+          {/* Dev-only: this must never reach the production bundle, so it is
+              guarded by the compile-time flag rather than a runtime check. */}
+          {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </BrowserRouter>
       </QueryClientProvider>
     </ErrorBoundary>
