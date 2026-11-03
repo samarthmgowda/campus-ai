@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.service;
 
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientException;
@@ -16,11 +17,31 @@ public class EmbeddingService {
 
     public EmbeddingService(
             @Value("${ollama.base-url}") String baseUrl,
-            @Value("${ollama.embedding-model}") String model
+            @Value("${ollama.embedding-model}") String model,
+            @Value("${ollama.embed-timeout-ms:30000}") int embedTimeoutMs
     ) {
         this.baseUrl = baseUrl;
-        this.restClient = RestClient.create(baseUrl);
         this.model = model;
+
+        // A read timeout is not optional here. RestClient.create(baseUrl) — which this
+        // used to call — has no timeout at all, so a hung or wedged Ollama leaves the
+        // calling thread blocked indefinitely. Embedding runs inside retrieval, so
+        // that is not one slow request: under load it is thread starvation, since every
+        // in-flight query parks a request thread on a socket that will never answer.
+        // Chat has always had a 120s cap; embedding had none.
+        //
+        // 30s is deliberate, and shorter than chat's 120s: an embed is a single forward
+        // pass over a short chunk, whereas chat generates num_predict tokens on CPU and
+        // legitimately needs minutes. Anything an embed has not answered in 30s is hung,
+        // not slow.
+        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5_000);
+        factory.setReadTimeout(embedTimeoutMs);
+
+        this.restClient = RestClient.builder()
+                .baseUrl(baseUrl)
+                .requestFactory(factory)
+                .build();
     }
 
     public float[] embed(String text) {

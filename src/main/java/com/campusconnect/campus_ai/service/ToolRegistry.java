@@ -1,5 +1,7 @@
 package com.campusconnect.campus_ai.service;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -12,6 +14,8 @@ import java.util.stream.Collectors;
  */
 @Component
 public class ToolRegistry {
+
+    private static final Logger log = LoggerFactory.getLogger(ToolRegistry.class);
 
     private final List<Tool> tools = new ArrayList<>();
     private final Map<String, Tool> toolsByName = new LinkedHashMap<>();
@@ -135,9 +139,13 @@ public class ToolRegistry {
                 }
                 // If tool fails but isn't a clarification, continue to next tool
             } catch (Exception e) {
-                // Log and continue to next tool
-                // In production, use a proper logger
-                System.err.println("Tool " + tool.name() + " failed: " + e.getMessage());
+                // A tool throwing must not silently disappear. System.err was a placeholder;
+                // log via SLF4J and return an error ToolResult so the failure surfaces to
+                // the user instead of looking like "no tool matched".
+                log.warn("Tool '{}' failed: {}", tool.name(), e.getMessage(), e);
+                return Optional.of(ToolResult.error(
+                        "Tool " + tool.name() + " failed",
+                        e.getClass().getSimpleName() + ": " + e.getMessage()));
             }
         }
         return Optional.empty();

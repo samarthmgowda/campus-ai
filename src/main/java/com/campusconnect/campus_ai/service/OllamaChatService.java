@@ -46,8 +46,13 @@ public class OllamaChatService {
             @Value("${ollama.top-p:0.9}") double topP,
             @Value("${ollama.repeat-penalty:1.1}") double repeatPenalty
     ) {
-        // 120s timeout for local CPU generation
+        // 120s timeout for local CPU generation.
+        //
+        // The connect timeout is a separate failure from a slow generation: a wedged
+        // Ollama that accepts no connection would otherwise block on the TCP handshake,
+        // which no read timeout covers. Retries belong to the caller, not here.
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
+        factory.setConnectTimeout(5_000);
         factory.setReadTimeout(120_000);
 
         this.restClient = RestClient.builder()
