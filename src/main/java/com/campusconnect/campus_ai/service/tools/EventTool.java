@@ -90,8 +90,8 @@ public class EventTool implements Tool {
                         .append(") on ").append(e.getEventDate())
                         .append(" at ").append(e.getLocation()).append("\n");
             }
-            sb.append("\nRSVP: POST /events/{id}/join with X-Demo-User");
-            return ToolResult.success(sb.toString(), Map.of());
+            sb.append("\nRSVP: POST /events/{id}/join when signed in");
+            return ToolResult.successWithCards(sb.toString(), Map.of(), eventCards(upcoming));
         }
 
         if ("join".equals(action)) {
@@ -123,7 +123,7 @@ public class EventTool implements Tool {
                         .append(") on ").append(e.eventDate())
                         .append(" at ").append(e.location()).append("\n");
             }
-            return ToolResult.success(sb.toString(), Map.of());
+            return ToolResult.successWithCards(sb.toString(), Map.of(), rsvpCards(myEvents));
         }
 
         if ("create".equals(action)) {
@@ -164,6 +164,39 @@ public class EventTool implements Tool {
     }
 
     private static final Set<String> ALLOWED_TYPES = Set.of("HACKATHON", "WORKSHOP", "SEMINAR", "NETWORKING", "PLACEMENT");
+
+    /** Clickable cards for a list of Event entities (upcoming). */
+    private static List<ToolResult.EntityCard> eventCards(List<Event> events) {
+        List<ToolResult.EntityCard> cards = new ArrayList<>();
+        for (var e : events) {
+            cards.add(new ToolResult.EntityCard(
+                    "event",
+                    e.getId(),
+                    e.getTitle() == null ? "Event" : e.getTitle(),
+                    (e.getType() == null ? "" : e.getType())
+                            + (e.getEventDate() == null ? "" : " · " + e.getEventDate()),
+                    e.getLocation() == null ? "Tap to view" : e.getLocation(),
+                    "/events/" + e.getId()));
+        }
+        return cards;
+    }
+
+    /** Clickable cards for a list of RSVP EventDto rows. */
+    private static List<ToolResult.EntityCard> rsvpCards(
+            List<com.campusconnect.campus_ai.service.EventAttendanceService.EventDto> events) {
+        List<ToolResult.EntityCard> cards = new ArrayList<>();
+        for (var e : events) {
+            cards.add(new ToolResult.EntityCard(
+                    "event",
+                    e.eventId(),
+                    e.title() == null ? "Event" : e.title(),
+                    (e.type() == null ? "" : e.type())
+                            + (e.eventDate() == null ? "" : " · " + e.eventDate()),
+                    e.location() == null ? "Tap to view" : e.location(),
+                    "/events/" + e.eventId()));
+        }
+        return cards;
+    }
 
     private String extractEventTitle(String intent) {
         // "create event Hackathon 2026 workshop on 2026-11-15" -> "Hackathon 2026"

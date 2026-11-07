@@ -63,7 +63,7 @@ public class AgentOrchestrator {
 
     public AgentResponse processIntent(String intent, Long userId) {
         if (intent == null || intent.isBlank()) {
-            return AgentResponse.clarification("Could you rephrase your request?");
+            return new AgentResponse("clarification", "Could you rephrase your request?", null, null, null);
         }
         String q = intent.trim().toLowerCase(Locale.ROOT);
 
@@ -98,7 +98,7 @@ public class AgentOrchestrator {
 
         // 0. Profile completeness check (Priority)
         if (q.contains("complete") && q.contains("profile")) {
-            if (userId == null) return AgentResponse.error("User not identified", "Please ensure you are logged in.");
+            if (userId == null) return new AgentResponse("error", "User not identified", Map.of("detail", "Please ensure you are logged in."), null, null);
             currentUserService.requireUser(userId);
             var student = studentRepository.findById(userId).orElseThrow();
 
@@ -113,7 +113,7 @@ public class AgentOrchestrator {
             return new AgentResponse("success",
                 String.format("Your profile is %.0f%% complete. You have provided %d of %d basic details.", percent, score, total),
                 Map.of("completeness", percent, "score", score, "total", total),
-                null);
+                null, null);
         }
 
         // 0.5. Follow-up resolution — if the question is a pronoun or very short
@@ -149,7 +149,7 @@ public class AgentOrchestrator {
                         text = maybePrependContext(text, contextRefs);
                     }
                 }
-                return AgentResponse.success(text, data);
+                return AgentResponse.success(text, data, result.cards());
             } else if (result.isClarification()) {
                 return AgentResponse.clarification(result.text());
             } else {
@@ -455,42 +455,55 @@ public class AgentOrchestrator {
      * @param text      Human-readable reply (rendered to user)
      * @param data      Optional structured payload (tool result details, IDs, etc.)
      * @param suggestions Follow-up prompts the client can surface
+     * @param cards     Clickable entity cards (teammates, events, …) rendered under the answer
      */
     public record AgentResponse(
             String type,
             String text,
             Map<String, Object> data,
-            List<String> suggestions
+            List<String> suggestions,
+            List<ToolResult.EntityCard> cards
     ) {
         public static AgentResponse success(String text, Map<String, Object> data) {
-            return new AgentResponse("success", text, data, null);
+            return new AgentResponse("success", text, data, null, null);
+        }
+
+        public static AgentResponse success(String text, Map<String, Object> data,
+                                            List<ToolResult.EntityCard> cards) {
+            return new AgentResponse("success", text, data, null, cards);
         }
 
         /** Convenience: success with conversation context references attached to data. */
         public static AgentResponse successWithContext(String text, Map<String, Object> data, List<String> contextRefs) {
+            return successWithContext(text, data, contextRefs, null);
+        }
+
+        public static AgentResponse successWithContext(String text, Map<String, Object> data,
+                                                       List<String> contextRefs,
+                                                       List<ToolResult.EntityCard> cards) {
             Map<String, Object> enriched = new LinkedHashMap<>(data != null ? data : Map.of());
             if (contextRefs != null && !contextRefs.isEmpty()) {
                 enriched.put("contextReferences", contextRefs);
             }
-            return new AgentResponse("success", text, enriched, null);
+            return new AgentResponse("success", text, enriched, null, cards);
         }
 
         public static AgentResponse info(String text, Map<String, Object> data) {
-            return new AgentResponse("info", text, data, null);
+            return new AgentResponse("info", text, data, null, null);
         }
 
         public static AgentResponse error(String text, String detail) {
-            return new AgentResponse("error", text, Map.of("detail", detail), null);
+            return new AgentResponse("error", text, Map.of("detail", detail), null, null);
         }
 
         public static AgentResponse clarification(String text) {
             return new AgentResponse("clarification", text, Map.of(),
                     List.of("Show my projects", "Find teammates", "List upcoming events",
-                            "What documents are available?"));
+                            "What documents are available?"), null);
         }
 
         public static AgentResponse confirmation(String text, Map<String, Object> data) {
-            return new AgentResponse("confirmation", text, data, null);
+            return new AgentResponse("confirmation", text, data, null, null);
         }
     }
 }

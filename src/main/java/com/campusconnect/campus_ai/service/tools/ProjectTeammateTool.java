@@ -162,9 +162,10 @@ public class ProjectTeammateTool implements Tool {
             sb.append("\nWant me to create a project for this event so you can send requests? ")
               .append("Say \"create project <name> for the ")
               .append(shortLabel(domain)).append(" hackathon\".");
-            return ToolResult.success(sb.toString(),
+            return ToolResult.successWithCards(sb.toString(),
                     Map.of("eventId", event.getId(), "domain", domain.label(), "standalone", true,
-                            "candidates", candidateData(plan.candidates())));
+                            "candidates", candidateData(plan.candidates())),
+                    candidateCards(plan.candidates()));
         }
 
         var pm = plan.matchedProject();
@@ -181,10 +182,11 @@ public class ProjectTeammateTool implements Tool {
         sb.append("Teammates who fit (similar stack + interests, profile-rated):\n");
         appendCandidates(sb, plan.candidates());
         sb.append("\nReply \"request teammate <name> for ").append(pm.name()).append("\" to send a request.");
-        return ToolResult.success(sb.toString(),
+        return ToolResult.successWithCards(sb.toString(),
                 Map.of("eventId", event.getId(), "projectId", pm.projectId(),
                         "domain", domain.label(), "standalone", false,
-                        "candidates", candidateData(plan.candidates())));
+                        "candidates", candidateData(plan.candidates())),
+                candidateCards(plan.candidates()));
     }
 
     // ——— project search (weighted) ———
@@ -199,6 +201,7 @@ public class ProjectTeammateTool implements Tool {
 
         StringBuilder sb = new StringBuilder();
         boolean anyShown = false;
+        List<TeammateMatchingService.ScoredCandidate> carded = new ArrayList<>();
         for (var ps : myProjects) {
             var gaps = projectToolService.getSkillGaps(ps.id());
             if (gaps.isEmpty()) continue;
@@ -230,6 +233,7 @@ public class ProjectTeammateTool implements Tool {
                 sb.append("  - ").append(c.name()).append(" (").append(c.branch())
                   .append(", Y").append(c.year()).append(") score ").append(c.score())
                   .append(" — ").append(EventTeammateService.why(c)).append("\n");
+                carded.add(c);
             }
         }
         if (!anyShown) {
@@ -238,7 +242,7 @@ public class ProjectTeammateTool implements Tool {
                     Map.of("count", 0));
         }
         sb.append("\nReply \"request teammate <name> for <project name>\" to send a request.");
-        return ToolResult.success(sb.toString(), Map.of());
+        return ToolResult.successWithCards(sb.toString(), Map.of(), candidateCards(carded));
     }
 
     // ——— formatting helpers ———
@@ -269,6 +273,30 @@ public class ProjectTeammateTool implements Tool {
             if (++shown >= 3) break;
         }
         return out;
+    }
+
+    /**
+     * Clickable profile cards for the recommended candidates: one card per
+     * teammate (name + branch/year), deep-linking to the public profile page.
+     * Same top-3 window as the text reply, so the cards mirror the prose.
+     */
+    private static List<ToolResult.EntityCard> candidateCards(
+            List<TeammateMatchingService.ScoredCandidate> candidates) {
+        List<ToolResult.EntityCard> cards = new ArrayList<>();
+        int shown = 0;
+        for (var c : candidates) {
+            String subtitle = (c.branch() == null ? "" : c.branch())
+                    + (c.year() == null ? "" : (c.branch() == null ? "" : " · ") + "Year " + c.year());
+            cards.add(new ToolResult.EntityCard(
+                    "student",
+                    c.studentId(),
+                    c.name() == null ? "Student" : c.name(),
+                    subtitle.isBlank() ? "Teammate match" : subtitle,
+                    EventTeammateService.why(c),
+                    "/profiles/" + c.studentId()));
+            if (++shown >= 3) break;
+        }
+        return cards;
     }
 
     private static String shortLabel(EventDomainService.Domain domain) {

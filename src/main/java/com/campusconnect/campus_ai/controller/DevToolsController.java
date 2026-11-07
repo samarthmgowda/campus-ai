@@ -3,7 +3,7 @@ package com.campusconnect.campus_ai.controller;
 import com.campusconnect.campus_ai.service.ProjectToolService;
 import com.campusconnect.campus_ai.service.TeammateMatchingService;
 import com.campusconnect.campus_ai.service.ToolRegistry;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -29,11 +29,10 @@ public class DevToolsController {
 
     @GetMapping("/teammates")
     public ProjectToolService.TeammateSuggestions teammates(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam Long projectId) {
         Long userId;
         try {
-            userId = DemoIdentity.parseId(header);
+            userId = AuthContext.idOrNull();
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }
@@ -49,13 +48,12 @@ public class DevToolsController {
      */
     @GetMapping("/teammates-weighted")
     public TeammateMatchingService.WeightedSuggestions teammatesWeighted(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam Long projectId,
             @RequestParam(defaultValue = "true") boolean availableOnly,
             @RequestParam(defaultValue = "false") boolean semantic) {
         Long userId;
         try {
-            userId = DemoIdentity.parseId(header);
+            userId = AuthContext.idOrNull();
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }

@@ -4,7 +4,6 @@ import com.campusconnect.campus_ai.entity.ModerationReport;
 import com.campusconnect.campus_ai.entity.Student;
 import com.campusconnect.campus_ai.repository.*;
 import com.campusconnect.campus_ai.entity.PostComment;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -28,8 +27,6 @@ public class ModerationService {
     private final EventRepository eventRepository;
     private final PostCommentRepository commentRepository;
     private final DocumentRepository documentRepository;
-    @Value("${campus.admin-ids:}")
-    private String adminIds;
 
     public ModerationService(ModerationReportRepository reportRepository,
                              StudentRepository studentRepository,
@@ -83,7 +80,7 @@ public class ModerationService {
     }
 
     public ReportDto resolve(Long reportId, Long actorId, String action, String resolution) {
-        if (actorId != null) requireAdmin(actorId);
+        if (actorId != null) requireAdmin();
         ModerationReport rep = reportRepository.findById(reportId)
                 .orElseThrow(() -> new IllegalArgumentException("Report not found: " + reportId));
         if (!"OPEN".equals(rep.getStatus())) throw new IllegalArgumentException("Report already " + rep.getStatus().toLowerCase());
@@ -97,13 +94,10 @@ public class ModerationService {
         return toDto(rep);
     }
 
-    private void requireAdmin(Long actorId) {
-        if (actorId == null) throw new IllegalArgumentException("X-Demo-User header required");
-        // validate user exists
-        studentRepository.findById(actorId).orElseThrow(() -> new IllegalArgumentException("Unknown demo user"));
-        if (adminIds == null || adminIds.isBlank()) throw new IllegalArgumentException("No admins configured");
-        var allowed = java.util.Arrays.stream(adminIds.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toSet());
-        if (!allowed.contains(String.valueOf(actorId))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin required — user " + actorId + " is not in campus.admin-ids");
+    private void requireAdmin() {
+        if (!AuthContext.isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+        }
     }
 
     private void applySideEffect(ModerationReport rep) {

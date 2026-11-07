@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ReferralService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +16,11 @@ public class ReferralController {
         this.referralService = referralService;
     }
 
-    /** POST /referrals/request {alumniId, message, company, role} with X-Demo-User */
+ /** POST /referrals/request {alumniId, message, company, role} */
     @PostMapping("/referrals/request")
     public ReferralService.ReferralDto request(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long studentId = requireHeader(header);
+        Long studentId = AuthContext.id();
         Long alumniId = body != null ? toLong(body.get("alumniId")) : null;
         if (alumniId == null) alumniId = body != null ? toLong(body.get("id")) : null;
         String message = body != null && body.get("message") instanceof String s ? s : null;
@@ -30,27 +29,24 @@ public class ReferralController {
         return referralService.request(studentId, alumniId, message, company, role);
     }
 
-    /** POST /referrals/{id}/respond {action: ACCEPT|REJECT} with X-Demo-User (student owner) */
+ /** POST /referrals/{id}/respond {action: ACCEPT|REJECT} (student owner) */
     @PostMapping("/referrals/{id}/respond")
     public ReferralService.ReferralDto respond(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long studentId = requireHeader(header);
+        Long studentId = AuthContext.id();
         String action = body != null && body.get("action") instanceof String a ? a : (body != null && body.get("status") instanceof String s ? s : "ACCEPT");
         return referralService.respond(id, studentId, action);
     }
 
-    /** POST /referrals/{id}/withdraw with X-Demo-User (pending only) */
+    /** POST /referrals/{id}/withdraw (pending only) */
     @PostMapping("/referrals/{id}/withdraw")
-    public Map<String, Object> withdraw(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long studentId = requireHeader(header);
+    public Map<String, Object> withdraw(@PathVariable Long id) {
+        Long studentId = AuthContext.id();
         return referralService.withdraw(id, studentId);
     }
 
-    /** POST /referrals/{id}/alumni-respond {alumniId, action} — alumni-side demo without X-Demo-User */
+ /** POST /referrals/{id}/alumni-respond {alumniId, action} — alumni-side demo without a signed-in user */
     @PostMapping("/referrals/{id}/alumni-respond")
     public ReferralService.ReferralDto alumniRespond(
             @PathVariable Long id,
@@ -61,12 +57,11 @@ public class ReferralController {
         return referralService.alumniRespond(id, alumniId, action);
     }
 
-    /** GET /referrals/my?status=PENDING with X-Demo-User */
+ /** GET /referrals/my?status=PENDING */
     @GetMapping("/referrals/my")
     public List<ReferralService.ReferralDto> myRequests(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(required = false) String status) {
-        Long studentId = requireHeader(header);
+        Long studentId = AuthContext.id();
         return referralService.getMyRequests(studentId, status);
     }
 
@@ -76,11 +71,6 @@ public class ReferralController {
             @PathVariable Long alumniId,
             @RequestParam(required = false) String status) {
         return referralService.getForAlumni(alumniId, status);
-    }
-
-    private Long requireHeader(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
     }
 
     private Long toLong(Object v) {

@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.RecruiterPostingService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,12 +17,11 @@ public class RecruiterPostingController {
         this.postingService = postingService;
     }
 
-    /** POST /recruiter/postings {title, description, requiredSkills} with X-Demo-User as recruiterId */
+ /** POST /recruiter/postings {title, description, requiredSkills} as recruiterId */
     @PostMapping
     public RecruiterPostingService.PostingDto create(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long recruiterId = requireHeader(header, body);
+        Long recruiterId = AuthContext.id();
         String title = body != null && body.get("title") instanceof String s ? s : null;
         String description = body != null && body.get("description") instanceof String s ? s : (body != null && body.get("desc") instanceof String d ? d : null);
         String requiredSkills = body != null && body.get("requiredSkills") instanceof String s ? s : (body != null && body.get("skills") instanceof String k ? k : null);
@@ -43,22 +42,19 @@ public class RecruiterPostingController {
         return postingService.getPosting(id);
     }
 
-    /** POST /recruiter/postings/{id}/close with X-Demo-User (owner) */
+    /** POST /recruiter/postings/{id}/close (owner) */
     @PostMapping("/{id}/close")
-    public RecruiterPostingService.PostingDto close(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long recruiterId = requireHeader(header, null);
+    public RecruiterPostingService.PostingDto close(@PathVariable Long id) {
+        Long recruiterId = AuthContext.id();
         return postingService.closePosting(recruiterId, id);
     }
 
-    /** POST /recruiter/postings/{id}/apply with X-Demo-User as studentId */
+ /** POST /recruiter/postings/{id}/apply as studentId */
     @PostMapping("/{id}/apply")
     public RecruiterPostingService.ApplicationDto apply(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long studentId = requireHeader(header, body);
+        Long studentId = AuthContext.id();
         return postingService.apply(studentId, id);
     }
 
@@ -67,9 +63,8 @@ public class RecruiterPostingController {
     public RecruiterPostingService.ApplicationDto decide(
             @PathVariable Long id,
             @PathVariable Long appId,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long recruiterId = requireHeader(header, body);
+        Long recruiterId = AuthContext.id();
         String action = body != null && body.get("action") instanceof String a ? a : null;
         if (action == null && body != null && body.get("status") instanceof String s) action = s;
         return postingService.decide(recruiterId, id, appId, action);
@@ -79,23 +74,9 @@ public class RecruiterPostingController {
     @GetMapping("/{id}/applications")
     public List<RecruiterPostingService.ApplicationDto> applications(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(required = false) String status) {
-        Long recruiterId = requireHeader(header, null);
+        Long recruiterId = AuthContext.id();
         return postingService.getApplicationsForPosting(recruiterId, id, status);
     }
 
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("recruiterId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-            Object v2 = body.get("studentId");
-            if (v2 instanceof Number n) return n.longValue();
-            if (v2 instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

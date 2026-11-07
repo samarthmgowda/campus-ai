@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ChatOrchestrator;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,9 +19,8 @@ public class ChatController {
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> chat(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long userId = requireHeader(header);
+        Long userId = AuthContext.id();
         String question = body != null && body.get("question") instanceof String s ? s : null;
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("question field required");
@@ -37,7 +36,4 @@ public class ChatController {
         ));
     }
 
-    private Long requireHeader(String header) {
-        return DemoIdentity.requireId(header);
-    }
 }

@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.SkillEndorsementService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +16,11 @@ public class SkillEndorsementController {
         this.endorsementService = endorsementService;
     }
 
-    /** POST /endorsements {endorseeId, skill} with X-Demo-User (endorser) */
+ /** POST /endorsements {endorseeId, skill} (endorser) */
     @PostMapping("/endorsements")
     public SkillEndorsementService.EndorsementDto endorse(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long endorserId = requireHeader(header, body);
+        Long endorserId = AuthContext.id();
         Long endorseeId = body != null ? toLong(body.get("endorseeId")) : null;
         if (endorseeId == null) endorseeId = body != null ? toLong(body.get("studentId")) : null;
         if (endorseeId == null) throw new IllegalArgumentException("endorseeId required");
@@ -29,12 +28,11 @@ public class SkillEndorsementController {
         return endorsementService.endorse(endorserId, endorseeId, skill);
     }
 
-    /** POST /endorsements/withdraw {endorseeId, skill} with X-Demo-User (endorser) */
+ /** POST /endorsements/withdraw {endorseeId, skill} (endorser) */
     @PostMapping("/endorsements/withdraw")
     public Map<String, Object> withdraw(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long endorserId = requireHeader(header, body);
+        Long endorserId = AuthContext.id();
         Long endorseeId = body != null ? toLong(body.get("endorseeId")) : null;
         if (endorseeId == null) endorseeId = body != null ? toLong(body.get("studentId")) : null;
         if (endorseeId == null) throw new IllegalArgumentException("endorseeId required");
@@ -56,22 +54,11 @@ public class SkillEndorsementController {
         return endorsementService.getSummary(endorseeId);
     }
 
-    /** GET /endorsements/given/my with X-Demo-User — endorsements I gave */
+ /** GET /endorsements/given/my — endorsements I gave */
     @GetMapping("/endorsements/given/my")
-    public List<SkillEndorsementService.EndorsementDto> given(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long endorserId = requireHeader(header, null);
+    public List<SkillEndorsementService.EndorsementDto> given() {
+        Long endorserId = AuthContext.id();
         return endorsementService.getByEndorser(endorserId);
-    }
-
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("endorserId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
     }
 
     private Long toLong(Object v) {

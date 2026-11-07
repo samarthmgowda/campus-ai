@@ -2,12 +2,11 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.DocumentService;
 import com.campusconnect.campus_ai.service.TeammateEvalService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 /**
  * Admin-gated three-way teammate evaluation (research track, Task #40).
- * Mirrors RagEvalController gating: X-Demo-User must be in campus.admin-ids.
+ * Mirrors RagEvalController gating: the JWT principal must hold ROLE_ADMIN.
  */
 @RestController
 @RequestMapping("/eval/teammates")
@@ -29,16 +28,10 @@ public class TeammateEvalController {
      */
     @PostMapping("/run")
     public TeammateEvalService.TeammateEvalSummary run(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(defaultValue = "true") boolean availableOnly,
             @RequestParam(defaultValue = "false") boolean includeSemantic) {
-        documentService.requireAdmin(requireHeader(header));
+        documentService.requireAdmin();
         return evalService.run(availableOnly, includeSemantic);
     }
 
-    private Long requireHeader(String header) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

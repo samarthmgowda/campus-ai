@@ -1,7 +1,9 @@
 package com.campusconnect.campus_ai.controller;
 
+import com.campusconnect.campus_ai.entity.enums.UserRole;
+import com.campusconnect.campus_ai.service.AuthContext;
+import com.campusconnect.campus_ai.service.CurrentUser;
 import com.campusconnect.campus_ai.service.DashboardService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
@@ -10,7 +12,10 @@ import java.util.Map;
 
 /**
  * Role-based dashboards (Phase 2 M5).
- * The composite X-Demo-User header ("role:id") determines which dashboard is returned.
+ *
+ * The acting role comes from the JWT principal (see {@link AuthContext}), not
+ * from a client-supplied header — a recruiter can no longer ask for the student
+ * dashboard by typing a different header value.
  */
 @RestController
 @RequestMapping("/dashboard")
@@ -28,13 +33,12 @@ public class DashboardController {
      * GET /dashboard/student
      */
     @GetMapping("/student")
-    public Map<String, Object> studentDashboard(
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        DemoIdentity identity = requireIdentity(header);
-        if (!identity.isStudent()) {
+    public Map<String, Object> studentDashboard() {
+        CurrentUser cu = AuthContext.require();
+        if (cu.role() != UserRole.STUDENT) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Student dashboard requires a student login");
         }
-        return dashboardService.getStudentDashboard(identity.id());
+        return dashboardService.getStudentDashboard(cu.actingId());
     }
 
     /**
@@ -42,22 +46,21 @@ public class DashboardController {
      * skill graph snapshot.
      * GET /dashboard/alumni?alumniId=1
      *
-     * alumniId falls back to the logged-in alumni when the header carries an
-     * alumni identity, so an alumni login works with no query param.
+     * An alumni login needs no query param: the principal supplies the id.
+     * A student may view another alumni's dashboard by passing alumniId; the
+     * student id then rides along as the acting context.
      */
     @GetMapping("/alumni")
-    public Map<String, Object> alumniDashboard(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
-            @RequestParam(required = false) Long alumniId) {
-        DemoIdentity identity = DemoIdentity.parse(header);
+    public Map<String, Object> alumniDashboard(@RequestParam(required = false) Long alumniId) {
+        CurrentUser cu = AuthContext.require();
         Long effectiveAlumniId = alumniId;
         Long adminAsUserId = null;
 
-        if (effectiveAlumniId == null && identity != null && identity.isAlumni()) {
-            effectiveAlumniId = identity.id();
+        if (effectiveAlumniId == null && cu.role() == UserRole.ALUMNI) {
+            effectiveAlumniId = cu.actingId();
         }
-        if (identity != null && identity.isStudent()) {
-            adminAsUserId = identity.id();
+        if (cu.role() == UserRole.STUDENT) {
+            adminAsUserId = cu.actingId();
         }
         if (effectiveAlumniId == null) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "alumniId required (or log in as an alumni)");
@@ -70,20 +73,11 @@ public class DashboardController {
      * GET /dashboard/recruiter
      */
     @GetMapping("/recruiter")
-    public Map<String, Object> recruiterDashboard(
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        DemoIdentity identity = requireIdentity(header);
-        if (!identity.isRecruiter()) {
+    public Map<String, Object> recruiterDashboard() {
+        CurrentUser cu = AuthContext.require();
+        if (cu.role() != UserRole.RECRUITER) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Recruiter dashboard requires a recruiter login");
         }
-        return dashboardService.getRecruiterDashboard(identity.id());
-    }
-
-    private DemoIdentity requireIdentity(String header) {
-        try {
-            return DemoIdentity.require(header);
-        } catch (IllegalArgumentException e) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, e.getMessage());
-        }
+        return dashboardService.getRecruiterDashboard(cu.actingId());
     }
 }

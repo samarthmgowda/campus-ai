@@ -122,10 +122,10 @@ public class LookupService {
             try {
                 var history = chatHistoryService.getHistory(userId, 5);
                 long total = chatHistoryService.count(userId);
-                if (history.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no chat history yet. Ask something via GET /ask?q=... with X-Demo-User.", List.of()));
+                if (history.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no chat history yet. Ask something via GET /ask?q=... when signed in.", List.of()));
                 StringBuilder sb = new StringBuilder("Your chat history (" + total + " turn(s), showing " + history.size() + "):");
                 for (var h : history) sb.append("\n- Q: ").append(h.question()).append(" -> ").append(h.answered() ? h.answer().substring(0, Math.min(80, h.answer().length())) : "(no answer)").append(h.answer() != null && h.answer().length() > 80 ? "..." : "");
-                sb.append("\nFull: GET /ask/history?limit=20 and GET /ask/history/count with X-Demo-User | DELETE /ask/history to clear");
+                sb.append("\nFull: GET /ask/history?limit=20 and GET /ask/history/count when signed in | DELETE /ask/history to clear");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -157,7 +157,7 @@ public class LookupService {
         if (userId != null && (q.contains("mentorship") || q.contains("mentor request") || q.contains("request mentor") || q.contains("my mentorship") || (q.contains("mentor") && q.contains("request")))) {
             try {
                 var mine = mentorshipService.getMyRequests(userId, "PENDING");
-                if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending mentorship requests. Request via POST /mentorship/request {alumniId, message} with X-Demo-User. List yours at GET /mentorship/my. Alumni view: GET /mentorship/alumni/{alumniId}", List.of()));
+                if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending mentorship requests. Request via POST /mentorship/request {alumniId, message} when signed in. List yours at GET /mentorship/my. Alumni view: GET /mentorship/alumni/{alumniId}", List.of()));
                 StringBuilder sb = new StringBuilder("Your pending mentorship requests (" + mine.size() + "):");
                 for (var mr : mine) sb.append("\n- alumni ").append(mr.alumniName()).append(" (").append(mr.alumniId()).append(")  -  ").append(mr.status()).append(" (request ").append(mr.id()).append(")");
                 sb.append("\nRespond: POST /mentorship/{id}/respond {action: ACCEPT|REJECT} or POST /mentorship/{id}/withdraw");
@@ -169,7 +169,7 @@ public class LookupService {
         if (userId != null && (q.contains("referral") || q.contains("refer me") || q.contains("my referral") || (q.contains("refer") && q.contains("request")))) {
             try {
                 var mine = referralService.getMyRequests(userId, "PENDING");
-                if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending referral requests. Request via POST /referrals/request {alumniId, message, company, role} with X-Demo-User. List yours at GET /referrals/my. Alumni view: GET /referrals/alumni/{alumniId}", List.of()));
+                if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending referral requests. Request via POST /referrals/request {alumniId, message, company, role} when signed in. List yours at GET /referrals/my. Alumni view: GET /referrals/alumni/{alumniId}", List.of()));
                 StringBuilder sb = new StringBuilder("Your pending referral requests (" + mine.size() + "):");
                 for (var rr : mine) sb.append("\n- alumni ").append(rr.alumniName()).append(" (").append(rr.alumniId()).append(")").append(rr.company() != null ? " @ " + rr.company() : "").append(rr.role() != null ? " — " + rr.role() : "").append(" (request ").append(rr.id()).append(")");
                 sb.append("\nRespond: POST /referrals/{id}/respond {action: ACCEPT|REJECT} or POST /referrals/{id}/withdraw");
@@ -183,13 +183,13 @@ public class LookupService {
                 if (userId != null) {
                     var mine = moderationService.myReports(userId);
                     long open = mine.stream().filter(r -> "OPEN".equals(r.status())).count();
-                    if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have not filed any reports. File one via POST /reports {targetType, targetId, reason} with X-Demo-User. View your reports at GET /reports/my.", List.of()));
+                    if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have not filed any reports. File one via POST /reports {targetType, targetId, reason} when signed in. View your reports at GET /reports/my.", List.of()));
                     StringBuilder sb = new StringBuilder("Your reports (" + mine.size() + ", open: " + open + "):");
                     for (var r : mine.stream().limit(5).toList()) sb.append("\n- ").append(r.targetType()).append(" ").append(r.targetId()).append("  -  ").append(r.reason()).append(" (").append(r.status()).append(")");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 }
                 var stats = moderationService.stats();
-                return Optional.of(new AskService.AskResponse(true, "Moderation queue  -  open: " + stats.get("open") + ", admin resolve: POST /reports/{id}/resolve with X-Demo-User (admin: "+stats.get("total") + ", resolved: " + stats.get("resolved") + ". Browse GET /reports?status=OPEN", List.of()));
+                return Optional.of(new AskService.AskResponse(true, "Moderation queue  -  open: " + stats.get("open") + ", admin resolve: POST /reports/{id}/resolve when signed in (admin: "+stats.get("total") + ", resolved: " + stats.get("resolved") + ". Browse GET /reports?status=OPEN", List.of()));
             } catch (Exception ignored) {}
         }
 
@@ -200,7 +200,7 @@ public class LookupService {
                 if (feed.isEmpty()) return Optional.of(new AskService.AskResponse(true, "Your activity feed is empty. Try posting, following someone, saving a bookmark, or RSVPing to an event.", List.of()));
                 StringBuilder sb = new StringBuilder("Your activity (" + feed.size() + "):");
                 for (var item : feed) sb.append("\n- [").append(item.get("type")).append("] ").append(item.get("title"));
-                sb.append("\nFull: GET /activity?limit=20&filter=ALL with X-Demo-User (filters: POSTS, INVITES, RSVPS, FOLLOWS, BOOKMARKS, ENDORSEMENTS, NOTIFICATIONS)");
+                sb.append("\nFull: GET /activity?limit=20&filter=ALL when signed in (filters: POSTS, INVITES, RSVPS, FOLLOWS, BOOKMARKS, ENDORSEMENTS, NOTIFICATIONS)");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -219,7 +219,7 @@ public class LookupService {
                 if (conn != null) sb.append("\nConnections: following ").append(conn.get("followingCount")).append(", followers ").append(conn.get("followerCount"));
                 if (rep != null) sb.append("\nReputation: ").append(rep.get("reviewCount")).append(" review(s)").append(rep.get("averageRating") != null ? " avg " + rep.get("averageRating") + "/5" : "");
                 if (proj != null) sb.append("\nProjects: ").append(proj.get("count"));
-                sb.append("\nFull: GET /me with X-Demo-User or GET /profile/" + userId);
+                sb.append("\nFull: GET /me when signed in or GET /profile/" + userId);
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -233,7 +233,7 @@ public class LookupService {
                 var missing = (java.util.List<?>) comp.get("missingFields");
                 if (missing != null && !missing.isEmpty()) sb.append("\nMissing: ").append(String.join(", ", missing.stream().map(Object::toString).toList()));
                 else sb.append("\nYour profile looks complete!");
-                sb.append("\nFull: GET /me/completeness with X-Demo-User | GET /me to see your profile");
+                sb.append("\nFull: GET /me/completeness when signed in | GET /me to see your profile");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -246,7 +246,7 @@ public class LookupService {
                 for (Object o : recs) {
                     if (o instanceof java.util.Map<?,?> m) sb.append("\n- ").append(m.get("skill")).append(" [").append(m.get("category")).append("]  -  ").append(m.get("reason"));
                 }
-                sb.append("\nFull: GET /me/recommendations?limit=5 with X-Demo-User");
+                sb.append("\nFull: GET /me/recommendations?limit=5 when signed in");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -256,7 +256,7 @@ public class LookupService {
             try {
                 var my = projectToolService.getMyProjects(userId);
                 StringBuilder sb = new StringBuilder();
-                sb.append("Create a project: POST /projects with X-Demo-User header and {name, description, domain, requiredSkills}. Name 3-120 chars, unique. RequiredSkills are normalized (e.g. js -> JavaScript).");
+                sb.append("Create a project: POST /projects when signed in and {name, description, domain, requiredSkills}. Name 3-120 chars, unique. RequiredSkills are normalized (e.g. js -> JavaScript).");
                 sb.append(" You currently own/are in ").append(my.size()).append(" active project(s).");
                 sb.append(" Add a teammate: POST /projects/{id}/members {studentId} (only members can add, max 10, notifies the student).");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
@@ -267,14 +267,14 @@ public class LookupService {
         if (userId != null && (q.contains("bookmark") || q.contains("saved") || q.contains("save this") || (q.contains("my") && q.contains("saved")))) {
             try {
                 var list = bookmarkService.list(userId, null);
-                if (list.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no saved bookmarks yet. Save via POST /bookmarks {refType: POST|EVENT|PROJECT, refId} with X-Demo-User or toggle at POST /bookmarks/toggle.", List.of()));
+                if (list.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no saved bookmarks yet. Save via POST /bookmarks {refType: POST|EVENT|PROJECT, refId} when signed in or toggle at POST /bookmarks/toggle.", List.of()));
                 var byType = bookmarkService.saveSummary(userId).get("byType");
                 StringBuilder sb = new StringBuilder("Your saved bookmarks (" + list.size() + ")  -  " + byType);
                 for (int i = 0; i < Math.min(5, list.size()); i++) {
                     var b = list.get(i);
                     sb.append("\n- " + b.refType() + " " + b.refId());
                 }
-                if (list.size() > 5) sb.append("\n... and " + (list.size() - 5) + " more. GET /bookmarks with X-Demo-User");
+                if (list.size() > 5) sb.append("\n... and " + (list.size() - 5) + " more. GET /bookmarks when signed in");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -293,7 +293,7 @@ public class LookupService {
                 var bySkill = (java.util.Map<?,?>) summary.get("bySkill");
                 long total = ((Number) summary.get("totalEndorsements")).longValue();
                 String who = targetId.equals(userId) ? "You have" : (targetName != null ? targetName + " has" : "They have");
-                if (total == 0) return Optional.of(new AskService.AskResponse(true, who + " no endorsements yet. Endorse via POST /endorsements {endorseeId, skill} with X-Demo-User.", List.of()));
+                if (total == 0) return Optional.of(new AskService.AskResponse(true, who + " no endorsements yet. Endorse via POST /endorsements {endorseeId, skill} when signed in.", List.of()));
                 StringBuilder sb = new StringBuilder(who + " " + total + " endorsement(s): ");
                 sb.append(bySkill.entrySet().stream().map(e -> e.getKey() + " (" + e.getValue() + ")").collect(java.util.stream.Collectors.joining(", ")));
                 sb.append(". Details: GET /endorsements/" + targetId + " and /endorsements/" + targetId + "/summary");
@@ -305,7 +305,7 @@ public class LookupService {
         if (userId != null && (q.contains("invite") || q.contains("join my project") || q.contains("project invite") || q.contains("pending invite"))) {
             try {
                 var invites = projectInviteService.getMyInvites(userId, "PENDING");
-                if (invites.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending project invites. To invite someone: POST /projects/{id}/invite {inviteeId} with X-Demo-User. To accept: POST /project-invites/{id}/respond {action: ACCEPT} with X-Demo-User.", List.of()));
+                if (invites.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no pending project invites. To invite someone: POST /projects/{id}/invite {inviteeId} when signed in. To accept: POST /project-invites/{id}/respond {action: ACCEPT} when signed in.", List.of()));
                 StringBuilder sb = new StringBuilder("Your pending project invites (" + invites.size() + "):");
                 for (var inv : invites) sb.append("\n- ").append(inv.projectName()).append(" from ").append(inv.inviterName()).append(" (invite ").append(inv.id()).append(")");
                 sb.append("\nAccept with POST /project-invites/{id}/respond {action: ACCEPT} or REJECT");
@@ -516,7 +516,7 @@ public class LookupService {
         if (userId != null && (q.contains("create event") || q.contains("new event") || (q.contains("create") && q.contains("event")))) {
             try {
                 StringBuilder sb = new StringBuilder();
-                sb.append("Create an event: POST /events with X-Demo-User header and {title, type, eventDate (YYYY-MM-DD), description, location}. Type: HACKATHON|WORKSHOP|SEMINAR|NETWORKING|PLACEMENT. Title 3-120 chars.");
+                sb.append("Create an event: POST /events when signed in and {title, type, eventDate (YYYY-MM-DD), description, location}. Type: HACKATHON|WORKSHOP|SEMINAR|NETWORKING|PLACEMENT. Title 3-120 chars.");
                 sb.append(" Browse: GET /events?upcoming=true or GET /events?type=HACKATHON. New events need admin approval before they appear publicly.");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
@@ -761,7 +761,7 @@ public class LookupService {
                     sb.append("\nRecent:");
                     for (var n : recent) sb.append("\n- [").append(n.type()).append("] ").append(n.title()).append(n.readFlag() ? " (read)" : " (unread)");
                 }
-                sb.append("\nOpen GET /notifications with X-Demo-User or GET /notifications?unreadOnly=true");
+                sb.append("\nOpen GET /notifications when signed in or GET /notifications?unreadOnly=true");
                 return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
             } catch (Exception ignored) {}
         }
@@ -789,10 +789,10 @@ public class LookupService {
             if (userId != null && (q.contains("my application") || q.contains("my shortlist") || q.contains("applied"))) {
                 try {
                     var apps = recruiterPostingService.getMyApplications(userId, null);
-                    if (apps.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no applications yet. Apply via POST /recruiter/postings/{id}/apply with X-Demo-User.", List.of()));
+                    if (apps.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no applications yet. Apply via POST /recruiter/postings/{id}/apply when signed in.", List.of()));
                     StringBuilder sb = new StringBuilder("Your applications (" + apps.size() + "):");
                     for (var a : apps) sb.append("\n- #").append(a.id()).append(" ").append(a.postingTitle()).append("  -  ").append(a.status()).append(" (posting ").append(a.postingId()).append(")");
-                    sb.append("\nManage: GET /recruiter/applications/my?status=APPLIED and POST /recruiter/applications/{id}/withdraw with X-Demo-User");
+                    sb.append("\nManage: GET /recruiter/applications/my?status=APPLIED and POST /recruiter/applications/{id}/withdraw when signed in");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 } catch (Exception ignored) {}
             }
@@ -807,7 +807,7 @@ public class LookupService {
                         var po = list.get(i);
                         sb.append("\n- #").append(po.id()).append(" ").append(po.title()).append("  -  ").append(po.company() != null ? po.company() : "?").append(po.requiredSkills() != null ? " [" + po.requiredSkills() + "]" : "").append(" (").append(po.applicantCount()).append(" applicants)");
                     }
-                    sb.append("\nDetail: GET /recruiter/postings/{id} | Apply: POST /recruiter/postings/{id}/apply with X-Demo-User | Create (recruiter): POST /recruiter/postings with X-Demo-User");
+                    sb.append("\nDetail: GET /recruiter/postings/{id} | Apply: POST /recruiter/postings/{id}/apply when signed in | Create (recruiter): POST /recruiter/postings when signed in");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 } catch (Exception ignored) {}
             }
@@ -818,10 +818,10 @@ public class LookupService {
             if (userId != null && (q.contains("my upload") || q.contains("my document"))) {
                 try {
                     var mine = documentService.getMyUploads(userId);
-                    if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no uploads yet. Upload via POST /documents/upload (multipart file .txt/.md, 5MB) with X-Demo-User.", List.of()));
+                    if (mine.isEmpty()) return Optional.of(new AskService.AskResponse(true, "You have no uploads yet. Upload via POST /documents/upload (multipart file .txt/.md, 5MB) when signed in.", List.of()));
                     StringBuilder sb = new StringBuilder("Your uploads (" + mine.size() + "):");
                     for (var d : mine) sb.append("\n- #").append(d.getId()).append(" ").append(d.getTitle()).append(d.isHidden() ? " [hidden]" : "").append("  -  ").append(d.getContent() != null ? d.getContent().length() + " chars" : "");
-                    sb.append("\nCurated: GET /documents (visible), GET /documents/admin/all (admin), POST /documents/admin/{id}/visibility with X-Demo-User (admin)");
+                    sb.append("\nCurated: GET /documents (visible), GET /documents/admin/all (admin), POST /documents/admin/{id}/visibility when signed in (admin)");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 } catch (Exception ignored) {}
             }
@@ -829,7 +829,7 @@ public class LookupService {
                 try {
                     var stats = documentService.stats();
                     StringBuilder sb = new StringBuilder("Documents  -  visible: " + stats.get("visible") + ", hidden: " + stats.get("hidden") + ", total: " + stats.get("total") + ", chunks: " + stats.get("totalChunks"));
-                    sb.append("\nVisible: GET /documents | All (admin): GET /documents/admin/all with X-Demo-User (campus.admin-ids=1) | Stats: GET /documents/stats/overview");
+                    sb.append("\nVisible: GET /documents | All (admin): GET /documents/admin/all when signed in | Stats: GET /documents/stats/overview");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 } catch (Exception ignored) {}
             }
@@ -844,7 +844,7 @@ public class LookupService {
                         String snippet = d.getContent() != null ? d.getContent().substring(0, Math.min(60, d.getContent().length())).replace("\n"," ") : "";
                         sb.append("\n- #").append(d.getId()).append(" ").append(d.getTitle()).append("  -  \"").append(snippet).append("...\"");
                     }
-                    sb.append("\nUpload: POST /documents/upload (multipart .txt/.md, 5MB) | My uploads: GET /documents/my/uploads with X-Demo-User | Hide (admin): POST /documents/admin/{id}/visibility");
+                    sb.append("\nUpload: POST /documents/upload (multipart .txt/.md, 5MB) | My uploads: GET /documents/my/uploads when signed in | Hide (admin): POST /documents/admin/{id}/visibility");
                     return Optional.of(new AskService.AskResponse(true, sb.toString(), List.of()));
                 } catch (Exception ignored) {}
             }

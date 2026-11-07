@@ -2,6 +2,7 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.AskService;
 import com.campusconnect.campus_ai.service.ChatHistoryService;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
@@ -9,15 +10,19 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
+/**
+ * The acting user for /ask comes from the JWT principal (set here with
+ * {@link TestAuth}), never a client header. Anonymous callers are allowed —
+ * they simply get no personalisation and no chat-history persistence.
+ */
 @WebMvcTest(AskController.class)
 class AskControllerTest {
 
@@ -30,18 +35,28 @@ class AskControllerTest {
     @MockitoBean
     private ChatHistoryService chatHistoryService;
 
+    // The JWT filter is auto-registered in the web slice; it needs a JwtService
+    // even though these tests set the principal directly via TestAuth.
+    @MockitoBean
+    private com.campusconnect.campus_ai.service.JwtService jwtService;
+
+    @AfterEach
+    void clearCaller() {
+        TestAuth.clear();
+    }
+
     /**
      * Happy path: AskService returns a normal answered response.
      */
     @Test
     void askReturnsAnsweredResponse() throws Exception {
+        TestAuth.asStudent(1L);
         AskService.AskResponse resp = new AskService.AskResponse(
-                true, "There are 2 to 4 students.", List.of());
+                true, "There are 2 to 4 students.", java.util.List.of());
         when(askService.ask(any(), anyLong())).thenReturn(resp);
 
         mockMvc.perform(get("/ask")
                         .param("q", "hackathon team size")
-                        .header("X-Demo-User", "1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answered").value(true))
@@ -61,12 +76,12 @@ class AskControllerTest {
      */
     @Test
     void askWhenOllamaDownReturnsGraceful200() throws Exception {
+        TestAuth.asStudent(1L);
         when(askService.ask(any(), anyLong()))
                 .thenThrow(new IllegalStateException("Could not reach Ollama"));
 
         mockMvc.perform(get("/ask")
                         .param("q", "tell me a joke")
-                        .header("X-Demo-User", "1")
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answered").value(false))
@@ -79,13 +94,13 @@ class AskControllerTest {
     }
 
     /**
-     * When no X-Demo-User header is present, userId is null and
-     * ChatHistoryService.save is never called.
+     * When the request is anonymous, userId is null and ChatHistoryService.save
+     * is never called.
      */
     @Test
-    void askWithoutUserHeaderDoesNotPersistHistory() throws Exception {
+    void askWithoutCallerDoesNotPersistHistory() throws Exception {
         AskService.AskResponse resp = new AskService.AskResponse(
-                false, "I don't have that information in the college documents.", List.of());
+                false, "I don't have that information in the college documents.", java.util.List.of());
         when(askService.ask(any(), isNull())).thenReturn(resp);
 
         mockMvc.perform(get("/ask")
@@ -93,61 +108,6 @@ class AskControllerTest {
                         .accept(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.answered").value(false));
-
-        verify(chatHistoryService, never()).save(anyLong(), any(), any(), anyBoolean());
-    }
-
-    /**
-     * Malformed X-Demo-User header should be treated as "no user" — not a crash.
-     */
-    @Test
-    void askWithMalformedUserHeaderTreatsAsAnonymous() throws Exception {
-        when(askService.ask(any(), isNull())).thenReturn(
-                new AskService.AskResponse(false, "abstain", List.of()));
-
-        mockMvc.perform(get("/ask")
-                        .param("q", "hello")
-                        .header("X-Demo-User", "not-a-number")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-
-        verify(chatHistoryService, never()).save(anyLong(), any(), any(), anyBoolean());
-    }
-
-    /**
-     * Composite "role:id" header (e.g. "student:1") resolves to the same user id
-     * as the bare number — chat history stays scoped to the acting user.
-     */
-    @Test
-    void askWithCompositeRoleHeaderResolvesUserId() throws Exception {
-        AskService.AskResponse resp = new AskService.AskResponse(
-                true, "Answers are grounded.", List.of());
-        when(askService.ask(any(), anyLong())).thenReturn(resp);
-
-        mockMvc.perform(get("/ask")
-                        .param("q", "hackathon team size")
-                        .header("X-Demo-User", "student:1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.answered").value(true));
-
-        verify(chatHistoryService).save(1L, "hackathon team size", "Answers are grounded.", true);
-    }
-
-    /**
-     * An unknown role in the header is not a valid identity — treated as anonymous
-     * rather than silently resolving against the wrong table.
-     */
-    @Test
-    void askWithUnknownRoleHeaderTreatsAsAnonymous() throws Exception {
-        when(askService.ask(any(), isNull())).thenReturn(
-                new AskService.AskResponse(false, "abstain", List.of()));
-
-        mockMvc.perform(get("/ask")
-                        .param("q", "hello")
-                        .header("X-Demo-User", "professor:1")
-                        .accept(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
 
         verify(chatHistoryService, never()).save(anyLong(), any(), any(), anyBoolean());
     }

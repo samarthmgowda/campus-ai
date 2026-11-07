@@ -2,8 +2,9 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.entity.Event;
 import com.campusconnect.campus_ai.service.EventService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
@@ -27,9 +28,8 @@ public class EventController {
 
     @PostMapping
     public Event create(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long userId = requireHeader(header);
+        Long userId = AuthContext.id();
         String title = body != null && body.get("title") instanceof String s ? s : null;
         String type = body != null && body.get("type") instanceof String s ? s : null;
         LocalDate eventDate = null;
@@ -43,11 +43,6 @@ public class EventController {
         return service.createEvent(userId, title, type, eventDate, description, location);
     }
 
-    private Long requireHeader(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
-    }
-
     // GET /events?type=HACKATHON&upcoming=true
     @GetMapping
     public List<Event> search(
@@ -55,5 +50,11 @@ public class EventController {
             @RequestParam(required = false) Boolean upcoming
     ) {
         return service.search(type, upcoming);
+    }
+
+    /** GET /events/{id} — a single event, for detail views and card deep links. */
+    @GetMapping("/{id}")
+    public Event getOne(@PathVariable Long id) {
+        return service.getEvent(id);
     }
 }

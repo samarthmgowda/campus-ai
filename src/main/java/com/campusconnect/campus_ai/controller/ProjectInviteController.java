@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ProjectInviteService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,13 +16,12 @@ public class ProjectInviteController {
         this.inviteService = inviteService;
     }
 
-    /** POST /projects/{projectId}/invite {inviteeId} with X-Demo-User (inviter) */
+ /** POST /projects/{projectId}/invite {inviteeId} (inviter) */
     @PostMapping("/projects/{projectId}/invite")
     public ProjectInviteService.InviteDto invite(
             @PathVariable Long projectId,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long inviterId = requireHeader(header, body);
+        Long inviterId = AuthContext.id();
         Long inviteeId = body != null ? toLong(body.get("inviteeId")) : null;
         if (inviteeId == null) inviteeId = body != null ? toLong(body.get("studentId")) : null;
         if (inviteeId == null) inviteeId = body != null ? toLong(body.get("peerId")) : null;
@@ -30,33 +29,30 @@ public class ProjectInviteController {
         return inviteService.invite(projectId, inviterId, inviteeId);
     }
 
-    /** POST /project-invites/{inviteId}/respond {action: ACCEPT|REJECT} with X-Demo-User (invitee) */
+ /** POST /project-invites/{inviteId}/respond {action: ACCEPT|REJECT} (invitee) */
     @PostMapping("/project-invites/{inviteId}/respond")
     public ProjectInviteService.InviteDto respond(
             @PathVariable Long inviteId,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long inviteeId = requireHeader(header, body);
+        Long inviteeId = AuthContext.id();
         String action = body != null && body.get("action") instanceof String s ? s : (body != null && body.get("status") instanceof String s2 ? s2 : "ACCEPT");
         return inviteService.respond(inviteId, inviteeId, action);
     }
 
-    /** POST /project-invites/{inviteId}/withdraw with X-Demo-User (inviter/owner) */
+ /** POST /project-invites/{inviteId}/withdraw (inviter/owner) */
     @PostMapping("/project-invites/{inviteId}/withdraw")
     public Map<String, Object> withdraw(
             @PathVariable Long inviteId,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long inviterId = requireHeader(header, body);
+        Long inviterId = AuthContext.id();
         return inviteService.withdraw(inviteId, inviterId);
     }
 
-    /** GET /project-invites/my?status=PENDING with X-Demo-User (invitee inbox) */
+ /** GET /project-invites/my?status=PENDING (invitee inbox) */
     @GetMapping("/project-invites/my")
     public List<ProjectInviteService.InviteDto> myInvites(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(required = false) String status) {
-        Long inviteeId = requireHeader(header, null);
+        Long inviteeId = AuthContext.id();
         return inviteService.getMyInvites(inviteeId, status);
     }
 
@@ -66,20 +62,6 @@ public class ProjectInviteController {
             @PathVariable Long projectId,
             @RequestParam(required = false) String status) {
         return inviteService.getProjectInvites(projectId, status);
-    }
-
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("inviterId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-            Object v2 = body.get("X-Demo-User");
-            if (v2 instanceof Number n) return n.longValue();
-            if (v2 instanceof String s2 && !s2.isBlank()) try { return Long.valueOf(s2.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
     }
 
     private Long toLong(Object v) {

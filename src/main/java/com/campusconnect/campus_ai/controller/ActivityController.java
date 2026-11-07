@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ActivityService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,18 +16,13 @@ public class ActivityController {
         this.activityService = activityService;
     }
 
-    /** GET /activity?limit=20&filter=ALL with X-Demo-User — unified timeline */
+ /** GET /activity?limit=20&filter=ALL — unified timeline */
     @GetMapping("/activity")
     public List<Map<String, Object>> feed(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(defaultValue = "20") int limit,
             @RequestParam(required = false) String filter) {
-        Long userId = requireHeader(header);
+        Long userId = AuthContext.id();
         return activityService.getFeed(userId, limit, filter);
     }
 
-    private Long requireHeader(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
-    }
 }

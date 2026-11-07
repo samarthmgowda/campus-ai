@@ -2,8 +2,8 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.AgentOrchestrator;
 import com.campusconnect.campus_ai.service.AgentOrchestrator.AgentResponse;
+import com.campusconnect.campus_ai.service.AuthContext;
 import com.campusconnect.campus_ai.service.ChatHistoryService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Map;
@@ -15,6 +15,10 @@ import java.util.Map;
  *
  * Delegates to AgentOrchestrator.processIntent() which classifies the intent,
  * executes controlled backend tools (no LLM-to-DB), and falls back to RAG.
+ *
+ * The endpoint is public: {@code userId} comes from an optional JWT, so an
+ * anonymous caller can still ask — it simply gets no personalised tools and no
+ * chat-history persistence.
  */
 @RestController
 @RequestMapping("/api/agent")
@@ -29,13 +33,8 @@ public class AgentController {
     }
 
     @PostMapping
-    public AgentResponse agent(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
-            @RequestBody Map<String, Object> body) {
-        Long userId = null;
-        if (header != null) {
-            userId = DemoIdentity.parseId(header);
-        }
+    public AgentResponse agent(@RequestBody Map<String, Object> body) {
+        Long userId = AuthContext.idOrNull();
 
         String intent = body != null && body.get("question") instanceof String s ? s : null;
         if (intent == null || intent.isBlank()) {
@@ -44,9 +43,10 @@ public class AgentController {
 
         AgentResponse resp = orchestrator.processIntent(intent, userId);
 
-        // Persist chat turn so it survives page refresh
+        // Persist chat turn so it survives page refresh — cards included, so the
+        // structured profile/event cards survive a reload and a history replay.
         boolean answered = "success".equals(resp.type()) || "info".equals(resp.type());
-        chatHistoryService.save(userId, intent, resp.text(), answered);
+        chatHistoryService.save(userId, intent, resp.text(), answered, resp.cards());
 
         return resp;
     }

@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.FollowService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,35 +16,33 @@ public class FollowController {
         this.followService = followService;
     }
 
-    /** POST /follow/{followingId} with X-Demo-User — follow someone */
+ /** POST /follow/{followingId} — follow someone */
     @PostMapping("/follow/{followingId}")
     public Map<String, Object> follow(@PathVariable Long followingId,
-                                      @RequestHeader(value = "X-Demo-User", required = false) String header,
                                       @RequestBody(required = false) Map<String, Object> body) {
-        Long followerId = requireHeader(header, body);
+        Long followerId = AuthContext.id();
         return followService.follow(followerId, followingId);
     }
 
-    /** POST /follow/{followingId}/unfollow with X-Demo-User */
+ /** POST /follow/{followingId}/unfollow */
     @PostMapping("/follow/{followingId}/unfollow")
     public Map<String, Object> unfollow(@PathVariable Long followingId,
-                                        @RequestHeader(value = "X-Demo-User", required = false) String header,
                                         @RequestBody(required = false) Map<String, Object> body) {
-        Long followerId = requireHeader(header, body);
+        Long followerId = AuthContext.id();
         return followService.unfollow(followerId, followingId);
     }
 
-    /** GET /follow/following — who I follow, with X-Demo-User */
+ /** GET /follow/following — who I follow, */
     @GetMapping("/follow/following")
-    public List<FollowService.PeerDto> following(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long followerId = requireHeader(header, null);
+    public List<FollowService.PeerDto> following() {
+        Long followerId = AuthContext.id();
         return followService.getFollowing(followerId);
     }
 
-    /** GET /follow/followers — my followers, with X-Demo-User */
+ /** GET /follow/followers — my followers, */
     @GetMapping("/follow/followers")
-    public List<FollowService.PeerDto> followers(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long followerId = requireHeader(header, null);
+    public List<FollowService.PeerDto> followers() {
+        Long followerId = AuthContext.id();
         return followService.getFollowers(followerId);
     }
 
@@ -60,10 +58,10 @@ public class FollowController {
         return followService.getFollowers(studentId);
     }
 
-    /** GET /follow/stats with X-Demo-User — follower + following counts */
+ /** GET /follow/stats — follower + following counts */
     @GetMapping("/follow/stats")
-    public Map<String, Object> stats(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long followerId = requireHeader(header, null);
+    public Map<String, Object> stats() {
+        Long followerId = AuthContext.id();
         return followService.getStats(followerId);
     }
 
@@ -73,23 +71,12 @@ public class FollowController {
         return followService.getStats(studentId);
     }
 
-    /** GET /follow/is-following/{followingId} with X-Demo-User */
+    /** GET /follow/is-following/{followingId} */
     @GetMapping("/follow/is-following/{followingId}")
-    public Map<String, Object> isFollowing(@PathVariable Long followingId,
-                                           @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long followerId = requireHeader(header, null);
+    public Map<String, Object> isFollowing(@PathVariable Long followingId) {
+        Long followerId = AuthContext.id();
         boolean v = followService.isFollowing(followerId, followingId);
         return Map.of("followerId", followerId, "followingId", followingId, "following", v);
     }
 
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("followerId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

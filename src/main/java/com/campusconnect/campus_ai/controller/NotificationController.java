@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.NotificationService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,41 +17,35 @@ public class NotificationController {
         this.notificationService = notificationService;
     }
 
-    /** GET /notifications with X-Demo-User, optional ?unreadOnly=true&limit=20 */
+ /** GET /notifications, optional ?unreadOnly=true&limit=20 */
     @GetMapping
     public List<NotificationService.NotificationDto> list(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(defaultValue = "false") boolean unreadOnly,
             @RequestParam(defaultValue = "20") int limit) {
-        Long userId = requireHeader(header);
+        Long userId = AuthContext.id();
         return notificationService.getForUser(userId, unreadOnly, Math.max(1, Math.min(limit, 100)));
     }
 
-    /** GET /notifications/unread-count with X-Demo-User */
+ /** GET /notifications/unread-count */
     @GetMapping("/unread-count")
-    public Map<String, Object> unreadCount(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long userId = requireHeader(header);
+    public Map<String, Object> unreadCount() {
+        Long userId = AuthContext.id();
         long c = notificationService.getUnreadCount(userId);
         return Map.of("userId", userId, "unreadCount", c);
     }
 
-    /** POST /notifications/{id}/read with X-Demo-User — mark one as read */
+    /** POST /notifications/{id}/read — mark one as read */
     @PostMapping("/{id}/read")
-    public Map<String, Object> markRead(@PathVariable Long id,
-                                        @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long userId = requireHeader(header);
+    public Map<String, Object> markRead(@PathVariable Long id) {
+        Long userId = AuthContext.id();
         return notificationService.markRead(id, userId);
     }
 
-    /** POST /notifications/read-all with X-Demo-User — mark all as read */
+    /** POST /notifications/read-all — mark all as read */
     @PostMapping("/read-all")
-    public Map<String, Object> markAllRead(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long userId = requireHeader(header);
+    public Map<String, Object> markAllRead() {
+        Long userId = AuthContext.id();
         return notificationService.markAllRead(userId);
     }
 
-    private Long requireHeader(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
-    }
 }

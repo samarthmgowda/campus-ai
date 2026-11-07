@@ -156,7 +156,7 @@ public class DocumentTool implements Tool {
             }
             try {
                 boolean hidden = "hide".equals(action);
-                var d = documentService.hideDocument(docId, userId, hidden);
+                var d = documentService.hideDocument(docId, hidden);
                 var dto = documentService.toDto(d);
                 return ToolResult.success("Document " + (hidden ? "hidden" : "unhidden") + ": " + dto.title(),
                         Map.of("docId", dto.id(), "hidden", dto.hidden()));

@@ -1,13 +1,12 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.AskService;
+import com.campusconnect.campus_ai.service.AuthContext;
 import com.campusconnect.campus_ai.service.ChatHistoryService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController
 @RequestMapping("/ask")
@@ -21,11 +20,15 @@ public class AskController {
         this.chatHistoryService = chatHistoryService;
     }
 
+    /**
+     * GET /ask?q= — public grounded-answer endpoint.
+     *
+     * The caller is resolved from an optional JWT: signed-in users get their
+     * chat history persisted, anonymous callers still get an answer.
+     */
     @GetMapping
-    public AskService.AskResponse ask(
-            @RequestParam String q,
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long userId = DemoIdentity.parseId(header);
+    public AskService.AskResponse ask(@RequestParam String q) {
+        Long userId = AuthContext.idOrNull();
         try {
             AskService.AskResponse resp = askService.ask(q, userId);
             if (userId != null) {

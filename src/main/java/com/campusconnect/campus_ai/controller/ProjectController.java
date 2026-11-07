@@ -6,7 +6,7 @@ import com.campusconnect.campus_ai.repository.ProjectMemberRepository;
 import com.campusconnect.campus_ai.repository.ProjectRepository;
 import com.campusconnect.campus_ai.service.CurrentUserService;
 import com.campusconnect.campus_ai.service.ProjectToolService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -38,10 +38,10 @@ public class ProjectController {
     }
 
     @GetMapping("/mine")
-    public List<Map<String, Object>> mine(@RequestHeader(value = "X-Demo-User", required = false) String header) {
+    public List<Map<String, Object>> mine() {
         Long userId;
         try {
-            userId = DemoIdentity.parseId(header);
+            userId = AuthContext.idOrNull();
         } catch (NumberFormatException e) {
             throw new IllegalArgumentException("Unknown demo user");
         }
@@ -84,9 +84,8 @@ public class ProjectController {
     }
 
     @PostMapping
-    public Map<String, Object> create(@RequestHeader(value = "X-Demo-User", required = false) String header,
-                                      @RequestBody Map<String, Object> body) {
-        Long userId = requireUser(header);
+    public Map<String, Object> create(                                      @RequestBody Map<String, Object> body) {
+        Long userId = AuthContext.id();
         String name = body != null && body.get("name") instanceof String s ? s : null;
         String description = body != null && body.get("description") instanceof String s ? s : null;
         String domain = body != null && body.get("domain") instanceof String s ? s : null;
@@ -96,20 +95,14 @@ public class ProjectController {
     }
 
     @PostMapping("/{projectId}/members")
-    public Map<String, Object> addMember(@RequestHeader(value = "X-Demo-User", required = false) String header,
-                                         @PathVariable Long projectId,
+    public Map<String, Object> addMember(                                         @PathVariable Long projectId,
                                          @RequestBody Map<String, Object> body) {
-        Long userId = requireUser(header);
+        Long userId = AuthContext.id();
         Long studentId = body != null ? toLong(body.get("studentId")) : null;
         if (studentId == null && body != null && body.get("memberId") != null) studentId = toLong(body.get("memberId"));
         if (studentId == null) throw new IllegalArgumentException("studentId required");
         var m = projectToolService.addMember(userId, projectId, studentId);
         return Map.of("studentId", m.studentId(), "name", m.name(), "role", m.role());
-    }
-
-    private Long requireUser(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
     }
 
     private Long toLong(Object v) {

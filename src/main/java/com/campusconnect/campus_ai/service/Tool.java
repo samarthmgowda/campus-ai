@@ -1,6 +1,7 @@
 package com.campusconnect.campus_ai.service;
 
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Interface for agent tools. Each tool encapsulates:
@@ -32,6 +33,14 @@ public interface Tool {
     boolean requiresAuth();
 
     /**
+     * Which roles are allowed to use this tool.
+     * Return empty set to allow all authenticated users.
+     */
+    default Set<String> allowedRoles() {
+        return Set.of();
+    }
+
+    /**
      * Execute the tool with the given parameters.
      * @param params extracted from the user's intent (e.g., project name, skill, etc.)
      * @param userId authenticated user ID (null if requiresAuth() == false)
@@ -53,7 +62,7 @@ public interface Tool {
     String description();
 
     /**
-     * Priority for intent matching (higher = checked first).
+     * Priority for intent matching (higher checked first).
      * Default 0. Tools with specific triggers should have higher priority
      * than generic fallback tools.
      */

@@ -45,9 +45,17 @@ public class SpaForwardFilter extends OncePerRequestFilter {
             "/recruiter",
             "/admin",
             "/analytics",
+            "/eval",
             "/profile",
             "/settings",
-            "/login"
+            "/login",
+            "/dashboard",
+            "/dashboard/alumni",
+            "/dashboard/recruiter",
+            "/skills-graph",
+            "/connect",
+            "/team-requests",
+            "/placement-training"
     );
 
     @Override
@@ -55,8 +63,14 @@ public class SpaForwardFilter extends OncePerRequestFilter {
             throws ServletException, IOException {
         String path = request.getRequestURI();
         String accept = request.getHeader("Accept");
+        // Page loads the SPA owns: the fixed shell routes, plus the deep links
+        // /events/{id} and /profiles/{id}. Data calls send Accept: */* and fall
+        // through to the controllers untouched.
+        boolean isSpaPage = SPA_PATHS.contains(path)
+                || path.startsWith("/events/")
+                || path.startsWith("/profiles/");
         if ("GET".equalsIgnoreCase(request.getMethod())
-                && SPA_PATHS.contains(path)
+                && isSpaPage
                 && accept != null && accept.contains("text/html")) {
             request.getRequestDispatcher("/index.html").forward(request, response);
             return;

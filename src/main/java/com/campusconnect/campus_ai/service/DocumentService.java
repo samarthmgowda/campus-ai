@@ -4,7 +4,6 @@ import com.campusconnect.campus_ai.entity.Document;
 import com.campusconnect.campus_ai.repository.DocumentChunkRepository;
 import com.campusconnect.campus_ai.repository.DocumentRepository;
 import com.campusconnect.campus_ai.repository.StudentRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -19,8 +18,6 @@ public class DocumentService {
     private final DocumentRepository repository;
     private final DocumentChunkRepository chunkRepository;
     private final StudentRepository studentRepository;
-    @Value("${campus.admin-ids:}")
-    private String adminIds;
 
     public DocumentService(DocumentRepository repository, DocumentChunkRepository chunkRepository, StudentRepository studentRepository) {
         this.repository = repository;
@@ -53,15 +50,15 @@ public class DocumentService {
         return repository.save(document);
     }
 
-    public Document hideDocument(Long id, Long actorId, boolean hidden) {
-        requireAdmin(actorId);
+    public Document hideDocument(Long id, boolean hidden) {
+        requireAdmin();
         Document d = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found: " + id));
         d.setHidden(hidden);
         return repository.save(d);
     }
 
-    public Map<String, Object> deleteDocument(Long id, Long actorId) {
-        requireAdmin(actorId);
+    public Map<String, Object> deleteDocument(Long id) {
+        requireAdmin();
         Document d = repository.findById(id).orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Document not found: " + id));
         // delete chunks first
         try {
@@ -91,12 +88,10 @@ public class DocumentService {
         return new DocDto(d.getId(), d.getTitle(), d.isHidden(), d.getUploaderId(), d.getCreatedAt() != null ? d.getCreatedAt().toString() : null, d.getContent() != null ? d.getContent().length() : 0);
     }
 
-    public void requireAdmin(Long actorId) {
-
-        if (actorId == null) throw new IllegalArgumentException("X-Demo-User header required");
-        studentRepository.findById(actorId).orElseThrow(() -> new IllegalArgumentException("Unknown demo user"));
-        if (adminIds == null || adminIds.isBlank()) throw new IllegalArgumentException("No admins configured");
-        var allowed = java.util.Arrays.stream(adminIds.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toSet());
-        if (!allowed.contains(String.valueOf(actorId))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin required — user " + actorId + " is not in campus.admin-ids");
+    /** Gate admin-only document curation on the JWT principal's ADMIN role. */
+    public void requireAdmin() {
+        if (!AuthContext.isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+        }
     }
 }

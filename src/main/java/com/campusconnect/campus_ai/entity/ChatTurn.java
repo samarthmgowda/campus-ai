@@ -23,6 +23,10 @@ public class ChatTurn {
 
     private boolean answered;
 
+    /** JSON-encoded List<ToolResult.EntityCard> rendered as cards under the answer. */
+    @Column(columnDefinition = "TEXT")
+    private String cards;
+
     private LocalDateTime createdAt = LocalDateTime.now();
 
     public ChatTurn() {}
@@ -32,11 +36,13 @@ public class ChatTurn {
     public String getQuestion() { return question; }
     public String getAnswer() { return answer; }
     public boolean isAnswered() { return answered; }
+    public String getCards() { return cards; }
     public LocalDateTime getCreatedAt() { return createdAt; }
 
     public void setStudent(Student student) { this.student = student; }
     public void setQuestion(String question) { this.question = question; }
     public void setAnswer(String answer) { this.answer = answer; }
     public void setAnswered(boolean answered) { this.answered = answered; }
+    public void setCards(String cards) { this.cards = cards; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 }

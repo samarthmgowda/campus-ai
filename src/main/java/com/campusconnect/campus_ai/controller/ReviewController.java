@@ -2,7 +2,7 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.entity.Review;
 import com.campusconnect.campus_ai.service.ReviewService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,14 +20,13 @@ public class ReviewController {
 
     /**
      * Student writes a review for another student.
-     * Reviewer identity comes from the X-Demo-User header (never the body).
+ * Reviewer identity comes from the JWT principal (never the body).
      * POST /reviews {revieweeId, rating (1–5), comment, projectId (optional)}
      */
     @PostMapping
     public ReviewService.ReviewDto write(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long reviewerId = requireUser(header);
+        Long reviewerId = AuthContext.id();
         Long revieweeId = getLong(body, "revieweeId");
         if (revieweeId == null) throw new IllegalArgumentException("revieweeId required");
         Integer rating = getInt(body, "rating");
@@ -67,11 +66,6 @@ public class ReviewController {
     @GetMapping("/project/{projectId}")
     public List<ReviewService.ReviewDto> getForProject(@PathVariable Long projectId) {
         return reviewService.getReviewsForProject(projectId);
-    }
-
-    private Long requireUser(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
     }
 
     private Long getLong(Map<String, Object> m, String key) {

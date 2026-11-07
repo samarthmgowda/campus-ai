@@ -3,6 +3,7 @@ package com.campusconnect.campus_ai.service;
 import com.campusconnect.campus_ai.entity.Alumni;
 import com.campusconnect.campus_ai.entity.Recruiter;
 import com.campusconnect.campus_ai.entity.Student;
+import com.campusconnect.campus_ai.entity.enums.UserRole;
 import com.campusconnect.campus_ai.repository.AlumniRepository;
 import com.campusconnect.campus_ai.repository.RecruiterRepository;
 import com.campusconnect.campus_ai.repository.StudentRepository;
@@ -13,13 +14,12 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Resolves the acting demo user from the X-Demo-User header.
+ * Resolves the acting user's identity and profile.
  *
- * The header is composite — {@code "role:id"} (e.g. {@code "student:1"},
- * {@code "alumni:3"}) — because Student, Alumni and Recruiter rows live in
- * separate tables with independent auto-increment IDs, so a bare number is
- * ambiguous. A bare number is still interpreted as a student for backward
- * compatibility (see {@link DemoIdentity}).
+ * Identity comes from the JWT principal ({@link AuthContext}) rather than the
+ * retired {@code X-Demo-User} header. Student, Alumni and Recruiter rows live in
+ * separate tables with independent auto-increment IDs, so the principal carries
+ * both the role and the role-specific profile id.
  */
 @Service
 public class CurrentUserService {
@@ -43,17 +43,25 @@ public class CurrentUserService {
                 .orElseThrow(() -> new IllegalArgumentException("Unknown demo user"));
     }
 
-    /** Role-aware profile header for any of the three roles. */
-    public Map<String, Object> resolveProfile(String header) {
-        DemoIdentity identity = DemoIdentity.require(header);
-        Map<String, Object> profile = new LinkedHashMap<>();
-        profile.put("role", identity.role());
-        profile.put("id", identity.id());
+    /**
+     * Role-aware profile for the acting principal. Resolves against the table
+     * the principal's role names, so an alumni/recruiter login reads its own row
+     * instead of the student table.
+     */
+    public Map<String, Object> resolveProfile(CurrentUser cu) {
+        UserRole profileRole = cu.role().profileRole();
+        if (profileRole == null) {
+            throw new IllegalArgumentException("No profile for an admin account: " + cu.email());
+        }
 
-        switch (identity.role()) {
-            case DemoIdentity.ROLE_STUDENT -> {
-                Student s = studentRepository.findById(identity.id())
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown demo user: " + header));
+        Map<String, Object> profile = new LinkedHashMap<>();
+        profile.put("role", profileRole.token());
+        profile.put("id", cu.actingId());
+
+        switch (profileRole) {
+            case STUDENT -> {
+                Student s = studentRepository.findById(cu.actingId())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown user: " + cu.email()));
                 profile.put("name", s.getName());
                 profile.put("branch", s.getBranch());
                 profile.put("year", s.getYear());
@@ -64,9 +72,9 @@ public class CurrentUserService {
                 profile.put("linkedinUrl", s.getLinkedinUrl());
                 profile.put("availability", s.getAvailability());
             }
-            case DemoIdentity.ROLE_ALUMNI -> {
-                Alumni a = alumniRepository.findById(identity.id())
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown demo user: " + header));
+            case ALUMNI -> {
+                Alumni a = alumniRepository.findById(cu.actingId())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown user: " + cu.email()));
                 profile.put("name", a.getName());
                 profile.put("branch", a.getBranch());
                 profile.put("graduationYear", a.getGraduationYear());
@@ -77,9 +85,9 @@ public class CurrentUserService {
                 profile.put("linkedinUrl", a.getLinkedinUrl());
                 profile.put("availability", a.getAvailability());
             }
-            case DemoIdentity.ROLE_RECRUITER -> {
-                Recruiter r = recruiterRepository.findById(identity.id())
-                        .orElseThrow(() -> new IllegalArgumentException("Unknown demo user: " + header));
+            case RECRUITER -> {
+                Recruiter r = recruiterRepository.findById(cu.actingId())
+                        .orElseThrow(() -> new IllegalArgumentException("Unknown user: " + cu.email()));
                 profile.put("name", r.getName());
                 profile.put("company", r.getCompany());
                 profile.put("roleTitle", r.getRole());
@@ -87,7 +95,7 @@ public class CurrentUserService {
                 profile.put("linkedinUrl", r.getLinkedinUrl());
                 profile.put("bio", r.getBio());
             }
-            default -> throw new IllegalArgumentException("Unknown demo user: " + header);
+            default -> throw new IllegalArgumentException("Unknown role: " + cu.role());
         }
         return profile;
     }

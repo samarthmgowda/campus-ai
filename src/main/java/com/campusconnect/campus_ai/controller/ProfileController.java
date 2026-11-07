@@ -1,10 +1,12 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.entity.Student;
+import com.campusconnect.campus_ai.entity.enums.UserRole;
 import com.campusconnect.campus_ai.repository.StudentRepository;
+import com.campusconnect.campus_ai.service.AuthContext;
+import com.campusconnect.campus_ai.service.CurrentUser;
 import com.campusconnect.campus_ai.service.CurrentUserService;
 import com.campusconnect.campus_ai.service.ProfileService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.*;
@@ -33,19 +35,25 @@ public class ProfileController {
     }
 
     /**
-     * GET /me with X-Demo-User — the acting user's profile.
+     * GET /me — the acting user's profile.
      *
      * Students get the full aggregated profile (counts, recommendations, …).
-     * Alumni and recruiters get their own identity header, since their rows
-     * live in different tables.
+     * Alumni and recruiters resolve against their own table; an admin account
+     * with no bound profile row gets a minimal identity instead of a 404.
      */
     @GetMapping("/me")
-    public Map<String, Object> me(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        DemoIdentity identity = DemoIdentity.require(header);
-        if (!identity.isStudent()) {
-            return currentUserService.resolveProfile(header);
+    public Map<String, Object> me() {
+        CurrentUser cu = AuthContext.require();
+        if (cu.role() == UserRole.ADMIN) {
+            return Map.of(
+                    "role", "admin",
+                    "id", cu.userId(),
+                    "email", cu.email());
         }
-        return profileService.getMe(identity.id());
+        if (cu.role() == UserRole.STUDENT) {
+            return profileService.getMe(cu.actingId());
+        }
+        return currentUserService.resolveProfile(cu);
     }
 
     /** GET /profile/{studentId} — public profile */
@@ -54,19 +62,23 @@ public class ProfileController {
         return profileService.getPublicProfile(studentId);
     }
 
-    /** GET /me/completeness with X-Demo-User */
+    /** GET /profiles/{studentId} — alias for the public profile, used by chat cards. */
+    @GetMapping("/profiles/{studentId}")
+    public Map<String, Object> publicProfileAlias(@PathVariable Long studentId) {
+        return profileService.getPublicProfile(studentId);
+    }
+
+    /** GET /me/completeness */
     @GetMapping("/me/completeness")
-    public Map<String, Object> completeness(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long studentId = requireHeader(header);
+    public Map<String, Object> completeness() {
+        Long studentId = AuthContext.id();
         return profileService.getCompleteness(studentId);
     }
 
-    /** GET /me/recommendations?limit=5 with X-Demo-User */
+    /** GET /me/recommendations?limit=5 */
     @GetMapping("/me/recommendations")
-    public Map<String, Object> myRecommendations(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
-            @RequestParam(defaultValue = "5") int limit) {
-        Long studentId = requireHeader(header);
+    public Map<String, Object> myRecommendations(@RequestParam(defaultValue = "5") int limit) {
+        Long studentId = AuthContext.id();
         return profileService.getSkillRecommendations(studentId, limit);
     }
 
@@ -77,12 +89,10 @@ public class ProfileController {
         return profileService.getSkillRecommendations(studentId, limit);
     }
 
-    /** PUT /me with X-Demo-User — update editable profile fields */
+    /** PUT /me — update editable profile fields */
     @PutMapping("/me")
-    public Map<String, Object> updateMe(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
-            @RequestBody Map<String, Object> body) {
-        Long studentId = requireHeader(header);
+    public Map<String, Object> updateMe(@RequestBody Map<String, Object> body) {
+        Long studentId = AuthContext.id();
         Student student = studentRepository.findById(studentId)
                 .orElseThrow(() -> new IllegalArgumentException("Student not found: " + studentId));
 
@@ -134,10 +144,5 @@ public class ProfileController {
         // Strip HTML-like tags; normalize whitespace; trim
         String cleaned = value.replaceAll("<[^>]+>", "").trim();
         return cleaned.replaceAll("\\s+", " ");
-    }
-
-    private Long requireHeader(String header) {
-        if (header == null || header.isBlank()) throw new IllegalArgumentException("X-Demo-User header required");
-        return DemoIdentity.requireId(header);
     }
 }

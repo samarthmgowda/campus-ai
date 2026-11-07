@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.BookmarkService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +16,11 @@ public class BookmarkController {
         this.bookmarkService = bookmarkService;
     }
 
-    /** POST /bookmarks/toggle {refType: POST|EVENT|PROJECT, refId} with X-Demo-User — save/remove */
+ /** POST /bookmarks/toggle {refType: POST|EVENT|PROJECT, refId} — save/remove */
     @PostMapping("/bookmarks/toggle")
     public Map<String, Object> toggle(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long studentId = requireHeader(header, body);
+        Long studentId = AuthContext.id();
         String refType = body != null && body.get("refType") instanceof String s ? s : (body != null && body.get("type") instanceof String t ? t : "");
         Long refId = body != null ? toLong(body.get("refId")) : null;
         if (refId == null) refId = body != null ? toLong(body.get("id")) : null;
@@ -31,12 +30,11 @@ public class BookmarkController {
         return Map.of("status", "saved", "bookmark", dto);
     }
 
-    /** POST /bookmarks {refType, refId} with X-Demo-User — save (idempotent) */
+ /** POST /bookmarks {refType, refId} — save (idempotent) */
     @PostMapping("/bookmarks")
     public Map<String, Object> save(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long studentId = requireHeader(header, body);
+        Long studentId = AuthContext.id();
         String refType = body != null && body.get("refType") instanceof String s ? s : "";
         Long refId = body != null ? toLong(body.get("refId")) : null;
         if (refId == null) throw new IllegalArgumentException("refId required");
@@ -48,45 +46,31 @@ public class BookmarkController {
         return Map.of("status", "saved", "bookmark", dto);
     }
 
-    /** DELETE /bookmarks?refType=&refId= with X-Demo-User */
+ /** DELETE /bookmarks?refType=&refId= */
     @DeleteMapping("/bookmarks")
     public Map<String, Object> remove(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam String refType,
             @RequestParam Long refId) {
-        Long studentId = requireHeader(header, null);
+        Long studentId = AuthContext.id();
         return bookmarkService.remove(studentId, refType, refId);
     }
 
-    /** GET /bookmarks?refType=POST|EVENT|PROJECT with X-Demo-User */
+ /** GET /bookmarks?refType=POST|EVENT|PROJECT */
     @GetMapping("/bookmarks")
     public List<BookmarkService.BookmarkDto> list(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(required = false) String refType) {
-        Long studentId = requireHeader(header, null);
+        Long studentId = AuthContext.id();
         return bookmarkService.list(studentId, refType);
     }
 
-    /** GET /bookmarks/saved/{refType}/{refId} with X-Demo-User — is saved? */
+ /** GET /bookmarks/saved/{refType}/{refId} — is saved? */
     @GetMapping("/bookmarks/saved/{refType}/{refId}")
     public Map<String, Object> isSaved(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @PathVariable String refType,
             @PathVariable Long refId) {
-        Long studentId = requireHeader(header, null);
+        Long studentId = AuthContext.id();
         boolean v = bookmarkService.isSaved(studentId, refType, refId);
         return Map.of("studentId", studentId, "refType", refType.toUpperCase().trim(), "refId", refId, "saved", v);
-    }
-
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("studentId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
     }
 
     private Long toLong(Object v) {

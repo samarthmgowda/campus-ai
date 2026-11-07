@@ -3,7 +3,6 @@ package com.campusconnect.campus_ai.service;
 import com.campusconnect.campus_ai.entity.Event;
 import com.campusconnect.campus_ai.repository.EventRepository;
 import com.campusconnect.campus_ai.repository.StudentRepository;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.server.ResponseStatusException;
@@ -17,8 +16,6 @@ public class EventService {
     private final EventRepository repository;
     private final StudentRepository studentRepository;
     private final CurrentUserService currentUserService;
-    @Value("${campus.admin-ids:}")
-    private String adminIds;
 
     public EventService(EventRepository repository, StudentRepository studentRepository, CurrentUserService currentUserService) {
         this.repository = repository;
@@ -72,25 +69,30 @@ public class EventService {
                 .collect(java.util.stream.Collectors.toList());
     }
 
+    /** A single event by id — for detail views and card deep links. */
+    public Event getEvent(Long id) {
+        return repository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Event not found: " + id));
+    }
+
     /** Admin view: all events including pending (hidden). */
     public List<Event> getAllIncludingHidden() {
         return repository.findAll();
     }
 
     /** Admin approve (hidden=false) or hide (hidden=true). */
-    public Event setVisibility(Long id, Long actorId, boolean hidden) {
-        requireAdmin(actorId);
+    public Event setVisibility(Long id, boolean hidden) {
+        requireAdmin();
         Event ev = repository.findById(id)
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + id));
         ev.setHidden(hidden);
         return repository.save(ev);
     }
 
-    public void requireAdmin(Long actorId) {
-        if (actorId == null) throw new IllegalArgumentException("X-Demo-User header required");
-        studentRepository.findById(actorId).orElseThrow(() -> new IllegalArgumentException("Unknown demo user"));
-        if (adminIds == null || adminIds.isBlank()) throw new IllegalArgumentException("No admins configured");
-        var allowed = java.util.Arrays.stream(adminIds.split(",")).map(String::trim).filter(s -> !s.isEmpty()).collect(java.util.stream.Collectors.toSet());
-        if (!allowed.contains(String.valueOf(actorId))) throw new ResponseStatusException(HttpStatus.FORBIDDEN, "Admin required — user " + actorId + " is not in campus.admin-ids");
+    /** Gate event approval on the JWT principal's ADMIN role. */
+    public void requireAdmin() {
+        if (!AuthContext.isAdmin()) {
+            throw new org.springframework.security.access.AccessDeniedException("Admin role required");
+        }
     }
 }

@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.RecruiterPostingService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,27 +17,19 @@ public class PostingApplicationController {
         this.postingService = postingService;
     }
 
-    /** GET /recruiter/applications/my?status= with X-Demo-User as studentId */
+ /** GET /recruiter/applications/my?status= as studentId */
     @GetMapping("/my")
     public List<RecruiterPostingService.ApplicationDto> my(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(required = false) String status) {
-        Long studentId = requireHeader(header);
+        Long studentId = AuthContext.id();
         return postingService.getMyApplications(studentId, status);
     }
 
-    /** POST /recruiter/applications/{id}/withdraw with X-Demo-User */
+    /** POST /recruiter/applications/{id}/withdraw */
     @PostMapping("/{id}/withdraw")
-    public Map<String, Object> withdraw(
-            @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long studentId = requireHeader(header);
+    public Map<String, Object> withdraw(@PathVariable Long id) {
+        Long studentId = AuthContext.id();
         return postingService.withdraw(studentId, id);
     }
 
-    private Long requireHeader(String header) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

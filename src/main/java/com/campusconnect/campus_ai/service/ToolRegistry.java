@@ -2,6 +2,7 @@ package com.campusconnect.campus_ai.service;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 
 import java.util.*;
@@ -125,8 +126,15 @@ public class ToolRegistry {
             if (tool.requiresAuth() && userId == null) {
                 return Optional.of(ToolResult.error(
                         "Authentication required",
-                        "This action requires login. Please provide X-Demo-User header."));
+                        "This action requires login. Please sign in and retry."));
             }
+
+            String role = currentRole();
+
+            if (!tool.allowedRoles().isEmpty() && !tool.allowedRoles().contains(role)) {
+                return Optional.of(ToolResult.error("Access denied", "Your role (" + role + ") does not have permission to use this tool."));
+            }
+
             try {
                 Map<String, Object> params = tool.extractParams(intent);
                 ToolResult result = tool.execute(params, userId);
@@ -139,9 +147,6 @@ public class ToolRegistry {
                 }
                 // If tool fails but isn't a clarification, continue to next tool
             } catch (Exception e) {
-                // A tool throwing must not silently disappear. System.err was a placeholder;
-                // log via SLF4J and return an error ToolResult so the failure surfaces to
-                // the user instead of looking like "no tool matched".
                 log.warn("Tool '{}' failed: {}", tool.name(), e.getMessage(), e);
                 return Optional.of(ToolResult.error(
                         "Tool " + tool.name() + " failed",
@@ -149,6 +154,18 @@ public class ToolRegistry {
             }
         }
         return Optional.empty();
+    }
+
+    /**
+     * The acting user's role token ("STUDENT", "ADMIN", ...) from the JWT
+     * principal, or "" for an anonymous caller.
+     */
+    private String currentRole() {
+        var auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth == null || auth.getAuthorities() == null) return "";
+        return auth.getAuthorities().stream()
+                .map(a -> a.getAuthority().replace("ROLE_", ""))
+                .findFirst().orElse("");
     }
 
     /**
@@ -161,15 +178,13 @@ public class ToolRegistry {
                         t.description(),
                         extractInputSchema(t),
                         "Map<String, Object>", // output type
-                        t.requiresAuth() ? "Requires auth (X-Demo-User)" : "Public",
+                        t.requiresAuth() ? "Requires login" : "Public",
                         t.triggers().length > 0 ? "Triggers: " + String.join(", ", t.triggers()) : "Explicit LLM planning"
                 ))
                 .collect(Collectors.toList());
     }
 
     private Map<String, String> extractInputSchema(Tool tool) {
-        // This is a simplified version — in a full implementation,
-        // tools would declare their input schema explicitly
         return Map.of("params", "JSON object with tool-specific fields");
     }
 

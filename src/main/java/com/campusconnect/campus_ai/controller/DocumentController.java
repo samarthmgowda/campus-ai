@@ -3,7 +3,7 @@ package com.campusconnect.campus_ai.controller;
 import com.campusconnect.campus_ai.entity.Document;
 import com.campusconnect.campus_ai.service.DocumentChunkService;
 import com.campusconnect.campus_ai.service.DocumentService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -32,8 +32,8 @@ public class DocumentController {
     }
 
     @GetMapping("/my/uploads")
-    public List<Document> myUploads(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long userId = requireHeader(header);
+    public List<Document> myUploads() {
+        Long userId = AuthContext.id();
         return service.getMyUploads(userId);
     }
 
@@ -54,9 +54,4 @@ public class DocumentController {
         return saved;
     }
 
-    private Long requireHeader(String header) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

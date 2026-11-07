@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.ModerationService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -16,12 +16,11 @@ public class ModerationController {
         this.moderationService = moderationService;
     }
 
-    /** POST /reports {targetType, targetId, reason, details} with X-Demo-User */
+ /** POST /reports {targetType, targetId, reason, details} */
     @PostMapping("/reports")
     public ModerationService.ReportDto report(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody Map<String, Object> body) {
-        Long reporterId = requireHeader(header, body);
+        Long reporterId = AuthContext.id();
         String targetType = body != null && body.get("targetType") instanceof String s ? s : "";
         Long targetId = body != null ? toLong(body.get("targetId")) : null;
         String reason = body != null && body.get("reason") instanceof String r ? r : "OTHER";
@@ -35,10 +34,10 @@ public class ModerationController {
         return moderationService.list(status);
     }
 
-    /** GET /reports/my with X-Demo-User — my reports */
+ /** GET /reports/my — my reports */
     @GetMapping("/reports/my")
-    public List<ModerationService.ReportDto> myReports(@RequestHeader(value = "X-Demo-User", required = false) String header) {
-        Long reporterId = requireHeader(header, null);
+    public List<ModerationService.ReportDto> myReports() {
+        Long reporterId = AuthContext.id();
         return moderationService.myReports(reporterId);
     }
 
@@ -58,25 +57,11 @@ public class ModerationController {
     @PostMapping("/reports/{id}/resolve")
     public ModerationService.ReportDto resolve(
             @PathVariable Long id,
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestBody(required = false) Map<String, Object> body) {
-        Long actorId = null;
-        actorId = DemoIdentity.parseId(header);
-        if (actorId == null) throw new IllegalArgumentException("X-Demo-User header required");
+        Long actorId = AuthContext.id();
         String action = body != null && body.get("action") instanceof String a ? a : (body != null && body.get("status") instanceof String s ? s : "RESOLVED");
         String resolution = body != null && body.get("resolution") instanceof String r ? r : null;
         return moderationService.resolve(id, actorId, action, resolution);
-    }
-
-    private Long requireHeader(String header, Map<String, Object> body) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        if (body != null) {
-            Object v = body.get("reporterId");
-            if (v instanceof Number n) return n.longValue();
-            if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
-        }
-        throw new IllegalArgumentException("X-Demo-User header required");
     }
 
     private Long toLong(Object v) {

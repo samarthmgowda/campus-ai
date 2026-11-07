@@ -2,7 +2,6 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.DocumentService;
 import com.campusconnect.campus_ai.service.RagEvalService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -22,9 +21,8 @@ public class RagEvalController {
 
     /** GET /eval/rag/cases — admin: view the curated Q/A set */
     @GetMapping("/cases")
-    public List<Map<String, Object>> cases(
-            @RequestHeader(value = "X-Demo-User", required = false) String header) {
-        documentService.requireAdmin(requireHeader(header));
+    public List<Map<String, Object>> cases() {
+        documentService.requireAdmin();
         return evalService.cases();
     }
 
@@ -40,19 +38,13 @@ public class RagEvalController {
      */
     @PostMapping("/run")
     public RagEvalService.EvalSummary run(
-            @RequestHeader(value = "X-Demo-User", required = false) String header,
             @RequestParam(defaultValue = "true") boolean retrievalOnly,
             @RequestParam(required = false) Integer topK) {
-        documentService.requireAdmin(requireHeader(header));
+        documentService.requireAdmin();
         if (topK != null) {
             return evalService.run(retrievalOnly, topK);
         }
         return evalService.run(retrievalOnly);
     }
 
-    private Long requireHeader(String header) {
-        Long resolved = DemoIdentity.parseId(header);
-        if (resolved != null) return resolved;
-        throw new IllegalArgumentException("X-Demo-User header required");
-    }
 }

@@ -1,7 +1,7 @@
 package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.SkillGraphService;
-import com.campusconnect.campus_ai.service.DemoIdentity;
+import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -91,9 +91,9 @@ public class SkillGraphController {
      * GET /skills/dashboard
      */
     @GetMapping("/dashboard")
-    public Map<String, Object> dashboard(@RequestHeader(value = "X-Demo-User", required = false) String header) {
+    public Map<String, Object> dashboard() {
         Long userId = null;
-        userId = DemoIdentity.parseId(header);
+        userId = AuthContext.idOrNull();
         return skillGraphService.getDashboardData(userId);
     }
 

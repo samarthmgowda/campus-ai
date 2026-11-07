@@ -112,7 +112,7 @@ public class RecruiterTool implements Tool {
                         .append(" [").append(po.requiredSkills() != null ? po.requiredSkills() : "")
                         .append("] (").append(po.applicantCount()).append(" applicants)\n");
             }
-            sb.append("\nApply: POST /recruiter/postings/{id}/apply with X-Demo-User");
+            sb.append("\nApply: POST /recruiter/postings/{id}/apply when signed in");
             return ToolResult.success(sb.toString(), Map.of());
         }
 
