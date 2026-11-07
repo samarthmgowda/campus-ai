@@ -37,6 +37,7 @@ export function RequireRole({ allow }: { allow: Role[] }) {
     student: '/dashboard',
     alumni: '/dashboard/alumni',
     recruiter: '/dashboard/recruiter',
+    admin: '/admin',
   }
   if (!allow.includes(role)) {
     return <Navigate to={home[role]} replace />

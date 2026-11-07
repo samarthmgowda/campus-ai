@@ -6,8 +6,8 @@ import { getName } from '../utils/identity'
 import { PageHeader, SkeletonCard } from '../components/ui/PageState'
 import { Badge } from '../components/ui/Badge'
 import {
-  MessageSquare, Users, CalendarDays, FolderKanban, Briefcase,
-  Bell, Inbox, ArrowUpRight, Sparkles, Bot,
+  MessageSquare, Users, CalendarDays, FolderKanban,
+  Bell, Inbox, ArrowUpRight, Sparkles, GraduationCap,
 } from 'lucide-react'
 
 interface FeedPost { id: number; authorName: string | null; content: string; likeCount: number; commentCount: number; createdAt: string | null }
@@ -18,12 +18,12 @@ interface Conversation { peerId: number; unreadCount: number }
 interface Notification { id: number; readFlag: boolean }
 
 const QUICK = [
-  { to: '/chat', icon: Bot, label: 'Ask AI', hint: 'Grounded answers', tint: 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white' },
+  { to: '/connect', icon: Users, label: 'Connect', hint: 'Network & Grow', tint: 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white' },
   { to: '/community', icon: Users, label: 'Community', hint: 'Join the wall', tint: 'bg-campus-50 text-campus-700 border border-campus-100' },
   { to: '/projects', icon: FolderKanban, label: 'Projects', hint: 'Ship together', tint: 'bg-violet-50 text-violet-700 border border-violet-100' },
   { to: '/events', icon: CalendarDays, label: 'Events', hint: 'Show up', tint: 'bg-accent-50 text-accent-700 border border-accent-100' },
-  { to: '/mentorship', icon: Sparkles, label: 'Mentors', hint: 'Get guidance', tint: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
-  { to: '/recruiter', icon: Briefcase, label: 'Careers', hint: 'Find roles', tint: 'bg-sky-50 text-sky-700 border border-sky-100' },
+  { to: '/placement-training', icon: GraduationCap, label: 'Placements', hint: 'Careers & Roadmaps', tint: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
+  { to: '/team-requests', icon: Users, label: 'Team Requests', hint: 'Find teammates', tint: 'bg-sky-50 text-sky-700 border border-sky-100' },
 ]
 
 function greeting() {

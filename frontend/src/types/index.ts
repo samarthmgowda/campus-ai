@@ -1,19 +1,5 @@
 // Backend API response types
 
-export interface DemoUser {
-  id: number
-  role: 'student' | 'alumni' | 'recruiter'
-  name: string
-  branch?: string
-  year?: number
-  skills?: string
-  currentRole?: string
-  currentCompany?: string
-  company?: string
-  roleTitle?: string
-  availability?: string
-}
-
 export interface Student {
   id: number
   name: string
@@ -225,7 +211,18 @@ export interface ChatTurn {
   answer: string
   answered: boolean
   sources: ChatSource[]
+  cards?: EntityCard[] | null
   createdAt: string
+}
+
+/** Clickable profile/event/project/document card returned with an answer. */
+export interface EntityCard {
+  type: 'student' | 'event' | 'project' | 'document'
+  id: number
+  title: string
+  subtitle: string
+  meta: string
+  href: string
 }
 
 export interface ChatSource {
@@ -284,6 +281,7 @@ export interface AgentResponse {
   text: string
   data: Record<string, unknown> | null
   suggestions?: string[] | null
+  cards?: EntityCard[] | null
 }
 
 /** Response from POST /api/chat (ChatOrchestrator) */

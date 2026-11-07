@@ -30,6 +30,12 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // Auth is what the sign-in form posts to. Without this entry the dev
+      // server answers /auth/login itself and returns 404.
+      '/auth': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/ask': {
         target: 'http://localhost:8080',
         changeOrigin: true,
@@ -67,6 +73,10 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/profile': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/profiles': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
@@ -135,6 +145,15 @@ export default defineConfig({
         changeOrigin: true,
       },
       '/dashboard': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      // Backend namespaces with no proxy entry would 404 the same way /auth did.
+      '/teammate-requests': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
+      '/project-invites': {
         target: 'http://localhost:8080',
         changeOrigin: true,
       },

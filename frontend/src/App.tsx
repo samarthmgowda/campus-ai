@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Layout from './components/Layout'
@@ -10,9 +10,6 @@ import NotFoundPage from './pages/NotFoundPage'
 import HomePage from './pages/HomePage'
 import ChatPage from './pages/ChatPage'
 import SearchPage from './pages/SearchPage'
-import ReviewsPage from './pages/ReviewsPage'
-import RoadmapPage from './pages/RoadmapPage'
-import ReferralPage from './pages/ReferralPage'
 import SkillsGraphPage from './pages/SkillsGraphPage'
 import DashboardPage from './pages/DashboardPage'
 import AlumniDashboardPage from './pages/AlumniDashboardPage'
@@ -20,16 +17,20 @@ import RecruiterDashboardPage from './pages/RecruiterDashboardPage'
 import DocumentsPage from './pages/DocumentsPage'
 import ProjectsPage from './pages/ProjectsPage'
 import EventsPage from './pages/EventsPage'
+import EventDetailPage from './pages/EventDetailPage'
+import PublicProfilePage from './pages/PublicProfilePage'
 import CommunityPage from './pages/CommunityPage'
 import MessagesPage from './pages/MessagesPage'
 import NotificationsPage from './pages/NotificationsPage'
-import MentorshipPage from './pages/MentorshipPage'
 import RecruiterPage from './pages/RecruiterPage'
 import AdminPage from './pages/AdminPage'
 import AnalyticsPage from './pages/AnalyticsPage'
 import EvalPage from './pages/EvalPage'
 import ProfilePage from './pages/ProfilePage'
 import SettingsPage from './pages/SettingsPage'
+import ConnectPage from './pages/ConnectPage'
+import TeamRequestsPage from './pages/TeamRequestsPage'
+import PlacementTrainingPage from './pages/PlacementTrainingPage'
 import './index.css'
 
 // The home dashboard is a read-only fan-out over data other pages mutate
@@ -69,26 +70,33 @@ function App() {
                 <Route path="/home" element={<HomePage />} />
                 <Route path="/chat" element={<ChatPage />} />
                 <Route path="/search" element={<SearchPage />} />
-                <Route path="/reviews" element={<ReviewsPage />} />
-                <Route path="/roadmaps" element={<RoadmapPage />} />
-                <Route path="/referrals" element={<ReferralPage />} />
-                <Route path="/documents" element={<DocumentsPage />} />
                 <Route path="/projects" element={<ProjectsPage />} />
                 <Route path="/events" element={<EventsPage />} />
+                <Route path="/events/:id" element={<EventDetailPage />} />
+                <Route path="/profiles/:id" element={<PublicProfilePage />} />
                 <Route path="/community" element={<CommunityPage />} />
                 <Route path="/messages" element={<MessagesPage />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
-                <Route path="/mentorship" element={<MentorshipPage />} />
                 <Route path="/profile" element={<ProfilePage />} />
                 <Route path="/settings" element={<SettingsPage />} />
 
+                {/* Redundant standalone routes now live inside their hubs.
+                    Keep the old paths working by redirecting rather than 404ing. */}
+                <Route path="/mentorship" element={<Navigate to="/connect?tab=mentorship" replace />} />
+                <Route path="/roadmaps" element={<Navigate to="/placement-training?tab=roadmaps" replace />} />
+                <Route path="/reviews" element={<Navigate to="/community" replace />} />
+                <Route path="/referrals" element={<Navigate to="/placement-training" replace />} />
+
                 {/* Role-specific destinations. The guard redirects the wrong
                     role to its own dashboard rather than showing it 403s. */}
+                <Route element={<RequireRole allow={['student', 'alumni', 'recruiter']} />}>
+                  <Route path="/connect" element={<ConnectPage />} />
+                  <Route path="/team-requests" element={<TeamRequestsPage />} />
+                  <Route path="/placement-training" element={<PlacementTrainingPage />} />
+                </Route>
                 <Route element={<RequireRole allow={['student']} />}>
                   <Route path="/dashboard" element={<DashboardPage />} />
                   <Route path="/skills-graph" element={<SkillsGraphPage />} />
-                  <Route path="/admin" element={<AdminPage />} />
-                  <Route path="/eval" element={<EvalPage />} />
                 </Route>
                 <Route element={<RequireRole allow={['alumni']} />}>
                   <Route path="/dashboard/alumni" element={<AlumniDashboardPage />} />
@@ -99,8 +107,15 @@ function App() {
                 <Route element={<RequireRole allow={['student', 'alumni']} />}>
                   <Route path="/recruiter" element={<RecruiterPage />} />
                 </Route>
-
-                <Route path="/analytics" element={<AnalyticsPage />} />
+                {/* Admin-only. The backend enforces this too (role-gated matchers);
+                    the guard just keeps a non-admin off a screen of 403s.
+                    Library, Analytics and Evaluation are all admin surfaces now. */}
+                <Route element={<RequireRole allow={['admin']} />}>
+                  <Route path="/documents" element={<DocumentsPage />} />
+                  <Route path="/analytics" element={<AnalyticsPage />} />
+                  <Route path="/admin" element={<AdminPage />} />
+                  <Route path="/eval" element={<EvalPage />} />
+                </Route>
               </Route>
             </Route>
 

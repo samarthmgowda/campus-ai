@@ -1,10 +1,13 @@
-import { useQuery } from '@tanstack/react-query'
+import { useState } from 'react'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { PageContainer } from '../components/ui/PageContainer'
 import { api } from '../api/client'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
 import { getRole, ROLE_LABELS, type Role } from '../utils/identity'
-import { TrendingUp, CheckCircle2, Circle, Sparkles } from 'lucide-react'
+import { TrendingUp, CheckCircle2, Circle, Sparkles, Pencil, X, Star, Loader2, Github, Linkedin } from 'lucide-react'
+import { Button } from '../components/ui/Button'
+import { Input } from '../components/ui/Input'
 
 function Ring({ score }: { score: number }) {
   const r = 34
@@ -36,7 +39,6 @@ function Ring({ score }: { score: number }) {
 
 interface FootprintStat { label: string; value: string }
 
-/** Curated stats from the student /me payload (nested { profile, connections, … }). */
 function studentFootprint(me: Record<string, any>): FootprintStat[] {
   const num = (v: unknown): number | null => (typeof v === 'number' ? v : null)
   const stat = (label: string, value: number | null): FootprintStat | null =>
@@ -56,6 +58,19 @@ function studentFootprint(me: Record<string, any>): FootprintStat[] {
 export default function ProfilePage() {
   const role: Role = getRole() ?? 'student'
   const isStudent = role === 'student'
+  const queryClient = useQueryClient()
+  const [isEditing, setIsEditing] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
+  const [editForm, setEditForm] = useState({
+    name: '',
+    bio: '',
+    skills: '',
+    interests: '',
+    branch: '',
+    year: '',
+    githubUrl: '',
+    linkedinUrl: '',
+  })
 
   const { data: me, isLoading: meLoading, error: meError, refetch } = useQuery({
     queryKey: ['me', role],
@@ -72,6 +87,24 @@ export default function ProfilePage() {
     queryKey: ['recommendations'],
     queryFn: () => api.get<{ recommendations: { skill: string; count: number; reason: string }[] }>('/me/recommendations?limit=5'),
     enabled: isStudent,
+  })
+
+  const updateMutation = useMutation({
+    // Backend route is PUT /me (see ProfileController.updateMe). Sending the
+    // body as the update map — the earlier /profiles/me path 404'd, so every
+    // save silently failed and the form appeared to do nothing.
+    mutationFn: (updates: Record<string, unknown>) => api.put('/me', updates),
+    onSuccess: () => {
+      setSaveError(null)
+      setIsEditing(false)
+      // Refresh the profile, the completeness ring and the recommendations —
+      // all three are derived from the fields we just changed.
+      queryClient.invalidateQueries({ queryKey: ['me'] })
+      queryClient.invalidateQueries({ queryKey: ['completeness'] })
+      queryClient.invalidateQueries({ queryKey: ['recommendations'] })
+      refetch()
+    },
+    onError: (e: Error) => setSaveError(e.message),
   })
 
   if (meLoading) {
@@ -91,9 +124,7 @@ export default function ProfilePage() {
     )
   }
 
-  // Students nest identity under `profile`; alumni/recruiter return it at the top level.
   const profile: Record<string, any> = isStudent ? (me?.profile ?? {}) : (me ?? {})
-
   const name = String(profile.name ?? '—')
   const skillList = profile.skills ? String(profile.skills).split(',').map(s => s.trim()).filter(Boolean) : []
   const attributeLine = isStudent
@@ -109,6 +140,52 @@ export default function ProfilePage() {
 
   const footprint = isStudent && me ? studentFootprint(me) : []
 
+  const handleEditToggle = () => {
+    setSaveError(null)
+    setEditForm({
+      name: profile.name ?? '',
+      bio: profile.bio ?? '',
+      skills: profile.skills ?? '',
+      interests: profile.interests ?? '',
+      branch: profile.branch ?? '',
+      year: profile.year != null ? String(profile.year) : '',
+      githubUrl: profile.githubUrl ?? '',
+      linkedinUrl: profile.linkedinUrl ?? '',
+    })
+    setIsEditing(!isEditing)
+  }
+
+  const handleSave = async () => {
+    setSaveError(null)
+    // Only send fields the user actually filled — the backend ignores unknown
+    // keys but treats an empty string as a real value, so blanking a field the
+    // student never set would be destructive. Year is sent as a number.
+    const payload: Record<string, unknown> = {}
+    const put = (key: string, value: string) => {
+      const v = value.trim()
+      if (v) payload[key] = key === 'year' ? Number(v) : v
+    }
+    put('name', editForm.name)
+    put('branch', editForm.branch)
+    put('year', editForm.year)
+    put('skills', editForm.skills)
+    put('interests', editForm.interests)
+    put('bio', editForm.bio)
+    put('githubUrl', editForm.githubUrl)
+    put('linkedinUrl', editForm.linkedinUrl)
+
+    if (Object.keys(payload).length === 0) {
+      setSaveError('Nothing to save — fill in at least one field.')
+      return
+    }
+
+    try {
+      await updateMutation.mutateAsync(payload)
+    } catch {
+      // onError already surfaced the message
+    }
+  }
+
   return (
     <PageContainer width="reading">
       <PageHeader title="Profile" sub="Your campus identity and growth signals" />
@@ -117,7 +194,7 @@ export default function ProfilePage() {
         <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-campus-500/25 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-accent-500/20 blur-3xl" aria-hidden="true" />
         <div className="relative flex items-start gap-5">
-          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] font-display font-bold text-[26px] flex-shrink-0 ring-2 ring-white/20" aria-hidden="true">
+          <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 border border-white/20 font-display font-bold text-[26px] flex-shrink-0 ring-2 ring-white/20" aria-hidden="true">
             {name.charAt(0).toUpperCase()}
           </span>
           <div className="min-w-0 flex-1">
@@ -126,6 +203,12 @@ export default function ProfilePage() {
               <span className="rounded-full bg-white/10 border border-white/15 px-2.5 py-0.5 text-micro font-medium text-campus-100">
                 {ROLE_LABELS[role]}
               </span>
+              {profile.rating != null && (
+                <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white">
+                  <Star className="h-3 w-3 fill-accent-300 text-accent-300" />
+                  <span className="text-micro font-bold">{profile.rating}</span>
+                </div>
+              )}
             </div>
             {attributeLine && <p className="text-body-sm text-white/60 mt-1">{attributeLine}</p>}
             {!!profile.bio && <p className="text-body-sm text-white/80 mt-2.5 leading-relaxed">{profile.bio}</p>}
@@ -136,10 +219,99 @@ export default function ProfilePage() {
                 ))}
               </div>
             )}
+            {(profile.githubUrl || profile.linkedinUrl) && (
+              <div className="flex flex-wrap gap-3 mt-3.5 text-body-sm text-white/70">
+                {profile.githubUrl && (
+                  <span className="inline-flex items-center gap-1.5"><Github className="h-3.5 w-3.5" aria-hidden="true" />{profile.githubUrl}</span>
+                )}
+                {profile.linkedinUrl && (
+                  <span className="inline-flex items-center gap-1.5"><Linkedin className="h-3.5 w-3.5" aria-hidden="true" />{profile.linkedinUrl}</span>
+                )}
+              </div>
+            )}
           </div>
-          {isStudent && completeness && <Ring score={completeness.score} />}
+          <div className="flex flex-col items-end gap-3 flex-shrink-0">
+            {isStudent && completeness && <Ring score={completeness.score} />}
+            {!isEditing && (
+              <button
+                onClick={handleEditToggle}
+                className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 border border-white/20 px-3.5 py-2 text-body-sm font-semibold text-white hover:bg-white/25 transition-colors"
+              >
+                <Pencil className="h-3.5 w-3.5" aria-hidden="true" />
+                Edit profile
+              </button>
+            )}
+          </div>
         </div>
       </div>
+
+      {isEditing && (
+        <section className="rounded-2xl border border-campus-300 bg-white shadow-elevated p-5 mb-5 animate-slide-down">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-bold text-[16px] text-campus-950">Edit Profile</h3>
+            <button onClick={() => setIsEditing(false)} className="text-surface-400 hover:text-surface-600" aria-label="Close editor">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {saveError && (
+            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-body-sm text-red-700" role="alert">
+              {saveError}
+            </div>
+          )}
+
+          <div className="grid gap-4">
+            <div className="space-y-1.5">
+              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Full name</label>
+              <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Branch</label>
+                <Input value={editForm.branch} onChange={e => setEditForm({ ...editForm, branch: e.target.value })} placeholder="CSE" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Year (1–4)</label>
+                <Input value={editForm.year} onChange={e => setEditForm({ ...editForm, year: e.target.value })} placeholder="3" inputMode="numeric" />
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Skills (comma separated)</label>
+              <Input value={editForm.skills} onChange={e => setEditForm({ ...editForm, skills: e.target.value })} placeholder="React, Java, Python" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Interests (comma separated)</label>
+              <Input value={editForm.interests} onChange={e => setEditForm({ ...editForm, interests: e.target.value })} placeholder="Open source, Robotics, Design" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Bio</label>
+              <textarea
+                className="w-full rounded-xl border border-campus-900/[0.08] bg-white px-4 py-2.5 text-body-sm focus:outline-none focus:ring-2 focus:ring-campus-500 resize-none"
+                rows={3}
+                value={editForm.bio}
+                onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
+                placeholder="Tell us about yourself..."
+              />
+            </div>
+            <div className="grid sm:grid-cols-2 gap-4">
+              <div className="space-y-1.5">
+                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">GitHub</label>
+                <Input value={editForm.githubUrl} onChange={e => setEditForm({ ...editForm, githubUrl: e.target.value })} placeholder="https://github.com/you" />
+              </div>
+              <div className="space-y-1.5">
+                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">LinkedIn</label>
+                <Input value={editForm.linkedinUrl} onChange={e => setEditForm({ ...editForm, linkedinUrl: e.target.value })} placeholder="https://linkedin.com/in/you" />
+              </div>
+            </div>
+            <div className="flex justify-end gap-2 mt-2">
+              <Button variant="outline" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
+              <Button variant="accent" size="sm" onClick={handleSave} disabled={updateMutation.isPending}>
+                {updateMutation.isPending ? <Loader2 className="h-4 w-4 animate-spin" /> : 'Save Changes'}
+              </Button>
+            </div>
+          </div>
+        </section>
+      )}
 
       {isStudent && completeness && (
         <section aria-label="Completeness" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 mb-4">
@@ -187,7 +359,7 @@ export default function ProfilePage() {
 
       {footprint.length > 0 && (
         <section aria-label="Activity" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5">
-          <p className="font-display font-semibold text-[16px] text-campus-950 mb-3.5">Your footprint</p>
+          <p className="font-display font-semibold text-[16px] text-//campus-950 mb-3.5">Your footprint</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {footprint.map(s => (
               <div key={s.label} className="rounded-xl bg-campus-50/60 border border-campus-100/60 px-3.5 py-3">

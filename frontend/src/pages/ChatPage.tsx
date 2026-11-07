@@ -3,11 +3,11 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { PageHeader } from '../components/ui/PageState'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import type { DemoUser, ChatTurn, ChatSource, AgentResponse } from '../types'
-import { getId, getRole, setIdentity } from '../utils/identity'
+import type { ChatTurn, ChatSource, AgentResponse } from '../types'
+import { getId } from '../utils/identity'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
-import { CitedAnswer } from '../components/CitedAnswer'
+import { CitedAnswer } from '../components/CitedAnswer'; import { EntityCards } from '../components/ui/EntityCards'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
 import { cn } from '../utils/cn'
 import {
@@ -62,8 +62,8 @@ export default function ChatPage() {
   const queryClient = useQueryClient()
   const [question, setQuestion] = useState('')
   const [showHistory, setShowHistory] = useState(false)
-  // Composite "role:id" — matches the backend header so chat history is scoped per identity.
-  const [demoUser, setDemoUser] = useState<string>('')
+  // The signed-in account, used to scope chat history to the acting user.
+  const account = getId()
   const [activeAsk, setActiveAsk] = useState<string | null>(null)
   const [liveResponse, setLiveResponse] = useState<AgentResponse | null>(null)
   const [confirmClear, setConfirmClear] = useState(false)
@@ -71,21 +71,16 @@ export default function ChatPage() {
   const inputRef = useRef<HTMLInputElement>(null)
   const lastQuestionRef = useRef<string | null>(null)
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['demo-users'],
-    queryFn: () => api.get<DemoUser[]>('/demo/users'),
-  })
-
   const { data: history = [], isLoading: historyLoading } = useQuery({
-    queryKey: ['chat-history', demoUser],
+    queryKey: ['chat-history', account],
     queryFn: () => api.get<ChatTurn[]>('/ask/history?limit=50'),
-    enabled: !!demoUser,
+    enabled: !!account,
   })
 
   const { data: historyCount = 0 } = useQuery({
-    queryKey: ['chat-history-count', demoUser],
+    queryKey: ['chat-history-count', account],
     queryFn: () => api.get<number>('/ask/history/count'),
-    enabled: !!demoUser,
+    enabled: !!account,
   })
 
   const sendMutation = useMutation({
@@ -95,23 +90,18 @@ export default function ChatPage() {
       // (history refetch from the backend may lag by a few ms).
       setLiveResponse(resp)
       // Invalidate history so the backend-persisted turn is pulled into `history`.
-      queryClient.invalidateQueries({ queryKey: ['chat-history', demoUser] })
-      queryClient.invalidateQueries({ queryKey: ['chat-history-count', demoUser] })
+      queryClient.invalidateQueries({ queryKey: ['chat-history', account] })
+      queryClient.invalidateQueries({ queryKey: ['chat-history-count', account] })
     },
   })
 
   const clearMutation = useMutation({
     mutationFn: () => api.delete<{ cleared: number }>('/ask/history'),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['chat-history', demoUser] })
-      queryClient.invalidateQueries({ queryKey: ['chat-history-count', demoUser] })
+      queryClient.invalidateQueries({ queryKey: ['chat-history', account] })
+      queryClient.invalidateQueries({ queryKey: ['chat-history-count', account] })
     },
   })
-
-  useEffect(() => {
-    const id = getId()
-    if (id) setDemoUser(`${getRole() ?? 'student'}:${id}`)
-  }, [])
 
   const scrollToBottom = useCallback(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth', block: 'end' })
@@ -189,10 +179,8 @@ export default function ChatPage() {
           </Badge>
         }
       />
-      {/* Toolbar: history plus a clearly-labelled demo identity override.
-          Signing in already sets the acting user; this stays only so a demo
-          can show how the same question answers differently per role, and it
-          says so rather than silently swapping who you are. */}
+      {/* Toolbar: history drawer toggle. The acting user comes from the signed-in
+          session, so there is no in-page identity switch here. */}
       <div className="flex items-center gap-2 mb-5 flex-wrap">
         <Button variant="outline" size="sm" onClick={() => setShowHistory(!showHistory)} aria-expanded={showHistory}>
           <History className="h-4 w-4" />
@@ -203,31 +191,6 @@ export default function ChatPage() {
             </span>
           )}
         </Button>
-        {users.length > 0 && (
-          <label className="ml-auto inline-flex items-center gap-2 rounded-xl border border-campus-900/[0.07] bg-white/70 pl-3 pr-1 py-1 shadow-card">
-            <span className="text-caption text-surface-400 whitespace-nowrap">Demo · answer as</span>
-            <select
-              value={demoUser}
-              onChange={(e) => {
-                const val = e.target.value
-                setDemoUser(val)
-                if (val) {
-                  const [role, id] = val.split(':')
-                  setIdentity(id, role as 'student' | 'alumni' | 'recruiter')
-                }
-              }}
-              aria-label="Answer as user (demo only)"
-              className="appearance-none bg-transparent border-0 py-1 pr-6 text-body-sm font-medium text-campus-900 focus:outline-none focus-visible:ring-2 focus-visible:ring-campus-500 cursor-pointer max-w-[170px]"
-            >
-              <option value="">Current</option>
-              {users.map((u) => (
-                <option key={`${u.role}:${u.id}`} value={`${u.role}:${u.id}`}>
-                  {u.name} · {u.branch ?? u.company ?? u.role}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
       </div>
 
       {/* History drawer */}
@@ -326,6 +289,7 @@ export default function ChatPage() {
                 </div>
                 <CitedAnswer text={turn.answer ?? ''} sources={turn.sources} idPrefix={`turn-${turn.id}`} />
                 <Sources sources={turn.sources} idPrefix={`turn-${turn.id}`} />
+                <EntityCards cards={turn.cards} title="Suggested matches" />
               </div>
             </div>
           ))}
@@ -370,6 +334,7 @@ export default function ChatPage() {
                 </div>
                 <CitedAnswer text={liveResponse.text ?? ''} sources={liveResponse.data?.sources as any} idPrefix="live-answer" />
                 <Sources sources={liveResponse.data?.sources as any} idPrefix="live-answer" />
+                <EntityCards cards={liveResponse.cards} title="Suggested matches" />
               </div>
             </div>
           )}
@@ -407,11 +372,6 @@ export default function ChatPage() {
             )}
           </button>
         </form>
-        {!demoUser && (
-          <p className="text-center text-caption text-surface-400 mt-2">
-            Pick a demo user above — answers are personalized to you. <Badge variant="outline" size="sm" className="ml-1">Demo mode</Badge>
-          </p>
-        )}
       </div>
 
       <ConfirmDialog

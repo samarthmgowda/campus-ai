@@ -3,9 +3,10 @@ import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-do
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { cn } from '../utils/cn'
-import { getName, getRole, getId, clearIdentity, ROLE_LABELS, type Role } from '../utils/identity'
+import { getName, getRole, clearSession, ROLE_LABELS, type Role } from '../utils/identity'
 import { navGroupsForRole, breadcrumbFor, type NavItem } from '../config/navigation'
-import { LogOut, Menu, X, ChevronDown, Sparkles } from 'lucide-react'
+import { LogOut, Menu, X, ChevronDown, Sparkles, Bell, Inbox, User as UserIcon, Settings as SettingsIcon } from 'lucide-react'
+import ChatWidget from './ChatWidget'
 
 function useBadge(kind: string | null): number | null {
   const inbox = useQuery({
@@ -91,7 +92,7 @@ function SidebarContent({
           <Sparkles className="h-[18px] w-[18px] text-white" aria-hidden="true" />
         </div>
         <div className="leading-tight">
-          <p className="font-display font-bold text-[17px] text-campus-950 tracking-tight">Campus AI</p>
+          <p className="font-display font-bold text-[17px] text-campus-950 tracking-tight">Campus Connect</p>
           <p className="text-micro text-surface-400">MIT Mysore</p>
         </div>
       </div>
@@ -110,10 +111,10 @@ function SidebarContent({
       </nav>
 
       <div className="p-3">
-        <div className="rounded-2xl bg-surface-100 border border-campus-900/[0.06] p-3">
+        <div className="rounded-2xl bg-surface-100 border border-campus-900/[0.06] p-2">
           <div className="relative">
             <button
-              className="w-full flex items-center gap-2.5 rounded-xl px-1 py-1 text-body-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-300"
+              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 text-body-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-300"
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               aria-expanded={userMenuOpen}
               aria-haspopup="true"
@@ -133,6 +134,22 @@ function SidebarContent({
             {userMenuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 animate-slide-up">
                 <div className="bg-white rounded-xl border border-campus-900/10 shadow-elevated p-1">
+                  <NavLink
+                    to="/profile"
+                    onClick={onNavigate}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
+                  >
+                    <UserIcon className="h-4 w-4" aria-hidden="true" />
+                    View &amp; edit profile
+                  </NavLink>
+                  <NavLink
+                    to="/settings"
+                    onClick={onNavigate}
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
+                  >
+                    <SettingsIcon className="h-4 w-4" aria-hidden="true" />
+                    Settings
+                  </NavLink>
                   <button
                     onClick={onLogout}
                     className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
@@ -150,7 +167,7 @@ function SidebarContent({
   )
 }
 
-export default function Layout() {
+function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
   const [identity, setIdentityState] = useState<{ name: string; role: Role } | null>(null)
   const navigate = useNavigate()
@@ -165,7 +182,7 @@ export default function Layout() {
   }, [location.pathname])
 
   const handleLogout = () => {
-    clearIdentity()
+    clearSession()
     setIdentityState(null)
     navigate('/login')
   }
@@ -174,8 +191,6 @@ export default function Layout() {
 
   return (
     <div className="min-h-screen bg-[#f5f7fa]">
-      {/* First thing in the tab order. Without it a keyboard user walks all 23
-          nav links before reaching the content on every single page. */}
       <a
         href="#main-content"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2.5 focus:text-body-sm focus:font-semibold focus:shadow-elevated"
@@ -253,32 +268,35 @@ export default function Layout() {
                 })}
               </ol>
             </nav>
-            <div className="ml-auto flex items-center gap-2">
-              {identity && (
-                <span className="hidden sm:inline-flex items-center gap-2 rounded-full border border-campus-900/[0.07] bg-white/70 pl-1 pr-3 py-1">
-                  <span
-                    className="flex h-6 w-6 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white text-micro font-bold"
-                    aria-hidden="true"
-                  >
-                    {(identity.name || '?').charAt(0).toUpperCase()}
-                  </span>
-                  <span className="text-caption text-campus-950 font-medium max-w-[14ch] truncate">
-                    {identity.name || `#${getId()}`}
-                  </span>
-                  <span className="text-micro font-semibold text-surface-400">
-                    {ROLE_LABELS[identity.role]}
-                  </span>
-                </span>
-              )}
+            <div className="ml-auto flex items-center gap-3">
+              <button
+                className="p-2 rounded-xl text-surface-600 hover:bg-campus-900/[0.05] relative group"
+                onClick={() => navigate('/notifications')}
+                aria-label="Notifications"
+              >
+                <Bell className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
+              </button>
+              <button
+                className="p-2 rounded-xl text-surface-600 hover:bg-campus-900/[0.05] relative group"
+                onClick={() => navigate('/messages')}
+                aria-label="Messages"
+              >
+                <Inbox className="h-5 w-5" />
+                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-500 border-2 border-white" />
+              </button>
             </div>
           </div>
         </header>
 
-        {/* tabIndex={-1} so the skip link moves focus here, not just the scroll. */}
         <main className="flex-1 px-4 py-6 lg:px-8 lg:py-8 animate-fade-in" id="main-content" tabIndex={-1}>
           <Outlet />
         </main>
+        <ChatWidget />
       </div>
+
     </div>
   )
 }
+
+export default Layout

@@ -7,7 +7,6 @@ import { PageContainer } from '../components/ui/PageContainer'
 import {
   Sparkles,
   ArrowRight,
-  Bot,
   Users,
   CalendarDays,
   FolderKanban,
@@ -53,43 +52,43 @@ function Reveal({ children, className, delay = 0 }: { children: React.ReactNode;
 
 const PILLARS: { icon: LucideIcon; title: string; body: string; example: string }[] = [
   {
-    icon: Bot,
-    title: 'Ask anything about campus',
-    body: 'Fees, deadlines, attendance rules, hostel policy — answered from the documents your college actually publishes.',
-    example: '"What is the minimum attendance for exams?"',
+    icon: Users,
+    title: 'Expand your network',
+    body: 'Connect with peers across departments. Find mentors and mentees based on shared interests and goals.',
+    example: '"Who is interested in distributed systems?"',
   },
   {
     icon: FolderKanban,
-    title: 'Find people to build with',
-    body: 'Describe what you want to make. Get teammates ranked by the skills the project is missing, not by who posted first.',
-    example: '"Find me teammates for a machine learning project"',
+    title: 'Assemble the dream team',
+    body: 'Post teammate requests for hackathons or projects. Get matched with people who bring the exact skills you need.',
+    example: '"Looking for a UI lead for AutoHack 2026"',
   },
   {
     icon: GraduationCap,
-    title: 'Learn from people ahead of you',
-    body: 'Reach seniors and alumni who have walked the same path — mentorship, referrals, and roadmaps to the role you want.',
-    example: '"Who can mentor me on backend interviews?"',
+    title: 'Bridging the gap to industry',
+    body: 'Access curated roadmaps and referrals from alumni who have already secured roles at top companies.',
+    example: '"How do I prepare for the Google SRE role?"',
   },
   {
     icon: CalendarDays,
-    title: 'Keep up with campus life',
-    body: 'Hackathons, workshops and drives in one feed, so nothing important passes while you are heads-down in a project.',
-    example: '"What hackathons are coming up this month?"',
+    title: 'Never miss a beat',
+    body: 'A unified feed of workshops, drives, and events. Stay in the loop with everything happening on campus.',
+    example: '"What are the upcoming tech talks this week?"',
   },
 ]
 
 const STEPS = [
   {
-    title: 'It reads your campus',
-    body: 'Policies, handbooks, event rules and notices are indexed into a searchable library — the same source the assistant answers from.',
+    title: 'Connect your profile',
+    body: 'Set up your skills and goals. The system understands your identity and matches you with the right peers and mentors.',
   },
   {
-    title: 'You ask in plain words',
-    body: 'No keywords, no filters, no forms. Type the question the way you would ask a senior.',
+    title: 'Explore the hub',
+    body: 'Browse team requests, career roadmaps, and campus events in a single, unified social experience.',
   },
   {
-    title: 'You get an answer with receipts',
-    body: 'Every reply cites the document and page it came from. If the library does not cover it, the assistant says so instead of guessing.',
+    title: 'Grow together',
+    body: 'Collaborate on projects, get referrals, and build a reputation that opens doors to your target companies.',
   },
 ]
 
@@ -137,7 +136,7 @@ export default function LandingPage() {
             <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2]">
               <Sparkles className="h-[18px] w-[18px] text-white" aria-hidden="true" />
             </span>
-            <span className="font-display font-bold text-[17px] tracking-tight">Campus AI</span>
+            <span className="font-display font-bold text-[17px] tracking-tight">Campus Connect</span>
           </Link>
 
           <nav className="ml-6 hidden items-center gap-1 md:flex" aria-label="Page sections">
@@ -219,16 +218,16 @@ export default function LandingPage() {
               </span>
 
               <h1 className="mt-6 font-display font-bold tracking-[-0.03em] text-[clamp(2.5rem,6vw,3.75rem)] leading-[1.02] text-campus-950">
-                Every campus question,
+                Your campus network,
                 <br />
                 <span className="bg-gradient-to-r from-[#667eea] to-[#764ba2] bg-clip-text text-transparent">
-                  answered with a source.
+                  reimagined for connection.
                 </span>
               </h1>
 
               <p className="mt-6 max-w-[54ch] text-body-lg leading-relaxed text-surface-600">
-                Campus AI reads your college's own documents and answers from them — and shows you the page
-                it came from. When the answer is not in the library, it tells you that too.
+                Connect with peers, find your ideal hackathon team, and get guided by alumni
+                who have walked your path. A social-first hub for every student at MIT Mysore.
               </p>
 
               <div className="mt-8 flex flex-wrap items-center gap-3">
@@ -394,7 +393,7 @@ export default function LandingPage() {
                 to="/login"
                 className="inline-flex items-center gap-2 rounded-xl bg-white px-6 py-3 text-body font-semibold text-campus-700 shadow-elevated transition-transform duration-150 hover:-translate-y-[2px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-[#764ba2]"
               >
-                Enter campus
+                Join the community
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Link>
               <Link
@@ -415,7 +414,7 @@ export default function LandingPage() {
             <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2]">
               <FileText className="h-4 w-4 text-white" aria-hidden="true" />
             </span>
-            <p className="text-body-sm font-semibold text-campus-900">Campus AI</p>
+            <p className="text-body-sm font-semibold text-campus-900">Campus Connect</p>
           </div>
           <p className="text-caption text-surface-500 sm:ml-auto">
             A demonstration project for MIT Mysore. Answers are grounded in curated campus documents.

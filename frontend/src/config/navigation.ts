@@ -2,21 +2,14 @@ import {
   FileText,
   FolderKanban,
   Calendar,
-  User,
   Settings,
-  Bot,
   Users,
-  Inbox,
-  Bell,
-  GraduationCap,
   Briefcase,
   ShieldAlert,
   BarChart3,
   FlaskConical,
   LayoutDashboard,
   Search,
-  Award,
-  Map,
   Network,
   type LucideIcon,
 } from 'lucide-react'
@@ -39,7 +32,7 @@ export interface NavGroup {
   items: NavItem[]
 }
 
-const ALL: Role[] = ['student', 'alumni', 'recruiter']
+const ALL: Role[] = ['student', 'alumni', 'recruiter', 'admin']
 
 /**
  * The single source of truth for what appears in the sidebar.
@@ -53,16 +46,15 @@ const ALL: Role[] = ['student', 'alumni', 'recruiter']
  * than as a single item, because the student, alumni and recruiter dashboards
  * are genuinely different screens.
  *
- * Note: admin/evaluation access is gated on the *id* allow-list
- * (`campus.admin-ids` in application.properties), not on role — so those items
- * are shown to students, who are the only population that can hold that id.
+ * Admin/evaluation access is gated on the real ADMIN role — the backend checks
+ * the JWT principal's role, and `RouteGuards.RequireRole` (reading `getRole()`
+ * from the session snapshot) keeps those destinations to admins only.
  */
 export const NAV_GROUPS: NavGroup[] = [
   {
     label: 'Start',
     items: [
       { path: '/home', label: 'Home', icon: LayoutDashboard, hint: 'Your campus at a glance' },
-      { path: '/chat', label: 'Ask AI', icon: Bot, hint: 'Grounded answers from campus documents' },
       { path: '/search', label: 'Search', icon: Search, hint: 'People, projects, events, documents' },
     ],
   },
@@ -72,9 +64,6 @@ export const NAV_GROUPS: NavGroup[] = [
       { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['student'], hint: 'Your stats and activity' },
       { path: '/dashboard/alumni', label: 'Dashboard', icon: LayoutDashboard, roles: ['alumni'], hint: 'Mentorship and referrals' },
       { path: '/dashboard/recruiter', label: 'Dashboard', icon: LayoutDashboard, roles: ['recruiter'], hint: 'Postings and applications' },
-      { path: '/profile', label: 'Profile', icon: User, hint: 'Your campus identity' },
-      { path: '/messages', label: 'Messages', icon: Inbox, badge: 'inbox', hint: 'Direct lines to your peers' },
-      { path: '/notifications', label: 'Notifications', icon: Bell, badge: 'notif', hint: 'Never miss what matters' },
     ],
   },
   {
@@ -83,31 +72,23 @@ export const NAV_GROUPS: NavGroup[] = [
       { path: '/community', label: 'Community', icon: Users, hint: 'Conversations across campus' },
       { path: '/projects', label: 'Projects', icon: FolderKanban, hint: 'Build together, ship together' },
       { path: '/events', label: 'Events', icon: Calendar, hint: 'Hackathons, workshops, gatherings' },
+      { path: '/connect', label: 'Connect', icon: Network, roles: ['student', 'alumni', 'recruiter'], hint: 'Network, Grow and Mentorship' },
+      { path: '/team-requests', label: 'Team Requests', icon: Users, roles: ['student', 'alumni', 'recruiter'], hint: 'Find teammates for hackathons and events' },
     ],
   },
   {
-    label: 'Grow',
+    label: 'Placement & Training',
     items: [
-      { path: '/mentorship', label: 'Mentorship', icon: GraduationCap, hint: 'Learn from those who walked it' },
-      { path: '/roadmaps', label: 'Roadmaps', icon: Map, hint: 'Alumni guides to your target role' },
-      { path: '/referrals', label: 'Referrals', icon: Briefcase, hint: 'Job referrals from alumni who opt in' },
-      { path: '/skills-graph', label: 'Skill Graph', icon: Network, roles: ['student'], hint: 'How your skills connect' },
-      { path: '/reviews', label: 'Reviews', icon: Award, hint: 'Peer reputation and trust' },
-    ],
-  },
-  {
-    label: 'Careers & knowledge',
-    items: [
-      { path: '/recruiter', label: 'Careers', icon: Briefcase, roles: ['student', 'alumni'], hint: 'Roles and your applications' },
-      { path: '/documents', label: 'Library', icon: FileText, hint: 'Curated knowledge, ready to ask about' },
+      { path: '/placement-training', label: 'Placement & Training', icon: Briefcase, roles: ['student', 'alumni'], hint: 'Job openings and career roadmaps' },
     ],
   },
   {
     label: 'Manage',
     items: [
-      { path: '/analytics', label: 'Analytics', icon: BarChart3, hint: 'The pulse of your campus' },
-      { path: '/eval', label: 'Evaluation', icon: FlaskConical, roles: ['student'], hint: 'RAG and teammate research harness' },
-      { path: '/admin', label: 'Admin', icon: ShieldAlert, roles: ['student'], hint: 'Keep the community healthy' },
+      { path: '/documents', label: 'Library', icon: FileText, roles: ['admin'], hint: 'Curated knowledge and RAG sources' },
+      { path: '/analytics', label: 'Analytics', icon: BarChart3, roles: ['admin'], hint: 'The pulse of your campus' },
+      { path: '/eval', label: 'Evaluation', icon: FlaskConical, roles: ['admin'], hint: 'RAG research harness' },
+      { path: '/admin', label: 'Admin', icon: ShieldAlert, roles: ['admin'], hint: 'Keep the community healthy' },
       { path: '/settings', label: 'Settings', icon: Settings, hint: 'Make it yours' },
     ],
   },
@@ -145,6 +126,7 @@ export const PAGE_META: Record<string, { title: string; sub: string }> = {
   '/documents': { title: 'Library', sub: 'Curated knowledge, ready to ask about' },
   '/projects': { title: 'Projects', sub: 'Build together, ship together' },
   '/events': { title: 'Events', sub: 'Hackathons, workshops, gatherings' },
+  '/profiles': { title: 'Member', sub: 'Campus profile' },
   '/mentorship': { title: 'Mentorship', sub: 'Learn from those who walked it' },
   '/skills-graph': { title: 'Skill Graph', sub: 'How your skills connect' },
   '/recruiter': { title: 'Careers', sub: 'Roles and your applications' },
@@ -180,5 +162,5 @@ export function breadcrumbFor(path: string): { label: string; to?: string }[] {
   }
   // Routes that live outside the sidebar (or a typo) still deserve a name.
   const meta = PAGE_META[path]
-  return meta ? [{ label: 'Campus AI' }, { label: meta.title }] : [{ label: 'Campus AI' }]
+  return meta ? [{ label: 'Campus Connect' }, { label: meta.title }] : [{ label: 'Campus Connect' }]
 }

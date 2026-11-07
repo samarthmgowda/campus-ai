@@ -69,8 +69,8 @@ export default function MessagesPage() {
   })
 
   const { data: users = [] } = useQuery({
-    queryKey: ['demo-users'],
-    queryFn: () => api.get<Student[]>('/demo/users'),
+    queryKey: ['users'],
+    queryFn: () => api.get<Student[]>('/users'),
   })
 
   const { data: thread = [], isLoading: threadLoading } = useQuery({
