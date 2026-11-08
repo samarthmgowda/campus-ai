@@ -241,4 +241,38 @@ class AskServiceTest {
         assertFalse(resp.retried(), "no retry happened, so the flag must stay false");
         verify(chatService, times(1)).chat(any(), any());
     }
+
+    // --- Short no-op / acknowledgement guard ---
+
+    private static final String ACK_REPLY =
+            "How can I help you? Questions about courses, placements, events, or alumni are welcome.";
+
+    @Test
+    void pureAcknowledgement_isShortCircuitedWithoutRag() {
+        for (String msg : List.of("ok", "Okay", "thanks", "thanks!", "got it", "ok, thanks", "sure", "yes")) {
+            var resp = askService.ask(msg, null);
+            assertEquals(ACK_REPLY, resp.answer(), "should short-circuit: " + msg);
+            assertTrue(resp.answered());
+        }
+        // No RAG pass should have been attempted for any of them.
+        verify(searchService, never()).search(any(), anyInt());
+    }
+
+    @Test
+    void questionStartingWithAckWord_isNotSwallowed() {
+        // Regression: a bare prefix match on "ok " / "sure " used to swallow real short questions.
+        when(searchService.search(any(), anyInt())).thenReturn(List.of());
+        for (String msg : List.of("ok and the date?", "sure, when is it?", "ok when", "great — how many can join?")) {
+            var resp = askService.ask(msg, null);
+            assertNotEquals(ACK_REPLY, resp.answer(), "must NOT be treated as a no-op: " + msg);
+        }
+        verify(searchService, atLeastOnce()).search(any(), anyInt());
+    }
+
+    @Test
+    void greetingIsNotTreatedAsAcknowledgement() {
+        when(searchService.search(any(), anyInt())).thenReturn(List.of());
+        var resp = askService.ask("hello", null);
+        assertNotEquals(ACK_REPLY, resp.answer());
+    }
 }
