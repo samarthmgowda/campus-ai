@@ -12,12 +12,50 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class AskService {
 
     private static final String OUT_OF_SCOPE_ANSWER =
             "I can only help with Campus Connect and college-related questions, and I could not find anything about that in the college documents.";
+
+    /** Single-word acknowledgements that, on their own, need no RAG pass. */
+    private static final Set<String> ACK_WORDS = Set.of(
+            "ok", "okay", "k", "thanks", "thx", "cool", "great", "awesome", "nice",
+            "perfect", "sure", "certainly", "yes", "yeah", "yep", "alright", "welcome",
+            "np", "gotcha", "understood");
+
+    /** Multi-word acknowledgements matched against the whole message. */
+    private static final Set<String> ACK_PHRASES = Set.of(
+            "thank you", "got it", "sounds good", "my bad", "my mistake", "no problem");
+
+    /** Joining words that may accompany a pure acknowledgement ("ok, thanks"). */
+    private static final Set<String> ACK_FILLERS = Set.of("fine", "then", "and", "so");
+
+    /**
+     * True only when the message consists ENTIRELY of acknowledgements (plus joining
+     * filler), so "ok, thanks" is a no-op but "ok and the date?" is treated as a
+     * question. Matching on a bare prefix would wrongly swallow real short questions.
+     */
+    private boolean isAcknowledgement(String question) {
+        String trimmed = question.trim();
+        if (trimmed.isEmpty() || trimmed.length() > 24) return false;
+        // A trailing question mark signals an actual question — never a no-op.
+        if (trimmed.endsWith("?")) return false;
+        String normalized = trimmed.toLowerCase(Locale.ENGLISH)
+                .replaceAll("[^a-z0-9\\s]", " ").trim().replaceAll("\\s+", " ");
+        if (ACK_PHRASES.contains(normalized)) return true;
+        boolean sawAck = false;
+        for (String word : normalized.split(" ")) {
+            if (ACK_WORDS.contains(word) || ACK_FILLERS.contains(word)) {
+                if (ACK_WORDS.contains(word)) sawAck = true;
+                continue;
+            }
+            return false; // an unrecognised word means this is a real message
+        }
+        return sawAck;
+    }
 
     private static final String ABSTAIN_ANSWER =
             "I don't have that information in the college documents.";
@@ -76,6 +114,16 @@ public class AskService {
     public AskResponse ask(String question, Long userId) {
         if (question == null || question.isBlank()) {
             throw new IllegalArgumentException("Question must not be null or blank");
+        }
+
+        // --- Short no-op / acknowledgment guard: avoid redundant RAG for trivial follow-ups ---
+        // Only fires when the message consists ENTIRELY of acknowledgements (plus joining
+        // filler). A single leading ack must not swallow a real question — "ok and the date?"
+        // is a question, not a no-op, so matching only on a prefix is wrong.
+        if (isAcknowledgement(question)) {
+            return new AskResponse(true,
+                    "How can I help you? Questions about courses, placements, events, or alumni are welcome.",
+                    List.of());
         }
 
         // --- My Projects / My Teams route (requires authenticated user) ---
