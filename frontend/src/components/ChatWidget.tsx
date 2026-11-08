@@ -1,148 +1,128 @@
 import { useState } from 'react'
-import { useQuery, useMutation } from '@tanstack/react-query'
-import { api } from '../api/client'
-import { Bot, X, Send, Plus } from 'lucide-react'
-import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
+import { useNavigate } from 'react-router-dom'
+import { Bot, X, Maximize2, Sparkles } from 'lucide-react'
+import { useChat } from '../hooks/useChat'
+import { ChatThread } from './chat/ChatThread'
+import { ChatComposer } from './chat/ChatComposer'
 import { cn } from '../utils/cn'
 
-interface Message {
-  id: number
-  text: string
-  sender: 'user' | 'bot'
-  timestamp: string
-}
+const SUGGESTED = ['How complete is my profile?', 'Recommend skills for me', 'Open postings']
 
-interface Thread {
-  id: string
-  title: string
-  lastMessage: string
-  updatedAt: string
-}
-
+/**
+ * The minimized Campus AI launcher.
+ *
+ * A floating bubble opens a compact chat with the same conversation shown on
+ * the full page — both read from {@link useChat}. Clicking the "Campus AI"
+ * title in the header (or the expand button) opens the full-page chat.
+ */
 export default function ChatWidget() {
   const [isOpen, setIsOpen] = useState(false)
-  const [currentThreadId, setCurrentThreadId] = useState<string | null>(null)
-  const [input, setInput] = useState('')
-  const [isTyping, setIsTyping] = useState(false)
+  const navigate = useNavigate()
+  const chat = useChat()
 
-  const { data: threads } = useQuery({
-    queryKey: ['chat-threads'],
-    queryFn: () => api.get<Thread[]>('/chat/threads')
-  })
-
-  const { data: messages } = useQuery({
-    queryKey: ['chat-messages', currentThreadId],
-    queryFn: () => api.get<Message[]>(currentThreadId ? `/chat/threads/${currentThreadId}/messages` : '/chat/messages'),
-    enabled: isOpen
-  })
-
-  const sendMutation = useMutation({
-    mutationFn: (text: string) => api.post('/chat/messages', { text, threadId: currentThreadId }),
-    onSuccess: () => {
-      setInput('')
-    }
-  })
-
-  const handleSend = async () => {
-    if (!input.trim()) return
-    setIsTyping(true)
-    try {
-      await sendMutation.mutateAsync(input)
-    } finally {
-      setIsTyping(false)
-    }
+  const openFullPage = () => {
+    setIsOpen(false)
+    navigate('/chat/full')
   }
 
   return (
     <div className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-4">
       {isOpen && (
-        <div className="w-[380px] h-[550px] max-h-[calc(100vh-120px)] bg-white rounded-3xl shadow-2xl border border-campus-900/[0.08] flex flex-col overflow-hidden animate-slide-up">
-          <div className="h-16 px-5 flex items-center justify-between bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white">
-            <div className="flex items-center gap-2.5">
-              <Bot className="h-5 w-5" />
-              <p className="font-display font-bold text-body-sm">Campus AI Assistant</p>
-            </div>
-            <button onClick={() => setIsOpen(false)} className="p-1 hover:bg-white/20 rounded-lg transition-colors">
-              <X className="h-5 w-5" />
+        <div className="w-[360px] h-[520px] max-h-[calc(100vh-120px)] bg-white rounded-3xl shadow-2xl border border-campus-900/[0.08] flex flex-col overflow-hidden animate-slide-up">
+          <div className="h-14 px-4 flex items-center justify-between bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white">
+            {/* The title is the affordance to expand into the full-page chat. */}
+            <button
+              onClick={openFullPage}
+              className="group flex items-center gap-2.5 min-w-0 rounded-lg -ml-1 px-1 py-1 hover:bg-white/15 transition-colors"
+              title="Open full chat"
+            >
+              <Bot className="h-5 w-5 flex-shrink-0" />
+              <span className="font-display font-bold text-body-sm truncate">Campus AI</span>
+              <Maximize2 className="h-3.5 w-3.5 opacity-0 group-hover:opacity-100 transition-opacity flex-shrink-0" />
             </button>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={openFullPage}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Open full chat"
+              >
+                <Maximize2 className="h-4 w-4" />
+              </button>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 hover:bg-white/20 rounded-lg transition-colors"
+                aria-label="Close chat"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
           </div>
 
-          <div className="flex-1 overflow-hidden flex">
-            {/* Threads Sidebar */}
-            <div className="w-24 sm:w-32 border-r border-campus-900/[0.05] bg-surface-50/50 flex flex-col">
-              <button
-                onClick={() => setCurrentThreadId(null)}
-                className="p-3 text-center hover:bg-surface-100 transition-colors border-b border-campus-900/[0.05]"
-              >
-                <Plus className="h-5 w-5 mx-auto text-surface-400" />
-                <span className="text-micro block mt-1 text-surface-500 font-medium">New</span>
-              </button>
-              <div className="flex-1 overflow-y-auto p-2 space-y-1">
-                {threads?.map(t => (
-                  <button
-                    key={t.id}
-                    onClick={() => setCurrentThreadId(t.id)}
-                    className={cn(
-                      "w-full text-left p-2 rounded-xl text-micro transition-all truncate",
-                      currentThreadId === t.id ? "bg-white shadow-sm text-campus-700 font-semibold" : "text-surface-500 hover:bg-surface-100"
-                    )}
-                  >
-                    {t.title}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            {/* Chat Area */}
-            <div className="flex-1 flex flex-col bg-white">
-              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-light">
-                {messages?.map(m => (
-                  <div key={m.id} className={cn("flex", m.sender === 'user' ? "justify-end" : "justify-start")}>
-                    <div className={cn(
-                      "max-w-[80%] p-3 rounded-2xl text-body-sm",
-                      m.sender === 'user'
-                        ? "bg-campus-600 text-white rounded-tr-none"
-                        : "bg-surface-100 text-surface-800 rounded-tl-none"
-                    )}>
-                      {m.text}
-                    </div>
-                  </div>
-                ))}
-                {isTyping && (
-                  <div className="flex justify-start">
-                    <div className="bg-surface-100 p-3 rounded-2xl rounded-tl-none flex gap-1">
-                      <span className="w-1.5 h-1.5 bg-surface-400 rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
-                      <span className="w-1.5 h-1.5 bg-surface-400 rounded-full animate-bounce" style={{ animationDelay: '150ms' }} />
-                      <span className="w-1.5 h-1.5 bg-surface-400 rounded-full animate-bounce" style={{ animationDelay: '300ms' }} />
-                    </div>
-                  </div>
-                )}
-              </div>
-              <div className="p-4 border-t border-campus-900/[0.05] bg-surface-50/30">
-                <div className="flex items-center gap-2">
-                  <Input
-                    value={input}
-                    onChange={e => setInput(e.target.value)}
-                    onKeyDown={e => e.key === 'Enter' && handleSend()}
-                    placeholder="Ask anything..."
-                    className="bg-white"
-                  />
-                  <Button variant="accent" size="sm" onClick={handleSend} disabled={sendMutation.isPending || !input.trim()}>
-                    <Send className="h-4 w-4" />
-                  </Button>
+          <div className="flex-1 overflow-y-auto p-4 scrollbar-light">
+            {chat.isEmpty ? (
+              <div className="flex h-full flex-col items-center justify-center text-center px-4">
+                <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] mb-3">
+                  <Sparkles className="h-6 w-6 text-white" aria-hidden="true" />
+                </span>
+                <p className="font-display font-bold text-body text-campus-950">Ask Campus AI</p>
+                <p className="text-caption text-surface-400 mt-1 mb-4">
+                  Answers grounded in your college knowledge base.
+                </p>
+                <div className="w-full space-y-2">
+                  {SUGGESTED.map((q) => (
+                    <button
+                      key={q}
+                      onClick={() => chat.ask(q)}
+                      className="w-full rounded-xl border border-campus-900/[0.08] bg-white px-3 py-2.5 text-left text-caption font-medium text-surface-700 hover:border-campus-900/20 hover:bg-campus-50/50 transition-all"
+                    >
+                      {q}
+                    </button>
+                  ))}
                 </div>
               </div>
-            </div>
+            ) : (
+              <ChatThread
+                history={chat.history}
+                activeAsk={chat.activeAsk}
+                isPending={chat.isPending}
+                error={chat.error}
+                liveResponse={chat.liveResponse}
+                compact
+              />
+            )}
+          </div>
+
+          <div className="p-3 border-t border-campus-900/[0.05] bg-surface-50/40">
+            <ChatComposer
+              value={chat.question}
+              onChange={chat.setQuestion}
+              onSubmit={() => chat.ask(chat.question)}
+              disabled={chat.isPending}
+              loading={chat.isPending}
+              placeholder="Ask anything…"
+              compact
+            />
+            <button
+              onClick={openFullPage}
+              className={cn(
+                'mt-2 w-full text-center text-micro font-medium text-surface-400',
+                'hover:text-campus-600 transition-colors',
+              )}
+            >
+              Open full chat with history →
+            </button>
           </div>
         </div>
       )}
 
       <button
         onClick={() => setIsOpen(!isOpen)}
+        aria-label={isOpen ? 'Close Campus AI' : 'Open Campus AI'}
         className={cn(
-          "h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 active:scale-95",
-          isOpen ? "bg-white text-campus-600 rotate-90" : "bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white"
+          'h-14 w-14 rounded-full shadow-2xl flex items-center justify-center transition-all duration-300 active:scale-95',
+          isOpen
+            ? 'bg-white text-campus-600 rotate-90'
+            : 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white',
         )}
       >
         {isOpen ? <X className="h-6 w-6" /> : <Bot className="h-6 w-6" />}

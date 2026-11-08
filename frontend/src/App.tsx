@@ -3,6 +3,7 @@ import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import { ChatProvider } from './hooks/useChat'
 import { RequireAuth, RequireRole, RedirectIfSignedIn } from './components/RouteGuards'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -56,12 +57,19 @@ function App() {
   return (
     <ErrorBoundary>
       <QueryClientProvider client={queryClient}>
+        <ChatProvider>
         <BrowserRouter>
           <Routes>
             {/* Public. The landing page is the front door; /login is the way in. */}
             <Route path="/" element={<LandingPage />} />
             <Route element={<RedirectIfSignedIn />}>
               <Route path="/login" element={<LoginPage />} />
+            </Route>
+
+            {/* Full-page chat, reached by expanding the floating widget. It is
+                its own shell (own header, no sidebar), so it sits outside Layout. */}
+            <Route element={<RequireAuth />}>
+              <Route path="/chat/full" element={<ChatPage fullPage />} />
             </Route>
 
             {/* Everything below requires a chosen profile. */}
@@ -127,6 +135,7 @@ function App() {
               guarded by the compile-time flag rather than a runtime check. */}
           {import.meta.env.DEV && <ReactQueryDevtools initialIsOpen={false} />}
         </BrowserRouter>
+        </ChatProvider>
       </QueryClientProvider>
     </ErrorBoundary>
   )

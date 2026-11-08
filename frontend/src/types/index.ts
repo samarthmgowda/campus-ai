@@ -122,16 +122,6 @@ export interface Message {
   createdAt: string
 }
 
-export interface Conversation {
-  peerId: number
-  peerName: string
-  lastMessageId: number
-  preview: string
-  lastAt: string
-  direction: 'in' | 'out'
-  unreadCount: number
-}
-
 export interface Notification {
   id: number
   recipientId: number
@@ -204,20 +194,28 @@ export interface MentorshipRequest {
   createdAt: string
 }
 
+/** One persisted question/answer pair (a turn) in a chat thread. */
 export interface ChatTurn {
   id: number
-  userId: number
+  conversationId: string
   question: string
   answer: string
   answered: boolean
-  sources: ChatSource[]
   cards?: EntityCard[] | null
   createdAt: string
 }
 
+/** A chat thread (conversation) belonging to the signed-in user. */
+export interface Conversation {
+  id: string
+  title: string
+  turnCount: number
+  lastMessageAt: string | null
+}
+
 /** Clickable profile/event/project/document card returned with an answer. */
 export interface EntityCard {
-  type: 'student' | 'event' | 'project' | 'document'
+  type: 'student' | 'event' | 'project' | 'document' | 'roadmap' | 'alumni'
   id: number
   title: string
   subtitle: string
