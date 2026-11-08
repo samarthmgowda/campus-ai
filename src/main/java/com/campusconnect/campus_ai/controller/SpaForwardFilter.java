@@ -31,6 +31,7 @@ public class SpaForwardFilter extends OncePerRequestFilter {
     private static final Set<String> SPA_PATHS = Set.of(
             "/home",
             "/chat",
+            "/chat/full",
             "/search",
             "/reviews",
             "/roadmaps",

@@ -41,12 +41,16 @@ public class AgentController {
             return AgentResponse.clarification("Could you rephrase your request?");
         }
 
+        // Optional thread id. Absent → the default conversation, so existing
+        // single-thread callers keep working unchanged.
+        String conversationId = body != null && body.get("conversationId") instanceof String c ? c : null;
+
         AgentResponse resp = orchestrator.processIntent(intent, userId);
 
         // Persist chat turn so it survives page refresh — cards included, so the
         // structured profile/event cards survive a reload and a history replay.
         boolean answered = "success".equals(resp.type()) || "info".equals(resp.type());
-        chatHistoryService.save(userId, intent, resp.text(), answered, resp.cards());
+        chatHistoryService.save(userId, intent, resp.text(), answered, resp.cards(), conversationId);
 
         return resp;
     }

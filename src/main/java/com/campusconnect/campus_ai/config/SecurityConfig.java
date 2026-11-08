@@ -49,7 +49,7 @@ public class SecurityConfig {
      * Accept: text/html, so they fall through to the controllers untouched.
      */
     private static final Set<String> SPA_PAGE_PATHS = Set.of(
-            "/", "/home", "/chat", "/search", "/reviews", "/roadmaps", "/referrals",
+            "/", "/home", "/chat", "/chat/full", "/search", "/reviews", "/roadmaps", "/referrals",
             "/documents", "/projects", "/events", "/community", "/messages", "/notifications",
             "/mentorship", "/recruiter", "/admin", "/analytics", "/profile", "/settings", "/login",
             "/dashboard", "/dashboard/alumni", "/dashboard/recruiter", "/skills-graph", "/eval",
