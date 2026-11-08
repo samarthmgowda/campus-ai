@@ -99,6 +99,20 @@
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
+				<configuration>
+					<!-- Default `mvnw spring-boot:run` to the local `dev` profile, which
+					     supplies throwaway secrets so a fresh clone boots zero-config.
+					     It only affects this run goal — packaged jars and other goals are
+					     untouched, so `java -jar` and production still start with NO
+					     profile and stay fail-closed (SecretsGuard refuses to start
+					     without a real JWT_SECRET).
+					     Override for a real environment, e.g.:
+					         mvnw spring-boot:run -Dspring-boot.run.profiles=prod
+					     with JWT_SECRET set in the environment. -->
+					<profiles>
+						<profile>dev</profile>
+					</profiles>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

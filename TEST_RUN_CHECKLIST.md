@@ -22,9 +22,9 @@ via `ToolAutoConfiguration`. Tools use case-insensitive substring trigger matchi
 priority (higher first). RAG fallback is still handled directly by `AgentOrchestrator.tryRagFallback`.
 
 - [ ] `mvnw.cmd clean compile` → 0 warnings on JDK 22
-- [ ] `mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev` → boots without stack trace
-      (the `dev` profile supplies throwaway local secrets; without it `SecretsGuard`
-      refuses to start unless `JWT_SECRET` is set. Requires Postgres on :5432.)
+- [ ] `mvnw.cmd spring-boot:run` → boots without stack trace
+      (defaults to the `dev` profile, which supplies throwaway local secrets.
+      Requires Postgres on :5432.)
 - [ ] Health: `GET /documents` → 200 (list or `[]`) — as an admin, since Library is admin-gated
 
 ## Phase 2 — RAG core (Section A — gates everything else)
