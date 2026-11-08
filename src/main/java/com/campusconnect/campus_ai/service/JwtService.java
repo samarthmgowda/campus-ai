@@ -20,7 +20,10 @@ import java.util.*;
 @Service
 public class JwtService {
 
-    @Value("${jwt.secret:campus-ai-super-secret-key-at-least-32-chars-long}")
+    // No default on purpose: a fallback here would be a second copy of a weak
+    // secret. SecretsGuard rejects a blank/short/placeholder value at startup
+    // outside the `dev` profile, so by the time a token is signed this is real.
+    @Value("${jwt.secret:}")
     private String secret;
 
     @Value("${jwt.expiration-ms:86400000}")

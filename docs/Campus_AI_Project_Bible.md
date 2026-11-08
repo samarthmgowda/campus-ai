@@ -369,7 +369,7 @@ The core architectural question was: **Is the current rule-based parameter extra
 
 #### **Phase 1 — Build + boot**
 - `mvnw.cmd clean compile` → 0 warnings on JDK 22
-- `mvnw.cmd spring-boot:run` → boots without stack trace
+- `mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev` → boots without stack trace
 - Health: GET /documents → 200
 
 #### **Phase 2 — RAG core (gates everything)**
@@ -456,7 +456,7 @@ Phase 8 has three sub-spheres designed to unblock the project, validate what's b
 - [ ] Ollama at localhost:11434 (bge-m3 + qwen2.5:3b)
 - [ ] JAVA_HOME=C:\Program Files\Java\jdk-22
 - [ ] `mvnw.cmd clean compile` → 0 warnings
-- [ ] `mvnw.cmd spring-boot:run` → boots without errors
+- [ ] `mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev` → boots without errors
 - [ ] Health: GET /documents → 200 []
 
 **Test Execution Order (top-to-bottom gating):**
@@ -502,7 +502,7 @@ Phase 8 has three sub-spheres designed to unblock the project, validate what's b
 **Goal:** Create the master reference so future sessions can pick up without 20+ context switches.
 
 **Activities:**
-- [ ] **Verify JDK 22 compilation** on user's local machine: `mvnw clean compile` → 0 warnings; `mvnw spring-boot:run` → boots
+- [ ] **Verify JDK 22 compilation** on user's local machine: `mvnw clean compile` → 0 warnings; `mvnw spring-boot:run -Dspring-boot.run.profiles=dev` → boots
 - [ ] **Create `CAMPUS_AI_ARCHITECTURE.md`** — single source of truth covering:
   - ToolRegistry dispatch flow (all 18 triggers + priority sorting)
   - Hybrid extraction pattern (rules → LLM → clarification) with code snippets from MentorshipTool + ProjectInviteTool
@@ -563,7 +563,7 @@ ollama pull qwen2.5:3b
 :: 4. Seed dev data (one-time)
 cd C:\PROJECTS\campus-ai
 .\mvnw.cmd clean compile
-.\mvnw.cmd spring-boot:run &
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev &
 
 :: 5. In separate terminal: Thunder Client
 ::    - Import: requests.http (all key test endpoints)
@@ -593,7 +593,7 @@ cd C:\PROJECTS\campus-ai
 
 **What cannot be done:**
 - `mvnw clean compile` → 0 warnings
-- `mvnw spring-boot:run` → boots without errors
+- `mvnw spring-boot:run -Dspring-boot.run.profiles=dev` → boots without errors
 - Unit test execution (JUnit, Mockito, etc.)
 - Integration test runs via Thunder Client until JDK 22 available
 
@@ -715,7 +715,7 @@ The 0.45 threshold was empirically derived from the Hackathon Rules domain:
 | Header in URL instead of Header tab | Auth failures | Set X-Demo-User: 1 in Thunder Client Header tab, not URL |
 | Unencoded spaces in `?q=` | 400 error | Always URL-encode query values |
 | Hidden entities return 404 | By design | Projects/docs/pending events hidden by design; not a bug |
-| New tables need restart | Referrals table example | After adding referrals table, restart backend (`spring-boot:run`) |
+| New tables need restart | Referrals table example | After adding referrals table, restart backend (`spring-boot:run -Dspring-boot.run.profiles=dev`) |
 | Recruiter ids wrong | Assume 1, adjust after seeding | After `POST /dev/seed-recruiter`, confirm actual ids and adjust |
 | Student 2 / alumni 1 missing | Re-import prototype SQL | Ensure prototype SQL import includes required base records |
 | Ollama down → 500 error | Should be 200 via Lookup fallback | Verify `tryRagFallback` handles OllamaException gracefully |

@@ -17,7 +17,7 @@ This document prepares for rigorous testing of the Campus AI chatbot (the `/ask`
 3. **Ollama** at `localhost:11434` with models:
    - `bge-m3` (1027M param embeddings)
    - `qwen2.5:3b` (3B param generation)
-4. **Backend running**: `cd C:\PROJECTS\campus-ai && mvnw.cmd spring-boot:run`
+4. **Backend running**: `cd C:\PROJECTS\campus-ai && mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev` (the `dev` profile supplies throwaway local secrets; without it `SecretsGuard` refuses to start unless `JWT_SECRET` is set)
 5. **Verify health**: `GET http://localhost:8080/documents` → 200
 
 ### Test Data Seeding

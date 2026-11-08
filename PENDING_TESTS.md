@@ -9,8 +9,11 @@ Prereqs: Postgres at localhost:5432 postgres/1234, Ollama at localhost:11434 wit
 set JAVA_HOME=C:\Program Files\Java\jdk-22
 cd C:\PROJECTS\campus-ai
 mvnw.cmd clean compile
-mvnw.cmd spring-boot:run
+mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=dev
 ```
+
+The `dev` profile supplies throwaway local secrets. Without it, `SecretsGuard`
+refuses to start unless `JWT_SECRET` (and optionally `APP_ADMIN_PASSWORD`) are set.
 
 Health: `GET http://localhost:8080/documents` → 200 `[]` or list (visible only, hidden filtered). If 404, check port not blocked.
 
