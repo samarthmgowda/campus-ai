@@ -18,20 +18,26 @@ public class AlumniController {
         this.alumniService = alumniService;
     }
 
+    /**
+     * Search alumni with optional filters.
+     * GET /alumni?role=backend&skill=react
+     * Returns card-format profiles.
+     */
     @GetMapping
     public List<Map<String, Object>> search(
             @RequestParam(required = false) String skill,
-            @RequestParam(required = false) String availability) {
-        return alumniService.search(skill, availability).stream().map(a -> {
+            @RequestParam(required = false) String availability,
+            @RequestParam(required = false) String role) {
+        return alumniService.search(skill, availability, role).stream().map(a -> {
             Map<String, Object> m = new java.util.LinkedHashMap<>();
             m.put("id", a.getId());
             m.put("name", a.getName());
             m.put("branch", a.getBranch());
             m.put("graduationYear", a.getGraduationYear());
-            m.put("skills", a.getSkills());
             m.put("currentRole", a.getCurrentRole());
             m.put("currentCompany", a.getCurrentCompany());
             m.put("availability", a.getAvailability());
+            m.put("skills", a.getSkills());
             return m;
         }).collect(Collectors.toList());
     }

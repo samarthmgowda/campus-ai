@@ -19,15 +19,21 @@ public class AlumniService {
         this.skillGraphService = skillGraphService;
     }
 
-    public List<Alumni> search(String skill, String availability) {
+    public List<Alumni> search(String skill, String availability, String role) {
         boolean hasSkill = skill != null && !skill.isBlank();
         boolean hasAvailability = availability != null && !availability.isBlank();
+        boolean hasRole = role != null && !role.isBlank();
 
-        if (!hasSkill && !hasAvailability) {
+        if (!hasSkill && !hasAvailability && !hasRole) {
             return repository.findAll();
         }
-        if (hasSkill) return findByWholeSkill(skill.trim());
-        return repository.findByAvailabilityIgnoreCase(availability.trim());
+
+        // Start with all alumni and apply filters
+        return repository.findAll().stream()
+                .filter(a -> !hasRole || a.getCurrentRole() != null && a.getCurrentRole().toLowerCase().contains(role.trim().toLowerCase()))
+                .filter(a -> !hasSkill || hasSkillAliasAware(a.getSkills(), skill.trim().toLowerCase()))
+                .filter(a -> !hasAvailability || "MENTORING".equalsIgnoreCase(a.getAvailability()) || "BOTH".equalsIgnoreCase(a.getAvailability()))
+                .collect(Collectors.toList());
     }
 
     private List<Alumni> findByWholeSkill(String skill) {

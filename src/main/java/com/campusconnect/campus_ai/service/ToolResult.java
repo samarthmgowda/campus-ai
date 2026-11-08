@@ -40,7 +40,7 @@ public record ToolResult(
     }
 
     public record EntityCard(
-            String type,      // "student", "event", "project", "document"
+            String type,      // "student", "event", "project", "document", "roadmap", "alumni"
             Long id,
             String title,
             String subtitle,
