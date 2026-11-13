@@ -7,6 +7,52 @@ export default {
   theme: {
     extend: {
       colors: {
+        // Prototype 6:3:1 color system: Midnight Black, Electric Blue, Sunset Orange.
+        //
+        // One flat ramp so every `er-*` class a page writes actually resolves.
+        // 50-700 is the electric-blue ramp; 800-950 is the midnight-black family
+        // that carries surfaces. Duplicate keys used to live here (500/600/700
+        // were declared twice), so the later orange silently won and `er-500`
+        // rendered orange instead of blue.
+        er: {
+          // Electric blue ramp - primary accent
+          50: '#EEF3FF',
+          100: '#D7E2FF',
+          200: '#B3C7FF',
+          300: '#8AA6FF',
+          400: '#6385FF',
+          500: '#2F6BFF', // primary
+          600: '#2557DB',
+          700: '#1C43AE',
+          // Midnight black family - base surfaces
+          800: '#171A22',
+          900: '#0F1117',
+          950: '#090A10',
+
+          // Named aliases, because pages write `from-er-blue to-er-orange`.
+          bg: '#090A10',
+          bg2: '#2F6BFF',
+          blue: '#2F6BFF',
+          // Sunset orange - CTA accent only (6 : 3 : 1, never as body colour)
+          orange: '#FF7A1A',
+          // Bridge hue for the one closing gradient that references it.
+          purple: '#7C5CFF',
+        },
+        // Neutral text ramp.
+        //
+        // Electric blue is the 30% accent, so prose cannot use the blue ramp —
+        // `text-er-300` and `text-er-400` are #8AA6FF and #6385FF, which turned
+        // every paragraph blue and collapsed the 6:3:1 ratio into "all accent".
+        // Body copy and muted meta come from here instead; blue stays for links,
+        // icons, focus rings and the one selected state.
+        ink: {
+          50: '#F4F6FB',
+          100: '#E3E7F0',
+          200: '#C6CCDA',
+          300: '#A2AAB9', // body copy on dark  - 8.0:1 on #090A10
+          400: '#7C8595', // muted meta         - 5.0:1 on #090A10
+          500: '#5D6574',
+        },
         campus: {
           // Prototype violet - primary brand ramp anchored at #667eea
           50: '#eef2ff',

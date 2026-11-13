@@ -3,7 +3,10 @@ import { MutationCache, QueryClient, QueryClientProvider } from '@tanstack/react
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools'
 import Layout from './components/Layout'
 import ErrorBoundary from './components/ErrorBoundary'
+import ConnectionGuard from './components/ConnectionGuard'
+import SessionBootstrap from './components/SessionBootstrap'
 import { ChatProvider } from './hooks/useChat'
+import { onSessionReset } from './utils/identity'
 import { RequireAuth, RequireRole, RedirectIfSignedIn } from './components/RouteGuards'
 import LandingPage from './pages/LandingPage'
 import LoginPage from './pages/LoginPage'
@@ -47,18 +50,45 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       staleTime: 30_000,
-      retry: 1,
       refetchOnWindowFocus: false,
+      // A 401 is already handled by the client (session torn down, redirect to
+      // /login); retrying it just fires the same doomed request again. A 403
+      // is a decision, not a blip — retrying cannot change the answer.
+      retry: (failureCount, error) => {
+        const status = (error as { status?: number } | null)?.status
+        if (status === 401 || status === 403 || status === 404) return false
+        return failureCount < 1
+      },
+    },
+    mutations: {
+      retry: false,
     },
   },
+})
+
+/**
+ * One cache for the whole app, wiped at every session boundary.
+ *
+ * This cache is module-level and outlives the components that read it, so a
+ * logout that only removed the token left every page's data in memory. The
+ * next account to sign in on the same tab was served the previous account's
+ * responses for up to `staleTime` — the most visible form of the cross-user
+ * bleed. Clearing here means "signed out" and "signed in as somebody else"
+ * are both genuinely empty states, and any query key that forgets to include
+ * the account id cannot leak, because there is nothing left to leak.
+ */
+onSessionReset(() => {
+  queryClient.clear()
 })
 
 function App() {
   return (
     <ErrorBoundary>
-      <QueryClientProvider client={queryClient}>
-        <ChatProvider>
-        <BrowserRouter>
+      <ConnectionGuard>
+        <SessionBootstrap>
+          <QueryClientProvider client={queryClient}>
+            <ChatProvider>
+              <BrowserRouter>
           <Routes>
             {/* Public. The landing page is the front door; /login is the way in. */}
             <Route path="/" element={<LandingPage />} />
@@ -137,6 +167,8 @@ function App() {
         </BrowserRouter>
         </ChatProvider>
       </QueryClientProvider>
+      </SessionBootstrap>
+      </ConnectionGuard>
     </ErrorBoundary>
   )
 }

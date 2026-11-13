@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { getId } from '../utils/identity'
+import { useSession } from '../utils/identity'
 import type { Student } from '../types'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -31,11 +31,6 @@ interface ConversationDto {
   unreadCount: number
 }
 
-function myId(): number | null {
-  const v = getId()
-  return v ? Number(v) : null
-}
-
 function initialOf(name: string | null, id: number) {
   return ((name ?? `#${id}`).trim().charAt(0) || '?').toUpperCase()
 }
@@ -61,11 +56,16 @@ export default function MessagesPage() {
   const [newPeerId, setNewPeerId] = useState('')
   const [newMessage, setNewMessage] = useState('')
   const threadEndRef = useRef<HTMLDivElement>(null)
-  const me = myId()
+  const session = useSession()
+  // Numeric id: `/users` returns numeric ids, so the "exclude myself" filter
+  // below would silently stop working if this were left as a string.
+  const meId = session?.userId ?? null
+  const me = meId != null ? Number(meId) : null
 
   const { data: inbox = [], isLoading, error, refetch } = useQuery({
-    queryKey: ['inbox'],
+    queryKey: ['inbox', me],
     queryFn: () => api.get<ConversationDto[]>('/messages/inbox'),
+    enabled: !!me,
   })
 
   const { data: users = [] } = useQuery({
@@ -74,7 +74,7 @@ export default function MessagesPage() {
   })
 
   const { data: thread = [], isLoading: threadLoading } = useQuery({
-    queryKey: ['thread', selected?.id],
+    queryKey: ['thread', me, selected?.id],
     queryFn: () => api.get<MessageDto[]>(`/messages/thread/${selected!.id}`),
     enabled: selected !== null,
   })
@@ -98,7 +98,7 @@ export default function MessagesPage() {
       api.post<MessageDto>('/messages', { recipientId, content }),
     onSuccess: () => {
       setDraft('')
-      queryClient.invalidateQueries({ queryKey: ['thread', selected?.id] })
+      queryClient.invalidateQueries({ queryKey: ['thread', me, selected?.id] })
       queryClient.invalidateQueries({ queryKey: ['inbox'] })
     },
   })

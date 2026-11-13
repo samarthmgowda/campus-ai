@@ -2,7 +2,7 @@ import { Link } from 'react-router-dom'
 import { PageContainer } from '../components/ui/PageContainer'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { getName } from '../utils/identity'
+import { useSession } from '../utils/identity'
 import { PageHeader, SkeletonCard } from '../components/ui/PageState'
 import { Badge } from '../components/ui/Badge'
 import {
@@ -35,21 +35,22 @@ function greeting() {
 }
 
 export default function HomePage() {
-  const meName = (() => {
-    try {
-      const name = getName()
-      return name ? `, ${name.split(' ')[0]}` : ''
-    } catch { return '' }
-  })()
+  // Reactive: a user switch re-renders this page with the new name and refetches
+  // under new keys, rather than keeping the previous account's greeting.
+  const session = useSession()
+  const account = session?.userId ?? null
+  const meName = session?.name ? `, ${session.name.split(' ')[0]}` : ''
 
   // Keyed under `home` so a single ['home'] invalidation (see App.tsx) refreshes
   // the whole dashboard whenever any mutation succeeds elsewhere in the app.
-  const inbox = useQuery({ queryKey: ['home', 'inbox'], queryFn: () => api.get<Conversation[]>('/messages/inbox') })
-  const notifs = useQuery({ queryKey: ['home', 'notifs'], queryFn: () => api.get<Notification[]>('/notifications') })
-  const events = useQuery({ queryKey: ['home', 'events'], queryFn: () => api.get<CampusEvent[]>('/events?upcoming=true') })
-  const projects = useQuery({ queryKey: ['home', 'projects'], queryFn: () => api.get<Project[]>('/projects/mine') })
-  const feed = useQuery({ queryKey: ['home', 'feed'], queryFn: () => api.get<FeedPost[]>('/community/feed?limit=3') })
-  const postings = useQuery({ queryKey: ['home', 'postings'], queryFn: () => api.get<Posting[]>('/recruiter/postings?status=OPEN') })
+  // The account id is part of every key: a key that names its owner can never
+  // show one account's inbox to another, even if the cache were not cleared.
+  const inbox = useQuery({ queryKey: ['home', 'inbox', account], queryFn: () => api.get<Conversation[]>('/messages/inbox'), enabled: !!account })
+  const notifs = useQuery({ queryKey: ['home', 'notifs', account], queryFn: () => api.get<Notification[]>('/notifications'), enabled: !!account })
+  const events = useQuery({ queryKey: ['home', 'events', account], queryFn: () => api.get<CampusEvent[]>('/events?upcoming=true'), enabled: !!account })
+  const projects = useQuery({ queryKey: ['home', 'projects', account], queryFn: () => api.get<Project[]>('/projects/mine'), enabled: !!account })
+  const feed = useQuery({ queryKey: ['home', 'feed', account], queryFn: () => api.get<FeedPost[]>('/community/feed?limit=3'), enabled: !!account })
+  const postings = useQuery({ queryKey: ['home', 'postings', account], queryFn: () => api.get<Posting[]>('/recruiter/postings?status=OPEN'), enabled: !!account })
 
   const unreadMsg = (inbox.data ?? []).reduce((s, c) => s + (c.unreadCount ?? 0), 0)
   const unreadNotif = (notifs.data ?? []).filter(n => !n.readFlag).length

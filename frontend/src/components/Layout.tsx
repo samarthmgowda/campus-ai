@@ -1,24 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState } from 'react'
 import { Outlet, NavLink, Link, useNavigate, useLocation } from 'react-router-dom'
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { cn } from '../utils/cn'
-import { getName, getRole, clearSession, ROLE_LABELS, type Role } from '../utils/identity'
+import { useSession, resetSession, ROLE_LABELS, type Role } from '../utils/identity'
 import { navGroupsForRole, breadcrumbFor, type NavItem } from '../config/navigation'
 import { LogOut, Menu, X, ChevronDown, Sparkles, Bell, Inbox, User as UserIcon, Settings as SettingsIcon } from 'lucide-react'
 import ChatWidget from './ChatWidget'
 
-function useBadge(kind: string | null): number | null {
+function useBadge(kind: string | null, account: string | null): number | null {
+  // Scoped to the account even though the cache is cleared on switch: a key
+  // that names the user cannot be wrong, and the badge must never show one
+  // account's unread count on another's shell.
   const inbox = useQuery({
-    queryKey: ['badge-inbox'],
+    queryKey: ['badge-inbox', account],
     queryFn: () => api.get<{ unreadCount: number }>('/messages/unread-count'),
-    enabled: kind === 'inbox',
+    enabled: kind === 'inbox' && !!account,
     refetchInterval: 60_000,
   })
   const notif = useQuery({
-    queryKey: ['badge-notif'],
+    queryKey: ['badge-notif', account],
     queryFn: () => api.get<{ unreadCount: number }>('/notifications/unread-count'),
-    enabled: kind === 'notif',
+    enabled: kind === 'notif' && !!account,
     refetchInterval: 60_000,
   })
   if (kind === 'inbox') return (inbox.data?.unreadCount ?? 0) > 0 ? inbox.data!.unreadCount : null
@@ -26,8 +29,8 @@ function useBadge(kind: string | null): number | null {
   return null
 }
 
-function NavBadge({ kind }: { kind: string }) {
-  const count = useBadge(kind)
+function NavBadge({ kind, account }: { kind: string; account: string | null }) {
+  const count = useBadge(kind, account)
   if (count === null) return null
   return (
     <span className="ml-auto min-w-[20px] px-1.5 py-0.5 text-micro font-semibold text-white bg-accent-500 rounded-full text-center tabular-nums">
@@ -36,7 +39,7 @@ function NavBadge({ kind }: { kind: string }) {
   )
 }
 
-function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
+function NavRow({ item, onNavigate, account }: { item: NavItem; onNavigate: () => void; account: string | null }) {
   const location = useLocation()
   const isActive = location.pathname === item.path
   return (
@@ -66,7 +69,7 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
         aria-hidden="true"
       />
       <span className="truncate">{item.label}</span>
-      {item.badge && <NavBadge kind={item.badge} />}
+      {item.badge && <NavBadge kind={item.badge} account={account} />}
     </NavLink>
   )
 }
@@ -74,14 +77,16 @@ function NavRow({ item, onNavigate }: { item: NavItem; onNavigate: () => void })
 function SidebarContent({
   onNavigate,
   identity,
+  account,
   onLogout,
 }: {
   onNavigate: () => void
-  identity: { name: string; role: Role } | null
+  identity: { name: string | null; role: Role } | null
+  account: string | null
   onLogout: () => void
 }) {
   const [userMenuOpen, setUserMenuOpen] = useState(false)
-  const displayName = identity?.name || 'Demo user'
+  const displayName = identity?.name || 'Campus member'
   const roleLabel = identity ? ROLE_LABELS[identity.role] : ''
   const groups = navGroupsForRole(identity?.role ?? null)
 
@@ -103,7 +108,12 @@ function SidebarContent({
             <p className="px-3.5 mb-1.5 text-micro font-semibold text-surface-400 tracking-wide">{group.label}</p>
             <div className="space-y-0.5">
               {group.items.map((item) => (
-                <NavRow key={`${group.label}-${item.path}`} item={item} onNavigate={onNavigate} />
+                <NavRow
+                  key={`${group.label}-${item.path}`}
+                  item={item}
+                  onNavigate={onNavigate}
+                  account={account}
+                />
               ))}
             </div>
           </div>
@@ -169,22 +179,26 @@ function SidebarContent({
 
 function Layout() {
   const [sidebarOpen, setSidebarOpen] = useState(false)
-  const [identity, setIdentityState] = useState<{ name: string; role: Role } | null>(null)
   const navigate = useNavigate()
   const location = useLocation()
+  // Reactive: the shell follows the live session, so a sign-out (or a token
+  // dying) updates the name, role and nav in the same paint rather than
+  // leaving the previous account's identity on screen.
+  const session = useSession()
+  const identity = session ? { name: session.name, role: session.role } : null
 
-  useEffect(() => {
-    const name = getName()
-    const role = getRole()
-    if (name || role) setIdentityState({ name: name ?? '', role: role ?? 'student' })
-    else setIdentityState(null)
-    setSidebarOpen(false)
-  }, [location.pathname])
+  // Close the mobile drawer whenever the route changes.
+  const [lastPath, setLastPath] = useState(location.pathname)
+  if (location.pathname !== lastPath) {
+    setLastPath(location.pathname)
+    if (sidebarOpen) setSidebarOpen(false)
+  }
 
   const handleLogout = () => {
-    clearSession()
-    setIdentityState(null)
-    navigate('/login')
+    // resetSession clears the query cache and every user-scoped store before
+    // dropping the token, so the next account cannot inherit this one's data.
+    resetSession('logout')
+    navigate('/login', { replace: true })
   }
 
   const trail = breadcrumbFor(location.pathname)
@@ -223,7 +237,12 @@ function Layout() {
             <X className="h-5 w-5" />
           </button>
         </div>
-        <SidebarContent onNavigate={() => setSidebarOpen(false)} identity={identity} onLogout={handleLogout} />
+        <SidebarContent
+          onNavigate={() => setSidebarOpen(false)}
+          identity={identity}
+          account={session?.userId ?? null}
+          onLogout={handleLogout}
+        />
       </aside>
 
       <div className="lg:pl-[248px] min-h-screen flex flex-col">

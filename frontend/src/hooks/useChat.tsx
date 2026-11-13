@@ -11,7 +11,7 @@ import {
 import { useQuery, useMutation, useQueryClient, type UseMutationResult } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { ChatTurn, AgentResponse, Conversation } from '../types'
-import { getId } from '../utils/identity'
+import { useSession } from '../utils/identity'
 
 /**
  * The single source of truth for the Campus AI conversation.
@@ -76,12 +76,32 @@ function newConversationId(): string {
 
 export function ChatProvider({ children }: { children: ReactNode }) {
   const queryClient = useQueryClient()
-  const account = getId()
+  // Reactive, not a one-shot read: this provider sits above the router and
+  // never unmounts, so a snapshot taken at mount would keep the first account
+  // forever. `account` is what re-keys every query and re-runs the reset below.
+  const account = useSession()?.userId ?? null
   const [question, setQuestion] = useState('')
   const [activeAsk, setActiveAsk] = useState<string | null>(null)
   const [liveResponse, setLiveResponse] = useState<AgentResponse | null>(null)
   const [conversationId, setConversationId] = useState<string>(() => newConversationId())
   const lastQuestionRef = useRef<string | null>(null)
+
+  /**
+   * A new account starts a new conversation.
+   *
+   * These four pieces of state live in the provider, not in the query cache,
+   * so clearing the cache does not touch them. Without this, the answer the
+   * previous user was reading stayed on screen after a switch — the query keys
+   * changed correctly and fetched the new user's (empty) history, but the live
+   * bubble was still the old account's reply. This is that leak, closed.
+   */
+  useEffect(() => {
+    setLiveResponse(null)
+    setActiveAsk(null)
+    setQuestion('')
+    lastQuestionRef.current = null
+    setConversationId(newConversationId())
+  }, [account])
 
   const { data: history = [], isLoading: historyLoading } = useQuery({
     queryKey: ['chat-history', account, conversationId],

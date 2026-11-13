@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query'
 import { Link, useNavigate } from 'react-router-dom'
 import { useEffect } from 'react'
 import { api } from '../api/client'
-import { getName, getId, getRole } from '../utils/identity'
+import { useSession } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
@@ -12,11 +12,6 @@ import { Reveal } from '../components/ui/Reveal'
 import {
   Briefcase, Calendar, Bell, Star, Award, ArrowUpRight, Sparkles, UserPlus,
 } from 'lucide-react'
-
-function myId(): number | null {
-  const v = getId()
-  return v ? Number(v) : null
-}
 
 function greeting() {
   const h = new Date().getHours()
@@ -28,9 +23,10 @@ function greeting() {
 
 export default function DashboardPage() {
   const navigate = useNavigate()
-  const demoUserId = myId()
-  const role = getRole()
-  const first = (getName() ?? '').split(' ')[0]
+  const session = useSession()
+  const demoUserId = session?.userId ?? null
+  const role = session?.role ?? null
+  const first = (session?.name ?? '').split(' ')[0]
 
   // Alumni and recruiters have their own dashboards with different data.
   // Redirect rather than rendering a student view to the wrong role.
@@ -90,7 +86,7 @@ export default function DashboardPage() {
   const connections = dash?.connections as { followers: number; following: number } | undefined
   const skillRecs = dash?.skillRecommendations as { recommendations: any[] } | undefined
 
-  const name = identity?.name || getName() || 'Student'
+  const name = identity?.name || session?.name || 'Student'
   const recs: any[] = skillRecs?.recommendations ?? []
 
   return (

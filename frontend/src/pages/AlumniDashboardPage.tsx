@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../api/client'
-import { getId } from '../utils/identity'
+import { useSession } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
@@ -41,13 +41,9 @@ interface Connections {
   following: number
 }
 
-function myId(): number | null {
-  const v = getId()
-  return v ? Number(v) : null
-}
-
 export default function AlumniDashboardPage() {
-  const userId = myId()
+  // Reactive so a switch cannot leave the previous alumni's numbers on screen.
+  const userId = useSession()?.userId ?? null
 
   const {
     data: dash,

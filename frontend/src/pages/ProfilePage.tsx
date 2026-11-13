@@ -4,7 +4,7 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { api } from '../api/client'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
-import { getRole, ROLE_LABELS, type Role } from '../utils/identity'
+import { useSession, ROLE_LABELS, type Role } from '../utils/identity'
 import { TrendingUp, CheckCircle2, Circle, Sparkles, Pencil, X, Star, Loader2, Github, Linkedin } from 'lucide-react'
 import { Button } from '../components/ui/Button'
 import { Input } from '../components/ui/Input'
@@ -56,7 +56,8 @@ function studentFootprint(me: Record<string, any>): FootprintStat[] {
 }
 
 export default function ProfilePage() {
-  const role: Role = getRole() ?? 'student'
+  const session = useSession()
+  const role: Role = session?.role ?? 'student'
   const isStudent = role === 'student'
   const queryClient = useQueryClient()
   const [isEditing, setIsEditing] = useState(false)
@@ -72,21 +73,25 @@ export default function ProfilePage() {
     linkedinUrl: '',
   })
 
+  // Every key names its owner: two students share a role but not a profile.
+  const account = session?.userId ?? null
+
   const { data: me, isLoading: meLoading, error: meError, refetch } = useQuery({
-    queryKey: ['me', role],
+    queryKey: ['me', account, role],
     queryFn: () => api.get<Record<string, any>>('/me'),
+    enabled: !!account,
   })
 
   const { data: completeness } = useQuery({
-    queryKey: ['completeness'],
+    queryKey: ['completeness', account],
     queryFn: () => api.get<{ score: number; missingFields: string[]; level: string }>('/me/completeness'),
-    enabled: isStudent,
+    enabled: isStudent && !!account,
   })
 
   const { data: recs } = useQuery({
-    queryKey: ['recommendations'],
+    queryKey: ['recommendations', account],
     queryFn: () => api.get<{ recommendations: { skill: string; count: number; reason: string }[] }>('/me/recommendations?limit=5'),
-    enabled: isStudent,
+    enabled: isStudent && !!account,
   })
 
   const updateMutation = useMutation({

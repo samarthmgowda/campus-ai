@@ -2,16 +2,22 @@ package com.campusconnect.campus_ai.config;
 
 import com.campusconnect.campus_ai.service.JwtAuthFilter;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.web.AuthenticationEntryPoint;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.io.IOException;
 import java.util.Set;
 
 /**
@@ -67,13 +73,65 @@ public class SecurityConfig {
                 || path.startsWith("/profiles/");
     }
 
+    /**
+     * Missing, expired or malformed credentials → 401.
+     *
+     * Spring's default entry point is {@code Http403ForbiddenEntryPoint}, which
+     * answers 403 for anonymous requests. The frontend treats 401 as "your
+     * session is gone, throw it away and go to the login screen" and any other
+     * status as "this page is broken". With 403 coming back for a dead token the
+     * client could never recover: every query on every page failed at once and
+     * nothing in the app was willing to clear the bad token, so the only escape
+     * was signing out by hand. 401 is the honest answer — we do not know who you
+     * are — and it is the signal the client already knows how to act on.
+     */
+    private static void writeJson(HttpServletResponse response, int status, String message)
+            throws IOException {
+        response.setStatus(status);
+        response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+        response.setCharacterEncoding("UTF-8");
+        response.getWriter().write("{\"status\":" + status + ",\"error\":\"" +
+                HttpStatus.valueOf(status).getReasonPhrase() + "\",\"message\":\"" + message + "\"}");
+    }
+
+    @Bean
+    public AuthenticationEntryPoint authenticationEntryPoint() {
+        return (request, response, authException) ->
+                writeJson(response, HttpServletResponse.SC_UNAUTHORIZED,
+                        "Not signed in. Please sign in again.");
+    }
+
+    /**
+     * Authenticated but not allowed → 403.
+     *
+     * This one must stay a 403. The caller's identity is valid; the token must
+     * not be discarded, because signing in again would land them on exactly the
+     * same denial. Keeping the two statuses distinct is what lets the client tell
+     * "wrong account" apart from "no account", which is the difference between
+     * redirecting to the login page and showing "this area is for admins".
+     */
+    @Bean
+    public AccessDeniedHandler accessDeniedHandler() {
+        return (request, response, accessDeniedException) ->
+                writeJson(response, HttpServletResponse.SC_FORBIDDEN,
+                        "Your account does not have access to this area.");
+    }
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(AbstractHttpConfigurer::disable)
             .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .exceptionHandling(e -> e
+                .authenticationEntryPoint(authenticationEntryPoint())
+                .accessDeniedHandler(accessDeniedHandler()))
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers("/auth/**").permitAll()
+                // Liveness probe. The browser asks this to decide whether the
+                // API is down; a 401 here would make a healthy server look
+                // unreachable, so it must answer without a token. It touches no
+                // data — see HealthController.
+                .requestMatchers("/health").permitAll()
                 .requestMatchers("/demo/users").permitAll() // Kept for demo picker, should be gated in real prod
                 // SPA shell + static bundle. Without these the login page itself fails to load.
                 .requestMatchers("/", "/index.html", "/favicon.svg", "/favicon.ico",

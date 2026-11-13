@@ -1,0 +1,647 @@
+/* ---------------------------------------------------------------------------
+   Error surfaces — 404, screen crash, server unreachable.
+
+   Same palette and type system as the landing page, but a separate scope
+   (`.er`) because the top-level ErrorBoundary sits *outside* BrowserRouter and
+   therefore outside anything the landing page owns. Duplicating eight custom
+   properties is cheaper and safer than making the boundary depend on a
+   component tree that may itself be broken.
+
+   The one idea carried over from the product: when Campus AI cannot find an
+   answer it says what it searched and what it found. A missing page is the
+   same kind of failure, so it is reported the same way — a trace, not an
+   apology.
+--------------------------------------------------------------------------- */
+
+.er {
+  --er-bg: #08090e;
+  --er-surface: #0d1017;
+  --er-raised: #12161f;
+  --er-line: rgba(255, 255, 255, 0.08);
+  --er-line-strong: rgba(255, 255, 255, 0.16);
+
+  --er-text: #f2f4f8;
+  --er-muted: #98a1b3;
+  --er-faint: rgba(242, 244, 248, 0.34);
+
+  --er-blue: #2f6bff;
+  --er-blue-bright: #6d95ff;
+  --er-orange: #ff7a1a;
+
+  --er-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  background-color: var(--er-bg);
+  color: var(--er-text);
+  font-family: 'Inter', system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* One ambient wash, top-left, blue. The only light on the page — same rule as
+   the landing hero, so the two screens read as the same room. */
+.er::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+  background:
+    radial-gradient(720px 420px at 14% 2%, rgba(47, 107, 255, 0.22), transparent 70%),
+    radial-gradient(520px 340px at 92% 8%, rgba(255, 122, 26, 0.05), transparent 68%);
+}
+
+/* Blue hairline along the very top edge: the accent is present from the first
+   pixel. Mirrors `.lp::after`. */
+.er::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 1px;
+  z-index: 60;
+  pointer-events: none;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(109, 149, 255, 0.9) 22%,
+    rgba(109, 149, 255, 0.9) 78%,
+    transparent
+  );
+}
+
+.er-shell {
+  width: 100%;
+  max-width: 1140px;
+  margin-inline: auto;
+  padding-inline: 24px;
+}
+
+/* ------------------------------------------------------------------ Header */
+
+.er-head {
+  padding: 14px 0;
+  border-bottom: 1px solid var(--er-line);
+}
+
+.er-head-inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.er-brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  color: var(--er-text);
+  text-decoration: none;
+}
+
+.er-brand-mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 9px;
+  color: #fff;
+  background: var(--er-blue);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28);
+}
+
+.er-head-context {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--er-faint);
+  letter-spacing: 0.02em;
+}
+@media (max-width: 560px) {
+  .er-head-context { display: none; }
+}
+
+.er-head-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* ------------------------------------------------------------------ Layout */
+
+.er-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 64px 0 72px;
+}
+
+.er-grid {
+  display: grid;
+  gap: 48px;
+  align-items: center;
+  width: 100%;
+}
+@media (min-width: 1024px) {
+  .er-grid {
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 64px;
+    align-items: center;
+  }
+}
+
+.er-copy { min-width: 0; }
+
+/* --------------------------------------------------------------- Eyebrow */
+
+.er-eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 9px;
+  margin: 0 0 18px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--er-muted);
+}
+
+.er-eyebrow-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--er-blue-bright);
+  box-shadow: 0 0 0 4px rgba(109, 149, 255, 0.14);
+  flex-shrink: 0;
+}
+
+/* Orange only where the situation is a genuine fault rather than a wrong turn.
+   A mistyped URL is not an alarm; a crashed screen is. */
+.er--crash .er-eyebrow-dot,
+.er--offline .er-eyebrow-dot {
+  background: var(--er-orange);
+  box-shadow: 0 0 0 4px rgba(255, 122, 26, 0.14);
+}
+
+/* ---------------------------------------------------------------- Numeral
+   The page's one loud element. It dissolves downward instead of glowing: a
+   gradient clipped to the glyphs fades the bottom third into the field, which
+   is what a lookup returning nothing looks like. No text-shadow, because a
+   clipped-text element cannot cast one. */
+
+.er-code {
+  margin: 0 0 -0.06em;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: clamp(4.5rem, 15vw, 10.5rem);
+  line-height: 0.82;
+  letter-spacing: -0.055em;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  background-image: linear-gradient(
+    180deg,
+    #f2f4f8 0%,
+    #f2f4f8 34%,
+    rgba(242, 244, 248, 0.46) 70%,
+    rgba(242, 244, 248, 0) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+/* ------------------------------------------------------------------ Copy */
+
+.er-title {
+  margin: 0;
+  font-family: 'Space Grotesk', 'Inter', sans-serif;
+  font-weight: 600;
+  font-size: clamp(1.75rem, 3.1vw, 2.625rem);
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+  max-width: 20ch;
+  text-wrap: balance;
+}
+
+.er-title:focus { outline: none; }
+.er-title:focus-visible {
+  outline: 2px solid var(--er-blue);
+  outline-offset: 6px;
+  border-radius: 4px;
+}
+
+.er-body {
+  margin: 18px 0 0;
+  max-width: 48ch;
+  font-size: 1.0625rem;
+  line-height: 1.62;
+  color: var(--er-muted);
+}
+
+.er-body code {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.875em;
+  color: var(--er-text);
+  background: rgba(255, 255, 255, 0.055);
+  border: 1px solid var(--er-line);
+  border-radius: 6px;
+  padding: 1px 6px;
+  overflow-wrap: anywhere;
+}
+
+/* ---------------------------------------------------------------- Actions */
+
+.er-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px;
+  margin-top: 32px;
+}
+
+.er-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  padding: 11px 18px;
+  font-family: inherit;
+  font-size: 0.9375rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: transform 160ms var(--er-ease), background-color 160ms var(--er-ease),
+              border-color 160ms var(--er-ease), box-shadow 160ms var(--er-ease);
+}
+.er-btn:active { transform: translateY(1px); }
+.er-btn:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--er-bg), 0 0 0 4px var(--er-blue);
+}
+
+/* Exactly one per screen. Never a gradient. */
+.er-btn--primary {
+  background: var(--er-orange);
+  color: #140a02;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.24), 0 8px 24px -12px rgba(255, 122, 26, 0.7);
+}
+.er-btn--primary:hover { background: #ff8b38; transform: translateY(-1px); }
+
+.er-btn--ghost {
+  background: transparent;
+  border-color: var(--er-line-strong);
+  color: var(--er-text);
+}
+.er-btn--ghost:hover {
+  border-color: rgba(255, 255, 255, 0.34);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.er-btn[aria-disabled='true'],
+.er-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.er-btn--sm { padding: 8px 14px; font-size: 0.875rem; }
+
+/* A small live hint under the actions: retry countdown, or "still trying". */
+.er-hint {
+  margin: 14px 0 0;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.75rem;
+  color: var(--er-faint);
+}
+
+.er-hint-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--er-blue-bright);
+  flex-shrink: 0;
+}
+.er-hint-dot--pulse { animation: er-pulse 1.4s var(--er-ease) infinite; }
+
+@keyframes er-pulse {
+  0%, 100% { opacity: 0.25; }
+  50% { opacity: 1; }
+}
+
+/* ------------------------------------------------------------- Diagnostic
+   The product's own idea, borrowed: a lookup failure reports what it looked
+   for and what came back. Same panel for all three variants, different rows. */
+
+.er-trace {
+  border: 1px solid var(--er-line);
+  border-radius: 14px;
+  background: linear-gradient(180deg, var(--er-raised) 0%, var(--er-surface) 100%);
+  box-shadow: 0 30px 80px -40px rgba(0, 0, 0, 0.9);
+  overflow: hidden;
+}
+
+.er-trace-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--er-line);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--er-faint);
+}
+
+.er-trace-head::before {
+  content: '';
+  width: 5px;
+  height: 5px;
+  border-radius: 999px;
+  background: var(--er-blue);
+}
+
+.er-rows {
+  margin: 0;
+  padding: 6px 16px 14px;
+}
+
+.er-row {
+  display: grid;
+  grid-template-columns: 96px minmax(0, 1fr);
+  gap: 12px;
+  padding: 9px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.045);
+}
+.er-row:last-child { border-bottom: none; }
+
+.er-row dt {
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.7;
+  color: var(--er-faint);
+}
+
+.er-row dd {
+  margin: 0;
+  min-width: 0;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+  color: var(--er-text);
+  overflow-wrap: anywhere;
+}
+
+.er-row dd.is-empty { color: var(--er-muted); }
+
+/* The only interactive thing inside the panel, so blue is structural here. */
+.er-row dd a {
+  color: var(--er-blue-bright);
+  text-decoration: none;
+  border-bottom: 1px solid rgba(109, 149, 255, 0.35);
+  padding-bottom: 1px;
+}
+.er-row dd a:hover { color: #fff; border-bottom-color: #fff; }
+.er-row dd a:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--er-bg), 0 0 0 4px var(--er-blue);
+  border-radius: 3px;
+}
+
+/* Stack traces are for the person debugging, folded away from everyone else. */
+.er-detail {
+  border-top: 1px solid var(--er-line);
+  padding: 12px 16px 16px;
+}
+
+.er-detail summary {
+  cursor: pointer;
+  list-style: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--er-faint);
+  transition: color 160ms var(--er-ease);
+}
+.er-detail summary::-webkit-details-marker { display: none; }
+.er-detail summary:hover { color: var(--er-text); }
+.er-detail summary:focus-visible {
+  outline: 2px solid var(--er-blue);
+  outline-offset: 4px;
+  border-radius: 3px;
+}
+
+.er-detail pre {
+  margin: 12px 0 0;
+  max-height: 190px;
+  overflow: auto;
+  padding: 12px;
+  border-radius: 9px;
+  border: 1px solid var(--er-line);
+  background: #0a0c12;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  line-height: 1.7;
+  color: var(--er-muted);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+/* ------------------------------------------------------------- Recovery */
+
+.er-recover {
+  margin-top: 56px;
+  padding-top: 28px;
+  border-top: 1px solid var(--er-line);
+}
+
+.er-recover-label {
+  margin: 0 0 14px;
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--er-faint);
+}
+
+.er-cards {
+  display: grid;
+  gap: 10px;
+  grid-template-columns: 1fr;
+}
+@media (min-width: 560px) {
+  .er-cards { grid-template-columns: 1fr 1fr; }
+}
+@media (min-width: 1024px) {
+  .er-cards { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
+
+.er-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 13px 14px;
+  min-height: 64px;
+  border: 1px solid var(--er-line);
+  border-radius: 11px;
+  background: rgba(255, 255, 255, 0.012);
+  color: inherit;
+  text-decoration: none;
+  transition: border-color 160ms var(--er-ease), background-color 160ms var(--er-ease),
+              transform 160ms var(--er-ease);
+}
+.er-card:hover {
+  border-color: rgba(109, 149, 255, 0.4);
+  background: rgba(47, 107, 255, 0.06);
+  transform: translateY(-1px);
+}
+.er-card:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--er-bg), 0 0 0 4px var(--er-blue);
+}
+
+.er-card-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  flex-shrink: 0;
+  color: var(--er-blue-bright);
+  background: rgba(47, 107, 255, 0.12);
+}
+
+.er-card-body { min-width: 0; }
+
+.er-card-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--er-text);
+}
+
+.er-card-hint {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--er-faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- Footer */
+
+.er-foot {
+  border-top: 1px solid var(--er-line);
+  padding: 26px 0 34px;
+}
+
+.er-foot-inner {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+@media (min-width: 780px) {
+  .er-foot-inner {
+    flex-direction: row;
+    align-items: center;
+    gap: 28px;
+  }
+}
+
+.er-foot-note {
+  margin: 0;
+  font-size: 0.8125rem;
+  line-height: 1.55;
+  color: var(--er-faint);
+  max-width: 46ch;
+}
+@media (min-width: 780px) {
+  .er-foot-note { margin-left: auto; text-align: right; }
+}
+
+.er-foot-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 18px;
+}
+
+.er-foot-links a {
+  font-size: 0.8125rem;
+  color: var(--er-muted);
+  text-decoration: none;
+  transition: color 160ms var(--er-ease);
+}
+.er-foot-links a:hover { color: var(--er-text); }
+.er-foot-links a:focus-visible {
+  outline: 2px solid var(--er-blue);
+  outline-offset: 3px;
+  border-radius: 3px;
+}
+
+/* ---------------------------------------------------------------- Entrance
+   One orchestrated moment for the whole page, not a fade per section: the
+   numeral settles, then the copy and panel arrive behind it. Everything is
+   present and legible when reduced motion is on — only the transition goes. */
+
+.er-anim {
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 520ms var(--er-ease), transform 520ms var(--er-ease);
+}
+.er-anim--code {
+  transform: translateY(0) scale(0.985);
+  transform-origin: left bottom;
+}
+.er-anim--panel { transition-delay: 90ms; }
+
+.er[data-ready='true'] .er-anim {
+  opacity: 1;
+  transform: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .er-anim {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .er-hint-dot--pulse { animation: none; opacity: 1; }
+  .er-btn--primary:hover,
+  .er-card:hover { transform: none; }
+}
+
+/* ------------------------------------------------------------ Small screens */
+
+@media (max-width: 760px) {
+  .er-shell { padding-inline: 20px; }
+  .er-main { padding: 40px 0 56px; }
+  .er-grid { gap: 36px; }
+  .er-recover { margin-top: 40px; }
+  .er-actions { margin-top: 26px; }
+  .er-btn { flex: 1 1 auto; }
+  .er-row { grid-template-columns: 82px minmax(0, 1fr); gap: 10px; }
+}

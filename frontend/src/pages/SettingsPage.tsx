@@ -2,19 +2,21 @@ import { PageContainer } from '../components/ui/PageContainer'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '../components/ui/Button'
 import { PageHeader } from '../components/ui/PageState'
-import { getName, getRole, getId, clearSession, ROLE_LABELS } from '../utils/identity'
+import { useSession, resetSession, ROLE_LABELS } from '../utils/identity'
 import { LogOut, UserRound, Pencil, ArrowRight } from 'lucide-react'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
+  const session = useSession()
 
-  const name = getName()
-  const role = getRole()
-  const accountId = getId()
+  const name = session?.name ?? null
+  const role = session?.role ?? null
+  const accountId = session?.userId ?? null
 
   const handleSignOut = () => {
-    clearSession()
-    navigate('/login')
+    // Same boundary as the sidebar: clear the caches, then the token.
+    resetSession('logout')
+    navigate('/login', { replace: true })
   }
 
   return (
