@@ -25,8 +25,8 @@ function Ring({ score }: { score: number }) {
         />
         <defs>
           <linearGradient id="ringGrad" x1="0" y1="0" x2="92" y2="92">
-            <stop offset="0%" stopColor="#667eea" />
-            <stop offset="100%" stopColor="#764ba2" />
+            <stop offset="0%" stopColor="#2F6BFF" />
+            <stop offset="100%" stopColor="#1C43AE" />
           </linearGradient>
         </defs>
       </svg>
@@ -195,9 +195,9 @@ export default function ProfilePage() {
     <PageContainer width="reading">
       <PageHeader title="Profile" sub="Your campus identity and growth signals" />
 
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 sm:p-8 mb-5">
-        <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-campus-500/25 blur-3xl" aria-hidden="true" />
-        <div className="absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-accent-500/20 blur-3xl" aria-hidden="true" />
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-er-500 to-er-600 text-white p-6 sm:p-8 mb-5">
+        <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-er-500/25 blur-3xl" aria-hidden="true" />
+        <div className="absolute -bottom-24 -left-12 h-52 w-52 rounded-full bg-er-500/20 blur-3xl" aria-hidden="true" />
         <div className="relative flex items-start gap-5">
           <span className="flex h-16 w-16 items-center justify-center rounded-2xl bg-white/15 border border-white/20 font-display font-bold text-[26px] flex-shrink-0 ring-2 ring-white/20" aria-hidden="true">
             {name.charAt(0).toUpperCase()}
@@ -205,12 +205,12 @@ export default function ProfilePage() {
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2.5 flex-wrap">
               <p className="font-display font-bold text-[24px] tracking-tight leading-tight">{name}</p>
-              <span className="rounded-full bg-white/10 border border-white/15 px-2.5 py-0.5 text-micro font-medium text-campus-100">
+              <span className="rounded-full bg-white/10 border border-white/15 px-2.5 py-0.5 text-micro font-medium text-white">
                 {ROLE_LABELS[role]}
               </span>
               {profile.rating != null && (
                 <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-white/10 border border-white/15 text-white">
-                  <Star className="h-3 w-3 fill-accent-300 text-accent-300" />
+                  <Star className="h-3 w-3 fill-er-300 text-er-200" />
                   <span className="text-micro font-bold">{profile.rating}</span>
                 </div>
               )}
@@ -220,7 +220,7 @@ export default function ProfilePage() {
             {skillList.length > 0 && (
               <div className="flex flex-wrap gap-1.5 mt-3.5">
                 {skillList.map(s => (
-                  <span key={s} className="rounded-full bg-white/10 border border-white/10 px-2.5 py-1 text-micro font-medium text-campus-100">{s}</span>
+                  <span key={s} className="rounded-full bg-white/10 border border-white/10 px-2.5 py-1 text-micro font-medium text-white">{s}</span>
                 ))}
               </div>
             )}
@@ -251,47 +251,47 @@ export default function ProfilePage() {
       </div>
 
       {isEditing && (
-        <section className="rounded-2xl border border-campus-300 bg-white shadow-elevated p-5 mb-5 animate-slide-down">
+        <section className="rounded-2xl border border-white/15 bg-er-800 shadow-elevated p-5 mb-5 animate-slide-down">
           <div className="flex items-center justify-between mb-4">
-            <h3 className="font-display font-bold text-[16px] text-campus-950">Edit Profile</h3>
-            <button onClick={() => setIsEditing(false)} className="text-surface-400 hover:text-surface-600" aria-label="Close editor">
+            <h3 className="font-display font-bold text-[16px] text-ink-50">Edit Profile</h3>
+            <button onClick={() => setIsEditing(false)} className="text-ink-400 hover:text-ink-300" aria-label="Close editor">
               <X className="h-4 w-4" />
             </button>
           </div>
 
           {saveError && (
-            <div className="mb-4 rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-body-sm text-red-700" role="alert">
+            <div className="mb-4 rounded-xl border border-red-500/25 bg-red-500/12 px-4 py-3 text-body-sm text-red-300" role="alert">
               {saveError}
             </div>
           )}
 
           <div className="grid gap-4">
             <div className="space-y-1.5">
-              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Full name</label>
+              <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Full name</label>
               <Input value={editForm.name} onChange={e => setEditForm({ ...editForm, name: e.target.value })} placeholder="Your name" />
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Branch</label>
+                <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Branch</label>
                 <Input value={editForm.branch} onChange={e => setEditForm({ ...editForm, branch: e.target.value })} placeholder="CSE" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Year (1–4)</label>
+                <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Year (1–4)</label>
                 <Input value={editForm.year} onChange={e => setEditForm({ ...editForm, year: e.target.value })} placeholder="3" inputMode="numeric" />
               </div>
             </div>
             <div className="space-y-1.5">
-              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Skills (comma separated)</label>
+              <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Skills (comma separated)</label>
               <Input value={editForm.skills} onChange={e => setEditForm({ ...editForm, skills: e.target.value })} placeholder="React, Java, Python" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Interests (comma separated)</label>
+              <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Interests (comma separated)</label>
               <Input value={editForm.interests} onChange={e => setEditForm({ ...editForm, interests: e.target.value })} placeholder="Open source, Robotics, Design" />
             </div>
             <div className="space-y-1.5">
-              <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">Bio</label>
+              <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">Bio</label>
               <textarea
-                className="w-full rounded-xl border border-campus-900/[0.08] bg-white px-4 py-2.5 text-body-sm focus:outline-none focus:ring-2 focus:ring-campus-500 resize-none"
+                className="w-full rounded-xl border border-white/10 bg-er-900 px-4 py-2.5 text-body-sm focus:outline-none focus:ring-2 focus:ring-er-500 resize-none"
                 rows={3}
                 value={editForm.bio}
                 onChange={e => setEditForm({ ...editForm, bio: e.target.value })}
@@ -300,11 +300,11 @@ export default function ProfilePage() {
             </div>
             <div className="grid sm:grid-cols-2 gap-4">
               <div className="space-y-1.5">
-                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">GitHub</label>
+                <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">GitHub</label>
                 <Input value={editForm.githubUrl} onChange={e => setEditForm({ ...editForm, githubUrl: e.target.value })} placeholder="https://github.com/you" />
               </div>
               <div className="space-y-1.5">
-                <label className="text-micro font-semibold text-surface-500 uppercase tracking-wide">LinkedIn</label>
+                <label className="text-micro font-semibold text-ink-400 uppercase tracking-wide">LinkedIn</label>
                 <Input value={editForm.linkedinUrl} onChange={e => setEditForm({ ...editForm, linkedinUrl: e.target.value })} placeholder="https://linkedin.com/in/you" />
               </div>
             </div>
@@ -319,22 +319,22 @@ export default function ProfilePage() {
       )}
 
       {isStudent && completeness && (
-        <section aria-label="Completeness" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 mb-4">
+        <section aria-label="Completeness" className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 mb-4">
           <div className="flex items-center justify-between">
-            <p className="font-display font-semibold text-[16px] text-campus-950">Profile completeness</p>
+            <p className="font-display font-semibold text-[16px] text-ink-50">Profile completeness</p>
             <Badge variant={completeness.missingFields.length === 0 ? 'success' : 'default'} size="sm">{completeness.level}</Badge>
           </div>
           {completeness.missingFields.length > 0 ? (
             <ul className="mt-3.5 space-y-2">
               {completeness.missingFields.map(f => (
-                <li key={f} className="flex items-center gap-2.5 rounded-xl bg-campus-50/70 border border-campus-100/70 px-3.5 py-2.5 text-body-sm text-surface-600">
-                  <Circle className="h-4 w-4 text-campus-300 flex-shrink-0" aria-hidden="true" />
-                  Add your <span className="font-semibold text-campus-900">{f}</span>
+                <li key={f} className="flex items-center gap-2.5 rounded-xl bg-white/[0.04] border border-white/10 px-3.5 py-2.5 text-body-sm text-ink-300">
+                  <Circle className="h-4 w-4 text-ink-500 flex-shrink-0" aria-hidden="true" />
+                  Add your <span className="font-semibold text-ink-100">{f}</span>
                 </li>
               ))}
             </ul>
           ) : (
-            <p className="mt-3.5 flex items-center gap-2 text-body-sm font-medium text-emerald-700">
+            <p className="mt-3.5 flex items-center gap-2 text-body-sm font-medium text-emerald-300">
               <CheckCircle2 className="h-4 w-4" aria-hidden="true" /> Everything filled — looking sharp
             </p>
           )}
@@ -342,18 +342,18 @@ export default function ProfilePage() {
       )}
 
       {isStudent && recs && recs.recommendations.length > 0 && (
-        <section aria-label="Recommended skills" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 mb-4">
-          <p className="font-display font-semibold text-[16px] text-campus-950 flex items-center gap-2">
-            <Sparkles className="h-4 w-4 text-accent-500" aria-hidden="true" /> Skills to grow
+        <section aria-label="Recommended skills" className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 mb-4">
+          <p className="font-display font-semibold text-[16px] text-ink-50 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-er-300" aria-hidden="true" /> Skills to grow
           </p>
-          <p className="text-caption text-surface-400 mt-0.5 mb-3.5">Suggested from how your skills pair across campus</p>
+          <p className="text-caption text-ink-400 mt-0.5 mb-3.5">Suggested from how your skills pair across campus</p>
           <div className="space-y-2">
             {recs.recommendations.map(r => (
-              <div key={r.skill} className="flex items-center gap-3 rounded-xl bg-surface-50/70 border border-surface-200/70 px-3.5 py-2.5">
-                <TrendingUp className="h-4 w-4 text-accent-500 flex-shrink-0" aria-hidden="true" />
+              <div key={r.skill} className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/10 px-3.5 py-2.5">
+                <TrendingUp className="h-4 w-4 text-er-300 flex-shrink-0" aria-hidden="true" />
                 <div className="flex-1 min-w-0">
-                  <p className="font-semibold text-surface-900 text-body-sm">{r.skill}</p>
-                  <p className="text-caption text-surface-500 truncate">{r.reason}</p>
+                  <p className="font-semibold text-ink-100 text-body-sm">{r.skill}</p>
+                  <p className="text-caption text-ink-400 truncate">{r.reason}</p>
                 </div>
                 <Badge variant="outline" size="sm"><span className="tabular-nums">{r.count}</span></Badge>
               </div>
@@ -363,13 +363,13 @@ export default function ProfilePage() {
       )}
 
       {footprint.length > 0 && (
-        <section aria-label="Activity" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5">
-          <p className="font-display font-semibold text-[16px] text-//campus-950 mb-3.5">Your footprint</p>
+        <section aria-label="Activity" className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5">
+          <p className="font-display font-semibold text-[16px] text-ink-50 mb-3.5">Your footprint</p>
           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
             {footprint.map(s => (
-              <div key={s.label} className="rounded-xl bg-campus-50/60 border border-campus-100/60 px-3.5 py-3">
-                <p className="font-display font-bold text-[20px] text-campus-950 tabular-nums leading-none">{s.value}</p>
-                <p className="text-caption text-surface-500 mt-1.5">{s.label}</p>
+              <div key={s.label} className="rounded-xl bg-white/[0.04] border border-white/10 px-3.5 py-3">
+                <p className="font-display font-bold text-[20px] text-ink-50 tabular-nums leading-none">{s.value}</p>
+                <p className="text-caption text-ink-400 mt-1.5">{s.label}</p>
               </div>
             ))}
           </div>

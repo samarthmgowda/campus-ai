@@ -76,12 +76,12 @@ export default function MentorshipPage() {
         sub={myRequests.length > 0 ? `${pendingCount} awaiting reply · ${myRequests.length} total requests` : 'Guidance from people a few steps ahead'}
       />
 
-      <section aria-label="My requests" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden mb-6">
-        <div className="px-5 pt-5 pb-4 border-b border-campus-900/[0.06] bg-campus-50/50">
+      <section aria-label="My requests" className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden mb-6">
+        <div className="px-5 pt-5 pb-4 border-b border-white/10 bg-white/[0.04]">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="font-display font-semibold text-[16px] text-campus-950">My requests</p>
-              <p className="text-caption text-surface-400 mt-0.5">Pending can be withdrawn · accepted or rejected are final</p>
+              <p className="font-display font-semibold text-[16px] text-ink-50">My requests</p>
+              <p className="text-caption text-ink-400 mt-0.5">Pending can be withdrawn · accepted or rejected are final</p>
             </div>
             <div className="flex gap-1.5" role="group" aria-label="Filter by status">
               {['', 'PENDING', 'ACCEPTED', 'REJECTED'].map(s => (
@@ -90,8 +90,8 @@ export default function MentorshipPage() {
                   onClick={() => setStatusFilter(s)}
                   aria-pressed={statusFilter === s}
                   className={cn(
-                    'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-campus-500',
-                    statusFilter === s ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white' : 'text-surface-400 hover:text-campus-900 hover:bg-campus-50'
+                    'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-er-500',
+                    statusFilter === s ? 'bg-gradient-to-br from-er-500 to-er-600 text-white' : 'text-ink-400 hover:text-ink-100 hover:bg-er-900'
                   )}
                 >
                   {s || 'All'}
@@ -117,17 +117,17 @@ export default function MentorshipPage() {
                 <div
                   key={r.id}
                   style={{ ['--stagger' as string]: Math.min(i, 8) }}
-                  className="flex items-center gap-3 rounded-xl border border-campus-900/[0.06] bg-white hover:border-campus-900/15 hover:shadow-card transition-all px-4 py-3"
+                  className="flex items-center gap-3 rounded-xl border border-white/10 bg-er-800 hover:border-white/10 hover:shadow-card transition-all px-4 py-3"
                 >
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-violet-400 to-violet-600 text-white font-display font-bold text-body-sm flex-shrink-0" aria-hidden="true">
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-gradient-to-br from-er-400 to-er-600 text-white font-display font-bold text-body-sm flex-shrink-0" aria-hidden="true">
                     {(r.alumniName ?? '?').charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-semibold text-body-sm text-campus-950">{r.alumniName ?? `Alumni #${r.alumniId}`}</p>
+                      <p className="font-semibold text-body-sm text-ink-50">{r.alumniName ?? `Alumni #${r.alumniId}`}</p>
                       <Badge variant={STATUS_VARIANT[r.status] ?? 'default'} size="sm">{r.status}</Badge>
                     </div>
-                    {r.message && <p className="text-body-sm text-surface-500 truncate mt-0.5">“{r.message}”</p>}
+                    {r.message && <p className="text-body-sm text-ink-400 truncate mt-0.5">“{r.message}”</p>}
                   </div>
                   {r.status === 'PENDING' && (
                     <div className="flex gap-1 flex-shrink-0">
@@ -135,7 +135,7 @@ export default function MentorshipPage() {
                         onClick={() => respondMutation.mutate({ id: r.id, action: 'ACCEPT' })}
                         aria-label="Accept (demo student-side)"
                         title="Accept (demo)"
-                        className="p-2 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                        className="p-2 rounded-lg text-emerald-300 hover:bg-emerald-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                       >
                         <Check className="h-4 w-4" />
                       </button>
@@ -143,7 +143,7 @@ export default function MentorshipPage() {
                         onClick={() => withdrawMutation.mutate(r.id)}
                         aria-label={`Withdraw request to ${r.alumniName}`}
                         title="Withdraw"
-                        className="p-2 rounded-lg text-surface-300 hover:text-surface-600 hover:bg-surface-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                        className="p-2 rounded-lg text-ink-500 hover:text-ink-300 hover:bg-er-900 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                       >
                         <Undo2 className="h-4 w-4" />
                       </button>
@@ -154,7 +154,7 @@ export default function MentorshipPage() {
             </div>
           )}
           {(withdrawMutation.isError || respondMutation.isError || requestMutation.isError) && (
-            <p className="text-body-sm text-red-600 mt-3" role="alert">
+            <p className="text-body-sm text-red-300 mt-3" role="alert">
               {((withdrawMutation.error ?? respondMutation.error ?? requestMutation.error) as Error)?.message}
             </p>
           )}
@@ -164,17 +164,17 @@ export default function MentorshipPage() {
       <section aria-label="Find a mentor">
         <div className="flex items-center justify-between flex-wrap gap-3 mb-4">
           <div>
-            <p className="font-display font-semibold text-[16px] text-campus-950">Find a mentor</p>
-            <p className="text-caption text-surface-400 mt-0.5">Alumni directory {alumni.length > 0 && `· showing ${Math.min(alumni.length, 12)}`}</p>
+            <p className="font-display font-semibold text-[16px] text-ink-50">Find a mentor</p>
+            <p className="text-caption text-ink-400 mt-0.5">Alumni directory {alumni.length > 0 && `· showing ${Math.min(alumni.length, 12)}`}</p>
           </div>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400 pointer-events-none" aria-hidden="true" />
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400 pointer-events-none" aria-hidden="true" />
             <input
               value={skillFilter}
               onChange={e => setSkillFilter(e.target.value)}
               placeholder="Filter by skill, e.g. Java"
               aria-label="Filter alumni by skill"
-              className="bg-white border border-campus-900/10 rounded-xl pl-9 pr-3 py-2 text-body-sm shadow-card placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-campus-500 w-[220px]"
+              className="bg-er-900 border border-white/10 rounded-xl pl-9 pr-3 py-2 text-body-sm shadow-card placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-er-500 w-[220px]"
             />
           </div>
         </div>
@@ -194,15 +194,15 @@ export default function MentorshipPage() {
                 <article
                   key={a.id}
                   style={{ ['--stagger' as string]: Math.min(i, 8) }}
-                  className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
+                  className="rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
                 >
                   <div className="flex items-start gap-3">
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-display font-bold flex-shrink-0" aria-hidden="true">
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-gradient-to-br from-er-500 to-er-600 text-white font-display font-bold flex-shrink-0" aria-hidden="true">
                       {a.name.charAt(0).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-display font-semibold text-[15px] text-campus-950 tracking-tight">{a.name}</p>
-                      <p className="text-caption text-surface-400 mt-0.5 truncate">
+                      <p className="font-display font-semibold text-[15px] text-ink-50 tracking-tight">{a.name}</p>
+                      <p className="text-caption text-ink-400 mt-0.5 truncate">
                         {a.currentRole ? `${a.currentRole}${a.currentCompany ? ` @ ${a.currentCompany}` : ''}` : `${a.branch} '${a.graduationYear}`}
                       </p>
                     </div>
@@ -210,9 +210,9 @@ export default function MentorshipPage() {
                   {skillList.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mt-3">
                       {skillList.slice(0, 4).map(s => (
-                        <span key={s} className="rounded-full bg-violet-50 border border-violet-100 px-2.5 py-0.5 text-micro font-medium text-violet-700">{s}</span>
+                        <span key={s} className="rounded-full bg-teal-500/12 border border-teal-500/25 px-2.5 py-0.5 text-micro font-medium text-teal-300">{s}</span>
                       ))}
-                      {skillList.length > 4 && <span className="text-micro text-surface-400 px-1 py-0.5">+{skillList.length - 4}</span>}
+                      {skillList.length > 4 && <span className="text-micro text-ink-400 px-1 py-0.5">+{skillList.length - 4}</span>}
                     </div>
                   )}
                   {requestFor === a.id ? (
@@ -236,7 +236,7 @@ export default function MentorshipPage() {
                         <button
                           onClick={() => { setRequestFor(null); setRequestMsg('') }}
                           aria-label="Cancel request"
-                          className="p-2 rounded-lg text-surface-400 hover:bg-surface-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                          className="p-2 rounded-lg text-ink-400 hover:bg-er-900 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                         >
                           <X className="h-4 w-4" />
                         </button>
@@ -245,7 +245,7 @@ export default function MentorshipPage() {
                   ) : (
                     <button
                       onClick={() => { setRequestFor(a.id); setRequestMsg('') }}
-                      className="mt-3.5 w-full rounded-xl border border-campus-900/10 py-2 text-body-sm font-semibold text-campus-900 hover:bg-campus-500 hover:text-white hover:border-campus-500 transition-all focus:outline-none focus:ring-2 focus:ring-campus-500"
+                      className="mt-3.5 w-full rounded-xl border border-white/10 py-2 text-body-sm font-semibold text-ink-100 hover:bg-er-500 hover:text-white hover:border-er-500/40 transition-all focus:outline-none focus:ring-2 focus:ring-er-500"
                     >
                       Request mentorship
                     </button>

@@ -1,12 +1,19 @@
 import { cn } from '../../utils/cn'
 
-/** The bar fills, in order. Repeats if there are more rows than colours. */
+/**
+ * The bar fills, in order. Repeats if there are more rows than colours.
+ *
+ * The first two are both electric blue — the top of a ranking is where the eye
+ * lands, so it gets the brand; the rest fan out into the secondary hues so a
+ * long list stays separable. They are all ≥400 on midnight so a 2px-tall bar
+ * still reads against the track.
+ */
 const BAR_FILLS = [
-  'from-campus-500 to-campus-400',
-  'from-accent-500 to-accent-400',
-  'from-violet-500 to-violet-400',
-  'from-emerald-500 to-emerald-400',
-  'from-sky-500 to-sky-400',
+  'from-er-400 to-er-500',
+  'from-er-500 to-er-600',
+  'from-sky-400 to-sky-500',
+  'from-emerald-400 to-emerald-500',
+  'from-orange-400 to-orange-500',
 ]
 
 export interface BarDatum {
@@ -43,7 +50,7 @@ export function BarList({
   emptyLabel?: string
 }) {
   if (data.length === 0) {
-    return <p className="py-4 text-center text-caption text-surface-400">{emptyLabel}</p>
+    return <p className="py-4 text-center text-caption text-ink-500">{emptyLabel}</p>
   }
 
   const ceiling = max ?? Math.max(...data.map((d) => d.value), 1)
@@ -53,13 +60,13 @@ export function BarList({
       {data.slice(0, limit).map((d, i) => (
         <div key={d.label} className="flex items-center gap-3" role="listitem">
           <span
-            className="w-28 flex-shrink-0 truncate text-body-sm font-medium text-surface-700"
+            className="w-28 flex-shrink-0 truncate text-body-sm font-medium text-ink-200"
             title={d.label}
           >
             {d.label}
           </span>
           <span
-            className="h-2 flex-1 overflow-hidden rounded-full bg-campus-500/10"
+            className="h-2 flex-1 overflow-hidden rounded-full bg-white/[0.07]"
             role="img"
             aria-label={`${d.label}: ${d.value}`}
           >
@@ -72,7 +79,7 @@ export function BarList({
               aria-hidden="true"
             />
           </span>
-          <span className="w-10 flex-shrink-0 text-right text-body-sm font-semibold tabular-nums text-campus-950">
+          <span className="w-10 flex-shrink-0 text-right text-body-sm font-semibold tabular-nums text-ink-100">
             {d.value}
           </span>
         </div>

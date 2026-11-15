@@ -74,14 +74,14 @@ export default function AnalyticsPage() {
             <Reveal>
               <Panel className="h-full">
                 <PanelHeaderBlock
-                  icon={<TrendingUp className="h-4 w-4 text-accent-500" aria-hidden="true" />}
+                  icon={<TrendingUp className="h-4 w-4 text-er-300" aria-hidden="true" />}
                   title="Top skills"
                   description="Most common across students"
                 />
                 {skills.data ? (
                   <BarList data={toBarData(skills.data)} />
                 ) : (
-                  <p className="text-caption text-surface-400">No data.</p>
+                  <p className="text-caption text-ink-400">No data.</p>
                 )}
               </Panel>
             </Reveal>
@@ -89,14 +89,14 @@ export default function AnalyticsPage() {
             <Reveal delay={80}>
               <Panel className="h-full">
                 <PanelHeaderBlock
-                  icon={<PieChart className="h-4 w-4 text-campus-500" aria-hidden="true" />}
+                  icon={<PieChart className="h-4 w-4 text-er-400" aria-hidden="true" />}
                   title="Branches"
                   description="Students by department"
                 />
                 {branches.data ? (
                   <BarList data={toBarData(branches.data)} />
                 ) : (
-                  <p className="text-caption text-surface-400">No data.</p>
+                  <p className="text-caption text-ink-400">No data.</p>
                 )}
               </Panel>
             </Reveal>
@@ -104,7 +104,7 @@ export default function AnalyticsPage() {
             <Reveal delay={120}>
               <Panel className="h-full">
                 <PanelHeaderBlock
-                  icon={<Clock className="h-4 w-4 text-emerald-500" aria-hidden="true" />}
+                  icon={<Clock className="h-4 w-4 text-emerald-300" aria-hidden="true" />}
                   title="Availability"
                   description="Who is open to what"
                 />
@@ -113,15 +113,15 @@ export default function AnalyticsPage() {
                     {Object.entries(availability.data).map(([k, v]) => (
                       <span
                         key={k}
-                        className="inline-flex items-center gap-1.5 rounded-full border border-campus-100 bg-campus-50 px-3 py-1.5 text-body-sm font-medium text-campus-800"
+                        className="inline-flex items-center gap-1.5 rounded-full border border-white/10 bg-er-900 px-3 py-1.5 text-body-sm font-medium text-er-200"
                       >
                         {k}
-                        <span className="font-display font-bold tabular-nums text-campus-950">{v}</span>
+                        <span className="font-display font-bold tabular-nums text-ink-50">{v}</span>
                       </span>
                     ))}
                   </div>
                 ) : (
-                  <p className="text-caption text-surface-400">No data.</p>
+                  <p className="text-caption text-ink-400">No data.</p>
                 )}
               </Panel>
             </Reveal>
@@ -129,7 +129,7 @@ export default function AnalyticsPage() {
             <Reveal delay={160}>
               <Panel className="h-full">
                 <PanelHeaderBlock
-                  icon={<Activity className="h-4 w-4 text-violet-500" aria-hidden="true" />}
+                  icon={<Activity className="h-4 w-4 text-teal-400" aria-hidden="true" />}
                   title="Community & projects"
                   description="Engagement breakdown"
                 />
@@ -142,7 +142,7 @@ export default function AnalyticsPage() {
                   ))}
                   {(!community.data || Object.keys(community.data).length === 0) &&
                     (!projects.data || Object.keys(projects.data).length === 0) && (
-                      <p className="py-4 text-center text-caption text-surface-400">No data yet.</p>
+                      <p className="py-4 text-center text-caption text-ink-400">No data yet.</p>
                     )}
                 </div>
               </Panel>
@@ -166,11 +166,11 @@ function PanelHeaderBlock({
 }) {
   return (
     <div className="mb-4">
-      <p className="flex items-center gap-2 font-display font-semibold text-[16px] text-campus-950">
+      <p className="flex items-center gap-2 font-display font-semibold text-[16px] text-ink-50">
         {icon}
         {title}
       </p>
-      <p className="mt-0.5 text-caption text-surface-400">{description}</p>
+      <p className="mt-0.5 text-caption text-ink-400">{description}</p>
     </div>
   )
 }
@@ -180,12 +180,12 @@ function MetricRow({ label, value, muted = false }: { label: string; value: stri
     <div
       className={
         muted
-          ? 'flex items-center justify-between rounded-xl border border-surface-200/70 bg-surface-50 px-3.5 py-2 text-body-sm'
-          : 'flex items-center justify-between rounded-xl border border-campus-100/60 bg-campus-50/60 px-3.5 py-2 text-body-sm'
+          ? 'flex items-center justify-between rounded-xl border border-white/10 bg-er-900 px-3.5 py-2 text-body-sm'
+          : 'flex items-center justify-between rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-2 text-body-sm'
       }
     >
-      <span className="capitalize text-surface-600">{label}</span>
-      <span className={muted ? 'font-semibold tabular-nums text-surface-900' : 'font-display font-bold tabular-nums text-campus-950'}>
+      <span className="capitalize text-ink-300">{label}</span>
+      <span className={muted ? 'font-semibold tabular-nums text-ink-100' : 'font-display font-bold tabular-nums text-ink-50'}>
         {value}
       </span>
     </div>

@@ -46,8 +46,8 @@ export default function DashboardPage() {
     return (
       <PageContainer>
         <PageHeader title="Dashboard" sub="Your Campus Connect overview" />
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4">
-          <p className="text-body-sm text-amber-900">
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/12 px-5 py-4">
+          <p className="text-body-sm text-amber-200">
             No profile selected. Pick one from the sign-in page to see your dashboard.
           </p>
         </div>
@@ -101,7 +101,7 @@ export default function DashboardPage() {
 
       {/* Identity strip — grounds the numbers in a person. */}
       <Reveal>
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 sm:p-7 mb-5 shadow-card">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-er-500 to-er-600 text-white p-6 sm:p-7 mb-5 shadow-card">
           <div className="absolute -top-20 -right-14 h-56 w-56 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
           <div className="absolute -bottom-24 -left-12 h-48 w-48 rounded-full bg-white/[0.07] blur-3xl" aria-hidden="true" />
           <div className="relative flex items-center gap-4 flex-wrap">
@@ -154,7 +154,7 @@ export default function DashboardPage() {
           />
           <StatTile
             icon={Award}
-            tint="violet"
+            tint="teal"
             label="Peer reviews"
             value={reputation?.reviewCount ?? 0}
             hint={reputation?.averageRating ? `${reputation.averageRating.toFixed(1)}★ average` : 'No rating yet'}
@@ -166,7 +166,7 @@ export default function DashboardPage() {
         <PageSection
           title="My projects"
           action={
-            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800">
+            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200">
               All <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           }
@@ -178,9 +178,9 @@ export default function DashboardPage() {
                   <li
                     key={p.id}
                     style={{ ['--stagger' as string]: Math.min(i, 5) }}
-                    className="flex items-center justify-between gap-2 rounded-xl bg-campus-50/60 border border-campus-100/70 px-3 py-2"
+                    className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] border border-white/10 px-3 py-2"
                   >
-                    <span className="text-body-sm font-medium text-campus-950 truncate">{p.name}</span>
+                    <span className="text-body-sm font-medium text-ink-50 truncate">{p.name}</span>
                     <Badge variant={p.status === 'ACTIVE' ? 'success' : 'outline'} size="sm">{p.status}</Badge>
                   </li>
                 ))}
@@ -198,7 +198,7 @@ export default function DashboardPage() {
         <PageSection
           title="Pending invites"
           action={
-            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800">
+            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200">
               Review <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
           }
@@ -210,10 +210,10 @@ export default function DashboardPage() {
                   <li
                     key={i.id}
                     style={{ ['--stagger' as string]: Math.min(idx, 5) }}
-                    className="rounded-xl bg-amber-50/70 border border-amber-100 px-3 py-2"
+                    className="rounded-xl bg-amber-500/12 border border-amber-500/25 px-3 py-2"
                   >
-                    <p className="text-body-sm font-medium text-campus-950 truncate">{i.projectName}</p>
-                    <p className="text-caption text-surface-500">from {i.inviterName}</p>
+                    <p className="text-body-sm font-medium text-ink-50 truncate">{i.projectName}</p>
+                    <p className="text-caption text-ink-400">from {i.inviterName}</p>
                   </li>
                 ))}
               </ul>
@@ -230,7 +230,7 @@ export default function DashboardPage() {
                 {recs.slice(0, 12).map((r: any) => (
                   <span
                     key={r.skill}
-                    className="rounded-full bg-accent-50 border border-accent-100 px-2.5 py-1 text-micro font-semibold text-accent-700"
+                    className="rounded-full bg-er-900 border border-er-500/25 px-2.5 py-1 text-micro font-semibold text-er-200"
                   >
                     {r.skill}
                   </span>
@@ -246,23 +246,23 @@ export default function DashboardPage() {
       <Reveal>
         <Link
           to="/chat"
-          className="group flex items-center gap-4 rounded-2xl border border-campus-900/[0.07] bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
+          className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
         >
           <span
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white flex-shrink-0"
+            className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-er-500 to-er-600 text-white flex-shrink-0"
             aria-hidden="true"
           >
             <Sparkles className="h-5 w-5" />
           </span>
           <span className="min-w-0 flex-1">
-            <span className="block font-display font-semibold text-[16px] text-campus-950">
+            <span className="block font-display font-semibold text-[16px] text-ink-50">
               Ask Campus AI anything
             </span>
-            <span className="block text-body-sm text-surface-500 mt-0.5">
+            <span className="block text-body-sm text-ink-400 mt-0.5">
               Handbooks, calendars, policies — answered with citations
             </span>
           </span>
-          <ArrowUpRight className="h-5 w-5 text-surface-300 group-hover:text-campus-600 transition-colors flex-shrink-0" aria-hidden="true" />
+          <ArrowUpRight className="h-5 w-5 text-ink-500 group-hover:text-er-300 transition-colors flex-shrink-0" aria-hidden="true" />
         </Link>
       </Reveal>
     </PageContainer>
@@ -281,12 +281,12 @@ function EmptyHint({
 }) {
   return (
     <div className="flex flex-col items-center justify-center text-center py-6">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-campus-50 border border-campus-100 mb-2.5" aria-hidden="true">
-        <Icon className="h-4 w-4 text-campus-400" />
+      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10 mb-2.5" aria-hidden="true">
+        <Icon className="h-4 w-4 text-ink-500" />
       </span>
-      <p className="text-body-sm text-surface-400">{text}</p>
+      <p className="text-body-sm text-ink-400">{text}</p>
       {cta && (
-        <Link to={cta.to} className="text-body-sm font-semibold text-campus-600 hover:text-campus-800 mt-1.5">
+        <Link to={cta.to} className="text-body-sm font-semibold text-er-300 hover:text-er-200 mt-1.5">
           {cta.label} →
         </Link>
       )}

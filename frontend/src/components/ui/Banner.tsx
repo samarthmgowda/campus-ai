@@ -5,13 +5,22 @@ import { useReducedMotion } from '../../hooks/useReducedMotion'
 /**
  * Banner
  * ──────
- * The full-width violet panel that opens a page: the student dashboard's
+ * The full-width electric-blue panel that opens a page: the student dashboard's
  * identity strip, the analytics totals, the chat welcome, the profile hero.
  *
  * Eighteen pages built this by hand, and because each one pasted its own
  * blurred blobs, the decoration differed every time — two circles here, three
  * there, at different offsets and opacities. Centralising it means the page
- * that opens with a violet band looks like the same product as the next one.
+ * that opens with a blue band looks like the same product as the next one.
+ *
+ * The gradient is two stops of the *same* hue. The old one ran violet → purple
+ * → pink, which is why every screen in the app had a purple smear on it; a
+ * single-hue ramp reads as depth rather than as a second colour, and it keeps
+ * the palette at three.
+ *
+ * It starts at `er-600`, not `er-500`: #2F6BFF only carries white at 4.2:1,
+ * which fails AA for the body copy inside a banner. #2557DB starts at 6.0:1 and
+ * the ramp darkens from there.
  *
  * The blobs are decorative and marked `aria-hidden`; they are rendered at low
  * opacity so text contrast is unaffected. When motion is reduced the drift is
@@ -26,7 +35,7 @@ export function Banner({
 }: {
   children: ReactNode
   className?: string
-  /** `brand` is the two-stop ramp; `wide` adds the pink stop for hero moments. */
+  /** `brand` is the two-stop blue ramp; `wide` extends it for hero moments. */
   gradient?: 'brand' | 'wide'
   size?: 'sm' | 'md' | 'lg'
 }) {
@@ -43,13 +52,13 @@ export function Banner({
       className={cn(
         'relative overflow-hidden rounded-3xl text-white shadow-card',
         gradient === 'wide'
-          ? 'bg-gradient-to-br from-[#667eea] via-[#764ba2] to-[#f093fb]'
-          : 'bg-gradient-to-br from-[#667eea] to-[#764ba2]',
+          ? 'bg-gradient-to-br from-er-500 via-er-600 to-er-700'
+          : 'bg-gradient-to-br from-er-600 to-er-700',
         padding,
         className
       )}
     >
-      {/* Colour washes. Kept under 12% so white body text stays at 4.5:1. */}
+      {/* Colour washes. Kept at or under 12% so white body text stays ≥4.5:1. */}
       <div className="pointer-events-none absolute inset-0" aria-hidden="true">
         <div
           className={cn(
@@ -81,7 +90,7 @@ export function BannerStat({ value, label }: { value: ReactNode; label: string }
   return (
     <div>
       <p className="font-display font-bold text-[26px] leading-none tabular-nums">{value}</p>
-      <p className="mt-1.5 text-caption text-white/60">{label}</p>
+      <p className="mt-1.5 text-caption text-white/80">{label}</p>
     </div>
   )
 }

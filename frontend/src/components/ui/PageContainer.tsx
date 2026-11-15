@@ -72,10 +72,10 @@ export function SectionHeader({
   return (
     <div className={cn('flex items-end justify-between gap-4 mb-3.5', className)}>
       <div className="min-w-0">
-        <Tag className={cn('font-display font-semibold tracking-tight text-campus-950 flex items-center gap-2', size)}>
+        <Tag className={cn('font-display font-semibold tracking-tight text-ink-50 flex items-center gap-2', size)}>
           {title}
         </Tag>
-        {description && <p className="text-body-sm text-surface-500 mt-0.5">{description}</p>}
+        {description && <p className="text-body-sm text-ink-400 mt-0.5">{description}</p>}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}
     </div>

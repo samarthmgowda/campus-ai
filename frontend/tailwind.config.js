@@ -7,15 +7,38 @@ export default {
   theme: {
     extend: {
       colors: {
-        // Prototype 6:3:1 color system: Midnight Black, Electric Blue, Sunset Orange.
-        //
-        // One flat ramp so every `er-*` class a page writes actually resolves.
-        // 50-700 is the electric-blue ramp; 800-950 is the midnight-black family
-        // that carries surfaces. Duplicate keys used to live here (500/600/700
-        // were declared twice), so the later orange silently won and `er-500`
-        // rendered orange instead of blue.
+        /* ------------------------------------------------------------------ *
+         * The palette: Midnight Black, Electric Blue, Sunset Orange — 7 : 4 : 1
+         *
+         *   950     #090A10   the page canvas        ~70% of every screen
+         *   500     #2F6BFF   electric blue          ~40% of the accent budget
+         *   orange  #FF7A1A   sunset orange          ~10% — one CTA per view
+         *
+         * The ratio moved off the landing page's 6 : 3 : 1 because blue is
+         * carrying more weight now. Blue is allowed on structure as well as
+         * emphasis: active nav, focus rings, links, icons, chart series,
+         * selected states, hairline borders. Orange did not move — it is still
+         * a button, never a surface, never a gradient, never body text.
+         *
+         * The ramp itself is the one the landing page already renders with and
+         * is deliberately unchanged: 50-700 is the blue scale, 800-950 is the
+         * midnight scale. What pages have to get right is the discipline —
+         * surfaces only ever come from 800/900/950, and body copy only from
+         * `ink`, never from the blue scale.
+         *
+         *   er-800  #171A22  raised plane: cards, panels, popovers
+         *   er-900  #0F1117  recessed plane: section bands, shells
+         *   er-950  #090A10  the canvas
+         *
+         * Contrast on #090A10 — text-er-500 (#2F6BFF) is 3.9:1, which is fine
+         * for large text and icons but fails for body copy. Anything under
+         * 18px uses text-er-300 (#8AA6FF, 5.6:1) or ink-300.
+         *
+         * (Duplicate keys used to live in this object — 500/600/700 declared
+         * twice — so the later orange silently won and er-500 rendered orange.)
+         * ------------------------------------------------------------------ */
         er: {
-          // Electric blue ramp - primary accent
+          // Electric blue — the accent scale
           50: '#EEF3FF',
           100: '#D7E2FF',
           200: '#B3C7FF',
@@ -24,76 +47,94 @@ export default {
           500: '#2F6BFF', // primary
           600: '#2557DB',
           700: '#1C43AE',
-          // Midnight black family - base surfaces
+          // Midnight black — the surface scale
           800: '#171A22',
           900: '#0F1117',
           950: '#090A10',
 
           // Named aliases, because pages write `from-er-blue to-er-orange`.
           bg: '#090A10',
-          bg2: '#2F6BFF',
+          bg2: '#0F1117',
           blue: '#2F6BFF',
-          // Sunset orange - CTA accent only (6 : 3 : 1, never as body colour)
+          // Sunset orange — CTA only (7 : 4 : 1, never as body colour)
           orange: '#FF7A1A',
-          // Bridge hue for the one closing gradient that references it.
-          purple: '#7C5CFF',
         },
-        // Neutral text ramp.
-        //
-        // Electric blue is the 30% accent, so prose cannot use the blue ramp —
-        // `text-er-300` and `text-er-400` are #8AA6FF and #6385FF, which turned
-        // every paragraph blue and collapsed the 6:3:1 ratio into "all accent".
-        // Body copy and muted meta come from here instead; blue stays for links,
-        // icons, focus rings and the one selected state.
+
+        /* Neutral text ramp.
+         *
+         * Electric blue is the accent, so prose cannot live on the blue scale —
+         * `text-er-300` and `text-er-400` are #8AA6FF and #6385FF, which turn
+         * every paragraph blue and collapse the ratio into "all accent". Body
+         * copy and muted meta come from here instead; blue stays for links,
+         * icons, focus rings and the one selected state. */
         ink: {
           50: '#F4F6FB',
-          100: '#E3E7F0',
-          200: '#C6CCDA',
-          300: '#A2AAB9', // body copy on dark  - 8.0:1 on #090A10
-          400: '#7C8595', // muted meta         - 5.0:1 on #090A10
-          500: '#5D6574',
+          100: '#E3E7F0', // headings
+          200: '#C6CCDA', // strong body
+          300: '#A2AAB9', // body copy on dark — 8.0:1 on #090A10
+          400: '#7C8595', // muted meta        — 5.0:1 on #090A10
+          500: '#5D6574', // faint icons, disabled — decorative only
+          600: '#4A515E',
+          700: '#3A4049',
+          800: '#2A2F37',
+          900: '#1B1F26',
+          950: '#12151A',
         },
+
+        /* ------------------------------------------------------------------ *
+         * Legacy ramps, remapped.
+         *
+         * `campus` (violet #667eea) and `accent` (purple #764ba2) were the
+         * prototype's brand scales; `surface` was a lavender grey set built for
+         * a #f5f7fa canvas. All three are retired — every page writes `er-*`
+         * and `ink-*` now — but the keys have to keep resolving, because a
+         * stray `text-campus-950` that resolves to nothing inherits its parent
+         * instead of failing loudly, and a stray violet is exactly the bug this
+         * pass exists to remove.
+         *
+         * So each scale is *inverted* onto the new palette: its light steps
+         * become midnight surfaces, its dark steps become light ink. Anything
+         * still referencing them renders correctly-on-dark rather than as a
+         * white block or invisible black text.
+         * ------------------------------------------------------------------ */
         campus: {
-          // Prototype violet - primary brand ramp anchored at #667eea
-          50: '#eef2ff',
-          100: '#e0e7ff',
-          200: '#c7d2fe',
-          300: '#a5b4fc',
-          400: '#818cf8',
-          500: '#667eea',  // primary
-          600: '#5a67d8',
-          700: '#4c51bf',
-          800: '#434190',
-          900: '#2e2a5c',
-          950: '#1a1a2e',
+          50: '#171A22',   // was the lightest tint  → raised plane
+          100: '#10141C',  // was a soft chip fill   → recessed plane
+          200: '#1C212B',
+          300: '#262C38',
+          400: '#3A4252',
+          500: '#2F6BFF',  // was the violet primary → electric blue
+          600: '#8AA6FF',
+          700: '#B3C7FF',
+          800: '#C6CCDA',
+          900: '#E3E7F0',
+          950: '#F4F6FB',  // was near-black headings → light ink
         },
         accent: {
-          // Prototype purple - secondary ramp anchored at #764ba2
-          50: '#f5f0fa',
-          100: '#ede4f7',
-          200: '#dbc8ef',
-          300: '#c3a3e3',
-          400: '#a87bd4',
-          500: '#764ba2',  // accent
-          600: '#6b4199',
-          700: '#5a3484',
-          800: '#4a2b6b',
-          900: '#3b2355',
-          950: '#241438',
+          50: '#171A22',   // was a lavender tint    → raised plane
+          100: '#10141C',
+          200: '#1C212B',
+          300: '#8AA6FF',
+          400: '#6385FF',
+          500: '#2F6BFF',  // was the purple accent  → electric blue
+          600: '#2557DB',
+          700: '#1C43AE',
+          800: '#B3C7FF',
+          900: '#D7E2FF',
+          950: '#EEF3FF',
         },
         surface: {
-          // Lavender-tinted greys to sit on the #f5f7fa canvas
-          50: '#f7f8fc',
-          100: '#eef0f6',
-          200: '#e2e5ee',
-          300: '#cbd0e0',
-          400: '#9aa1b8',
-          500: '#6f7690',
-          600: '#545a73',
-          700: '#44485e',
-          800: '#2c2e3f',
-          900: '#1e1f2b',
-          950: '#12131a',
+          50: '#0F1117',   // was the page canvas    → recessed plane
+          100: '#171A22',  // was a chip / skeleton  → raised plane
+          200: '#20252F',
+          300: '#2B313D',  // was a light border     → hairline on midnight
+          400: '#7C8595',  // muted meta
+          500: '#A2AAB9',  // body copy
+          600: '#C6CCDA',
+          700: '#E3E7F0',
+          800: '#F4F6FB',
+          900: '#F4F6FB',
+          950: '#F4F6FB',
         },
       },
       fontFamily: {
@@ -109,7 +150,7 @@ export default {
         'display-lg': ['clamp(2rem, 4vw, 3rem)', { lineHeight: '1.15', letterSpacing: '-0.015em', fontWeight: '700' }],
         'display-md': ['clamp(1.5rem, 3vw, 2.25rem)', { lineHeight: '1.2', letterSpacing: '-0.01em', fontWeight: '600' }],
         'heading-lg': ['clamp(1.25rem, 2.5vw, 1.75rem)', { lineHeight: '1.3', fontWeight: '600' }],
-        'heading-md': ['clamp(1.125rem, 2vw, 1.375rem)', { lineHeight: '1.35', fontWeight: '600' }],
+        'heading-md': ['clamp(1.125rem, 2vw, 1.5rem)', { lineHeight: '1.35', fontWeight: '600' }],
         'heading-sm': ['1rem', { lineHeight: '1.4', fontWeight: '600' }],
         'body-lg': ['1.125rem', { lineHeight: '1.6' }],
         'body': ['1rem', { lineHeight: '1.6' }],
@@ -129,11 +170,17 @@ export default {
         'input': '10px',
       },
       boxShadow: {
-        'card': '0 2px 10px rgba(0, 0, 0, 0.05)',
-        'card-hover': '0 5px 20px rgba(0, 0, 0, 0.1)',
-        'elevated': '0 20px 60px rgba(102, 126, 234, 0.25)',
-        'glow': '0 5px 15px rgba(102, 126, 234, 0.4)',
-        'focus': '0 0 0 3px rgba(102, 126, 234, 0.35)',
+        // On midnight a drop shadow is nearly invisible, so these are mostly a
+        // hairline of light along the top edge plus a soft black lift. Kept
+        // under the old names so every `shadow-card` a page already writes
+        // picks up the dark treatment for free.
+        'card': '0 1px 0 0 rgba(255, 255, 255, 0.04), 0 10px 28px -14px rgba(0, 0, 0, 0.9)',
+        'card-hover': '0 1px 0 0 rgba(255, 255, 255, 0.07), 0 18px 44px -18px rgba(0, 0, 0, 0.95)',
+        'elevated': '0 24px 70px -22px rgba(0, 0, 0, 0.95)',
+        // These three were rgba(102, 126, 234) — violet. Now electric blue.
+        'glow': '0 6px 22px -6px rgba(47, 107, 255, 0.55)',
+        'glow-orange': '0 6px 22px -6px rgba(255, 122, 26, 0.45)',
+        'focus': '0 0 0 3px rgba(47, 107, 255, 0.38)',
       },
       animation: {
         'fade-in': 'fadeIn 200ms ease-out',

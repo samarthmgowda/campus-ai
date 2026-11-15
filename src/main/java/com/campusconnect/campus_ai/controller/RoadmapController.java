@@ -5,10 +5,14 @@ import com.campusconnect.campus_ai.entity.Roadmap;
 import com.campusconnect.campus_ai.repository.AlumniRepository;
 import com.campusconnect.campus_ai.repository.RoadmapRepository;
 import org.springframework.web.bind.annotation.*;
+import tools.jackson.databind.ObjectMapper;
 
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @RestController
@@ -17,6 +21,7 @@ public class RoadmapController {
 
     private final RoadmapRepository roadmapRepository;
     private final AlumniRepository alumniRepository;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     public RoadmapController(RoadmapRepository roadmapRepository, AlumniRepository alumniRepository) {
         this.roadmapRepository = roadmapRepository;
@@ -52,7 +57,7 @@ public class RoadmapController {
     /**
      * Alumni publishes a roadmap. The alumni identity comes from the body
      * (alumniId) so alumni can post without a student demo header.
-     * POST /roadmaps {alumniId, title, targetRole, description}
+     * POST /roadmaps {alumniId, title, targetRole, description, resources?}
      */
     @PostMapping
     public Map<String, Object> create(@RequestBody Map<String, Object> body) {
@@ -70,11 +75,80 @@ public class RoadmapController {
         if (description.length() > 5000)
             throw new IllegalArgumentException("description too long (max 5000)");
 
+        String resourcesJson = validateResources(body != null ? body.get("resources") : null);
+
         Alumni alumni = alumniRepository.findById(alumniId)
                 .orElseThrow(() -> new IllegalArgumentException("Alumni not found: " + alumniId));
         Roadmap r = new Roadmap(title, targetRole, description, alumni);
+        r.setResources(resourcesJson);
         r = roadmapRepository.save(r);
         return toMap(r);
+    }
+
+    /** Resource kinds the frontend knows how to render an icon and label for. */
+    private static final Set<String> RESOURCE_TYPES = Set.of("youtube", "blog", "pdf", "website");
+    private static final int MAX_RESOURCES = 20;
+    private static final int MAX_URL_LENGTH = 2048;
+
+    /**
+     * Validates an incoming `resources` value and returns it as the JSON string
+     * we store. Returns null for "absent", so a roadmap without resources keeps
+     * a null column rather than the string "null".
+     *
+     * The type is checked against a fixed set and the URL against http/https:
+     * these strings are rendered straight into an <a href> on the client, so an
+     * unchecked value could be a javascript: URL.
+     */
+    @SuppressWarnings("unchecked")
+    private String validateResources(Object raw) {
+        if (raw == null) return null;
+        if (!(raw instanceof List<?> list))
+            throw new IllegalArgumentException("resources must be an array");
+        if (list.size() > MAX_RESOURCES)
+            throw new IllegalArgumentException("Too many resources (max " + MAX_RESOURCES + ")");
+
+        List<Map<String, String>> clean = new ArrayList<>();
+        for (Object item : list) {
+            if (!(item instanceof Map<?, ?> m))
+                throw new IllegalArgumentException("Each resource must be an object with type and url");
+            Object typeVal = m.get("type");
+            Object urlVal = m.get("url");
+            if (!(typeVal instanceof String type) || !RESOURCE_TYPES.contains(type))
+                throw new IllegalArgumentException("Resource type must be one of " + RESOURCE_TYPES);
+            if (!(urlVal instanceof String url) || url.isBlank())
+                throw new IllegalArgumentException("Resource url is required");
+            url = url.trim();
+            if (url.length() > MAX_URL_LENGTH)
+                throw new IllegalArgumentException("Resource url too long (max " + MAX_URL_LENGTH + ")");
+            String lower = url.toLowerCase(Locale.ROOT);
+            if (!lower.startsWith("http://") && !lower.startsWith("https://"))
+                throw new IllegalArgumentException("Resource url must start with http:// or https://");
+
+            Map<String, String> entry = new LinkedHashMap<>();
+            entry.put("type", type);
+            entry.put("url", url);
+            Object labelVal = m.get("label");
+            if (labelVal instanceof String label && !label.isBlank())
+                entry.put("label", label.trim().length() > 120 ? label.trim().substring(0, 120) : label.trim());
+            clean.add(entry);
+        }
+        if (clean.isEmpty()) return null;
+        try {
+            return objectMapper.writeValueAsString(clean);
+        } catch (Exception e) {
+            throw new IllegalArgumentException("Could not store resources: " + e.getMessage());
+        }
+    }
+
+    /** Reads the stored JSON back into a list; a malformed column yields an empty list, not a 500. */
+    @SuppressWarnings("unchecked")
+    private List<Map<String, Object>> readResources(String json) {
+        if (json == null || json.isBlank()) return List.of();
+        try {
+            return objectMapper.readValue(json, List.class);
+        } catch (Exception e) {
+            return List.of();
+        }
     }
 
     private Map<String, Object> toMap(Roadmap r) {
@@ -83,6 +157,7 @@ public class RoadmapController {
         m.put("title", r.getTitle());
         m.put("targetRole", r.getTargetRole());
         m.put("description", r.getDescription());
+        m.put("resources", readResources(r.getResources()));
         if (r.getAlumni() != null) {
             m.put("alumniId", r.getAlumni().getId());
             m.put("alumniName", r.getAlumni().getName());

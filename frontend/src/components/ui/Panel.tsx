@@ -4,13 +4,18 @@ import { cn } from '../../utils/cn'
 /**
  * Panel
  * ─────
- * The white card that holds a titled region of a page.
+ * The raised surface that holds a titled region of a page.
  *
- * This exact combination — `rounded-2xl border border-campus-900/[0.07]
- * bg-white shadow-card` — was pasted 49 times across the pages, with the
+ * This exact combination — `rounded-2xl border border-er-800
+ * bg-er-800 shadow-card` — was pasted 49 times across the pages, with the
  * border opacity drifting between 0.04 and 0.08 as each page was written. That
  * drift is invisible in isolation and obvious in a sidebar of screenshots: no
  * two panels had the same edge weight.
+ *
+ * On midnight the edge is doing more work than it did on white: a shadow is
+ * nearly invisible against #090A10, so the hairline is what actually separates
+ * the card from the canvas. That is why it is a ring of white at low opacity
+ * rather than a darker border — you cannot go darker than the background.
  *
  * `divided` adds the hairline separators between children that list panels
  * need, since `divide-y` cannot be applied from outside. `inset` is for panels
@@ -33,9 +38,9 @@ export function Panel({
   return (
     <div
       className={cn(
-        'rounded-2xl border border-campus-900/[0.07] bg-white shadow-card',
+        'rounded-2xl border border-white/[0.07] bg-er-800 shadow-card',
         padded && 'p-4 sm:p-5',
-        divided && 'overflow-hidden divide-y divide-campus-900/[0.05]',
+        divided && 'overflow-hidden divide-y divide-white/[0.06]',
         className
       )}
     >
@@ -47,7 +52,7 @@ export function Panel({
 /**
  * PanelHeader
  * ───────────
- * The title row inside a Panel. `tinted` gives it the soft lavender band that
+ * The title row inside a Panel. `tinted` gives it the recessed band that
  * filterable panels use, with the rule underneath already in place.
  */
 export function PanelHeader({
@@ -69,16 +74,16 @@ export function PanelHeader({
     <div
       className={cn(
         'flex flex-wrap items-center justify-between gap-3',
-        tinted && 'border-b border-campus-900/[0.06] bg-campus-50/50 px-5 pb-4 pt-5',
+        tinted && 'border-b border-white/[0.06] bg-er-900/60 px-5 pb-4 pt-5',
         className
       )}
     >
       <div className="min-w-0">
-        <p className="flex items-center gap-2 font-display font-semibold text-[16px] text-campus-950">
+        <p className="flex items-center gap-2 font-display font-semibold text-[16px] text-ink-100">
           {icon}
           {title}
         </p>
-        {description && <p className="mt-0.5 text-caption text-surface-400">{description}</p>}
+        {description && <p className="mt-0.5 text-caption text-ink-400">{description}</p>}
       </div>
       {action && <div className="flex-shrink-0">{action}</div>}
     </div>
@@ -115,14 +120,14 @@ export function ListRow({
   return (
     <div
       className={cn(
-        'group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-campus-50/70',
+        'group flex items-center gap-3 px-3 py-2.5 transition-colors hover:bg-white/[0.03]',
         className
       )}
     >
       {icon}
       <div className="min-w-0 flex-1">
-        <p className="truncate text-body-sm font-medium text-campus-950">{title}</p>
-        {meta && <p className="truncate text-micro text-surface-400">{meta}</p>}
+        <p className="truncate text-body-sm font-medium text-ink-100">{title}</p>
+        {meta && <p className="truncate text-micro text-ink-400">{meta}</p>}
         {badge && <div className="mt-1">{badge}</div>}
       </div>
       {action && (
@@ -141,8 +146,8 @@ export function ListRow({
 
 /** Consistent hover treatment for an icon-only row action. */
 export const ROW_ACTION =
-  'rounded-lg p-2 text-surface-400 transition-colors hover:bg-campus-100 hover:text-campus-700 focus:outline-none focus:ring-2 focus:ring-campus-500'
+  'rounded-lg p-2 text-ink-400 transition-colors hover:bg-white/[0.06] hover:text-er-300 focus:outline-none focus-visible:ring-2 focus-visible:ring-er-500'
 
 /** The destructive variant, separated so it can never be clicked by accident. */
 export const ROW_ACTION_DANGER =
-  'rounded-lg p-2 text-surface-300 transition-colors hover:bg-red-50 hover:text-red-600 focus:outline-none focus:ring-2 focus:ring-campus-500'
+  'rounded-lg p-2 text-ink-500 transition-colors hover:bg-red-500/12 hover:text-red-400 focus:outline-none focus-visible:ring-2 focus-visible:ring-red-500'

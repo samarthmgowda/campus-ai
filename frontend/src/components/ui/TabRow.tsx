@@ -23,6 +23,11 @@ export interface TabItem<T extends string = string> {
  * The underlying value stays controlled by the caller, so this is a drop-in
  * for the `const [tab, setTab] = useState(...)` pattern the pages already use.
  *
+ * The selected tab is the strongest blue on the screen (`er-600`), sitting on a
+ * near-black track. That contrast is deliberate: this is one of the few places
+ * the ratio spends blue at full strength, so the current view is unmistakable
+ * from across a room.
+ *
  * Note on ARIA: `role="tab"` technically promises a `tabpanel` sibling. Pages
  * here render their panels outside this component, so we also set
  * `aria-controls` when an `id` is supplied and let callers wire `role="tabpanel"`
@@ -86,7 +91,7 @@ export function TabRow<T extends string>({
       aria-label={ariaLabel}
       onKeyDown={onKeyDown}
       className={cn(
-        'inline-flex items-center gap-1 rounded-2xl border border-campus-900/[0.07] bg-white p-1 shadow-card',
+        'inline-flex items-center gap-1 rounded-2xl border border-white/[0.07] bg-er-800 p-1 shadow-card',
         className
       )}
     >
@@ -104,11 +109,11 @@ export function TabRow<T extends string>({
             onClick={() => onChange(t.id)}
             className={cn(
               'relative inline-flex items-center gap-1.5 rounded-xl font-semibold transition-all',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-campus-500',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-er-500',
               pad,
               selected
-                ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-card'
-                : 'text-surface-500 hover:text-campus-900 hover:bg-campus-50'
+                ? 'bg-er-600 text-white shadow-glow'
+                : 'text-ink-400 hover:text-ink-100 hover:bg-white/[0.05]'
             )}
           >
             {t.icon}
@@ -117,7 +122,7 @@ export function TabRow<T extends string>({
               <span
                 className={cn(
                   'tabular-nums text-micro rounded-full px-1.5 min-w-[18px] text-center',
-                  selected ? 'bg-white/20 text-white' : 'bg-campus-900/[0.06] text-surface-500'
+                  selected ? 'bg-white/25 text-white' : 'bg-white/[0.07] text-ink-400'
                 )}
               >
                 {t.count}
@@ -172,15 +177,15 @@ export function ScrollTabs<T extends string>({
             onClick={() => onChange(t.id)}
             className={cn(
               'whitespace-nowrap rounded-full px-3.5 py-1.5 text-body-sm font-semibold transition-all flex-shrink-0',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-campus-500',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-er-500',
               selected
-                ? 'bg-campus-900 text-white'
-                : 'bg-white border border-campus-900/10 text-surface-500 hover:text-campus-900'
+                ? 'bg-er-600 text-white'
+                : 'bg-er-800 border border-white/10 text-ink-400 hover:text-ink-100 hover:border-white/20'
             )}
           >
             {t.label}
             {typeof t.count === 'number' && (
-              <span className="ml-1.5 tabular-nums opacity-60">{t.count}</span>
+              <span className="ml-1.5 tabular-nums opacity-70">{t.count}</span>
             )}
           </button>
         )

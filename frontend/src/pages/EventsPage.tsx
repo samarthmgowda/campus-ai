@@ -25,10 +25,10 @@ function dateBlock(iso: string) {
 
 function typeStyle(type: string) {
   const t = (type ?? '').toUpperCase()
-  if (t.includes('HACK')) return 'bg-accent-50 text-accent-700 border-accent-100'
-  if (t.includes('WORKSHOP')) return 'bg-campus-50 text-campus-700 border-campus-100'
-  if (t.includes('SEMINAR')) return 'bg-violet-50 text-violet-700 border-violet-100'
-  return 'bg-sky-50 text-sky-700 border-sky-100'
+  if (t.includes('HACK')) return 'bg-er-900 text-er-200 border-er-500/25'
+  if (t.includes('WORKSHOP')) return 'bg-er-900 text-er-300 border-white/10'
+  if (t.includes('SEMINAR')) return 'bg-teal-500/12 text-teal-300 border border-teal-500/25'
+  return 'bg-sky-500/12 text-sky-300 border-sky-500/25'
 }
 
 export default function EventsPage() {
@@ -91,8 +91,8 @@ export default function EventsPage() {
               onClick={() => setUpcomingOnly(!upcomingOnly)}
               aria-pressed={upcomingOnly}
               className={cn(
-                'rounded-xl px-3 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-campus-500',
-                upcomingOnly ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-card' : 'bg-white border border-campus-900/10 text-surface-500 hover:text-campus-900'
+                'rounded-xl px-3 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-er-500',
+                upcomingOnly ? 'bg-gradient-to-br from-er-500 to-er-600 text-white shadow-card' : 'bg-er-800 border border-white/10 text-ink-400 hover:text-ink-100'
               )}
             >
               Upcoming only
@@ -106,15 +106,15 @@ export default function EventsPage() {
       />
 
       {justSubmitted && (
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/60 px-4 py-3 mb-4 flex items-start gap-2.5" role="status">
-          <p className="text-body-sm text-amber-800 leading-relaxed">
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/12 px-4 py-3 mb-4 flex items-start gap-2.5" role="status">
+          <p className="text-body-sm text-amber-200 leading-relaxed">
             <strong className="font-semibold">Submitted for approval.</strong>{' '}
             Your event is pending admin review and will appear here once approved.
           </p>
           <button
             onClick={() => setJustSubmitted(false)}
             aria-label="Dismiss notice"
-            className="ml-auto p-1 rounded-lg text-amber-600 hover:text-amber-900 hover:bg-amber-100 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
+            className="ml-auto p-1 rounded-lg text-amber-200 hover:text-amber-200 hover:bg-amber-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-500"
           >
             <X className="h-4 w-4" />
           </button>
@@ -122,18 +122,18 @@ export default function EventsPage() {
       )}
 
       {showCreate && (
-        <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-elevated p-5 sm:p-6 mb-6 animate-slide-down">
-          <p className="font-display font-semibold text-[17px] text-campus-950">Create event</p>
-          <p className="text-body-sm text-surface-500 mt-0.5">Type like HACKATHON, WORKSHOP, SEMINAR · new events need admin approval before publishing</p>
+        <div className="rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 sm:p-6 mb-6 animate-slide-down">
+          <p className="font-display font-semibold text-[17px] text-ink-50">Create event</p>
+          <p className="text-body-sm text-ink-400 mt-0.5">Type like HACKATHON, WORKSHOP, SEMINAR · new events need admin approval before publishing</p>
           <div className="grid gap-3 sm:grid-cols-2 mt-4">
             <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Winter Hack Night" />
             <div className="w-full">
-              <label htmlFor="evt-type" className="block text-body-sm font-medium text-surface-700 mb-1.5">Type</label>
+              <label htmlFor="evt-type" className="block text-body-sm font-medium text-ink-200 mb-1.5">Type</label>
               <select
                 id="evt-type"
                 value={type}
                 onChange={e => setType(e.target.value)}
-                className="w-full rounded-lg border border-surface-300 bg-white px-3 py-2 text-body focus:outline-none focus:ring-2 focus:ring-campus-500 transition-colors"
+                className="w-full rounded-lg border border-white/12 bg-er-900 px-3 py-2 text-body focus:outline-none focus:ring-2 focus:ring-er-500 transition-colors"
               >
                 <option value="HACKATHON">Hackathon</option>
                 <option value="WORKSHOP">Workshop</option>
@@ -145,19 +145,19 @@ export default function EventsPage() {
             <Input label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
             <Input label="Location" value={location} onChange={e => setLocation(e.target.value)} placeholder="Innovation Hall A" />
             <div className="sm:col-span-2">
-              <label htmlFor="evt-desc" className="block text-body-sm font-medium text-surface-700 mb-1.5">What is happening?</label>
+              <label htmlFor="evt-desc" className="block text-body-sm font-medium text-ink-200 mb-1.5">What is happening?</label>
               <textarea
                 id="evt-desc"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={2}
                 placeholder="Agenda, guests, what to bring…"
-                className="w-full rounded-xl border border-surface-300 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-campus-500 resize-none"
+                className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-er-500 resize-none"
               />
             </div>
           </div>
           {createMutation.isError && (
-            <p className="text-body-sm text-red-600 mt-3" role="alert">{(createMutation.error as Error).message}</p>
+            <p className="text-body-sm text-red-300 mt-3" role="alert">{(createMutation.error as Error).message}</p>
           )}
           <div className="flex gap-2 mt-4">
             <Button size="sm" variant="accent" disabled={!title.trim() || !date || createMutation.isPending} loading={createMutation.isPending}
@@ -189,37 +189,37 @@ export default function EventsPage() {
                 key={e.id}
                 style={{ ['--stagger' as string]: Math.min(i, 8) }}
                 className={cn(
-                  'rounded-2xl border bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 overflow-hidden',
-                  joined ? 'border-campus-500/30 ring-1 ring-campus-500/20' : 'border-campus-900/[0.07]'
+                  'rounded-2xl border bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 overflow-hidden',
+                  joined ? 'border-er-500/40 ring-1 ring-er-500/20' : 'border-white/10'
                 )}
               >
                 <div className="p-5 flex gap-4">
                   <div
                     className={cn(
                       'flex flex-col items-center justify-center rounded-2xl w-[68px] h-[76px] flex-shrink-0 border',
-                      joined ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border-transparent' : 'bg-campus-50 border-campus-100'
+                      joined ? 'bg-gradient-to-br from-er-500 to-er-600 text-white border-transparent' : 'bg-er-900 border-white/10'
                     )}
                     aria-label={`Event date ${e.eventDate}`}
                   >
-                    <span className={cn('text-micro font-bold tracking-widest', joined ? 'text-accent-300' : 'text-accent-600')}>{month}</span>
-                    <span className={cn('font-display font-bold text-[26px] leading-none tabular-nums', joined ? 'text-white' : 'text-campus-950')}>{day}</span>
-                    <span className={cn('text-micro', joined ? 'text-white/60' : 'text-surface-400')}>{weekday}</span>
+                    <span className={cn('text-micro font-bold tracking-widest', joined ? 'text-er-200' : 'text-er-300')}>{month}</span>
+                    <span className={cn('font-display font-bold text-[26px] leading-none tabular-nums', joined ? 'text-white' : 'text-ink-50')}>{day}</span>
+                    <span className={cn('text-micro', joined ? 'text-white/60' : 'text-ink-400')}>{weekday}</span>
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5 flex-wrap">
-                      <p className="font-display font-semibold text-[16px] text-campus-950 tracking-tight leading-tight">{e.title}</p>
+                      <p className="font-display font-semibold text-[16px] text-ink-50 tracking-tight leading-tight">{e.title}</p>
                     </div>
                     <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                       <span className={cn('rounded-full border px-2 py-0.5 text-micro font-semibold', typeStyle(e.type))}>{e.type}</span>
                       {joined && (
-                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 border border-emerald-100 px-2 py-0.5 text-micro font-semibold text-emerald-700">
+                        <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/12 border border-emerald-500/25 px-2 py-0.5 text-micro font-semibold text-emerald-300">
                           <Check className="h-3 w-3" aria-hidden="true" /> Joined
                         </span>
                       )}
                     </div>
-                    {e.description && <p className="text-body-sm text-surface-600 mt-2 line-clamp-2 leading-relaxed">{e.description}</p>}
+                    {e.description && <p className="text-body-sm text-ink-300 mt-2 line-clamp-2 leading-relaxed">{e.description}</p>}
                     {e.location && (
-                      <p className="text-caption text-surface-400 mt-1.5 flex items-center gap-1">
+                      <p className="text-caption text-ink-400 mt-1.5 flex items-center gap-1">
                         <MapPin className="h-3.5 w-3.5 flex-shrink-0" aria-hidden="true" /> {e.location}
                       </p>
                     )}

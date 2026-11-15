@@ -21,10 +21,12 @@ export function CitedAnswer({
     const el = document.getElementById(`${idPrefix}-source-${n}`)
     if (!el) return
     el.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    // Electric blue, not the old violet — this flash is the only moment the
+    // citation is pointed at, so it has to be the same accent as the chip.
     el.animate(
       [
-        { boxShadow: '0 0 0 3px rgba(118,75,162,0.55)' },
-        { boxShadow: '0 0 0 0 rgba(118,75,162,0)' },
+        { boxShadow: '0 0 0 3px rgba(47,107,255,0.65)' },
+        { boxShadow: '0 0 0 0 rgba(47,107,255,0)' },
       ],
       { duration: 900 }
     )
@@ -34,7 +36,7 @@ export function CitedAnswer({
   const parts = (text ?? '').split(/(\[\d+\])/g)
 
   return (
-    <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-surface-800">
+    <p className="whitespace-pre-wrap text-body-sm leading-relaxed text-ink-200">
       {parts.map((part, i) => {
         const m = /^\[(\d+)\]$/.exec(part)
         if (!m) return <span key={i}>{part}</span>
@@ -50,8 +52,8 @@ export function CitedAnswer({
             aria-label={`Citation ${n}: ${title}`}
             className={cn(
               'mx-0.5 inline-flex h-5 min-w-5 items-center justify-center rounded-md px-1 align-baseline',
-              'bg-campus-100 text-campus-700 text-micro font-bold tabular-nums',
-              'hover:bg-campus-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-500'
+              'bg-er-500/15 text-er-200 text-micro font-bold tabular-nums',
+              'hover:bg-er-500/30 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-er-400'
             )}
           >
             {n}

@@ -106,12 +106,12 @@ export default function AdminPage() {
               className={cn(
                 'rounded-2xl border px-4 py-3.5 shadow-card',
                 k.toUpperCase() === 'OPEN' && Number(v) > 0
-                  ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border-transparent'
-                  : 'bg-white border-campus-900/[0.07]'
+                  ? 'bg-gradient-to-br from-er-500 to-er-600 text-white border-transparent'
+                  : 'bg-er-800 border-white/10'
               )}
             >
-              <p className={cn('font-display font-bold text-[26px] leading-none tabular-nums', k.toUpperCase() === 'OPEN' && Number(v) > 0 ? 'text-white' : 'text-campus-950')}>{v}</p>
-              <p className={cn('text-caption mt-1.5 capitalize', k.toUpperCase() === 'OPEN' && Number(v) > 0 ? 'text-white/60' : 'text-surface-500')}>{k.toLowerCase()}</p>
+              <p className={cn('font-display font-bold text-[26px] leading-none tabular-nums', k.toUpperCase() === 'OPEN' && Number(v) > 0 ? 'text-white' : 'text-ink-50')}>{v}</p>
+              <p className={cn('text-caption mt-1.5 capitalize', k.toUpperCase() === 'OPEN' && Number(v) > 0 ? 'text-white/60' : 'text-ink-400')}>{k.toLowerCase()}</p>
             </div>
           ))}
         </div>
@@ -121,14 +121,14 @@ export default function AdminPage() {
         <p className="mb-4" role="alert"><Badge variant="danger">{(anyError as Error).message}</Badge></p>
       )}
 
-      <section aria-label="Moderation queue" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden mb-5">
-        <div className="px-5 pt-5 pb-4 border-b border-campus-900/[0.06] bg-campus-50/50">
+      <section aria-label="Moderation queue" className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden mb-5">
+        <div className="px-5 pt-5 pb-4 border-b border-white/10 bg-white/[0.04]">
           <div className="flex items-center justify-between flex-wrap gap-3">
             <div>
-              <p className="font-display font-semibold text-[16px] text-campus-950 flex items-center gap-2">
-                <Flag className="h-4 w-4 text-accent-500" aria-hidden="true" /> Reports
+              <p className="font-display font-semibold text-[16px] text-ink-50 flex items-center gap-2">
+                <Flag className="h-4 w-4 text-er-300" aria-hidden="true" /> Reports
               </p>
-              <p className="text-caption text-surface-400 mt-0.5">Review flagged content — resolve with an action and note</p>
+              <p className="text-caption text-ink-400 mt-0.5">Review flagged content — resolve with an action and note</p>
             </div>
             <div className="flex gap-1.5 flex-wrap" role="group" aria-label="Filter reports">
               {REPORT_FILTERS.map(s => (
@@ -137,8 +137,8 @@ export default function AdminPage() {
                   onClick={() => setReportStatus(s)}
                   aria-pressed={reportStatus === s}
                   className={cn(
-                    'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-campus-500',
-                    reportStatus === s ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white' : 'text-surface-400 hover:text-campus-900 hover:bg-campus-50'
+                    'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-er-500',
+                    reportStatus === s ? 'bg-gradient-to-br from-er-500 to-er-600 text-white' : 'text-ink-400 hover:text-ink-100 hover:bg-er-900'
                   )}
                 >
                   {s || 'All'}
@@ -166,18 +166,18 @@ export default function AdminPage() {
                   style={{ ['--stagger' as string]: Math.min(i, 8) }}
                   className={cn(
                     'rounded-xl border p-4',
-                    r.status === 'OPEN' ? 'border-amber-200/70 bg-amber-50/40' : 'border-campus-900/[0.06] bg-white'
+                    r.status === 'OPEN' ? 'border-amber-500/25 bg-amber-500/12' : 'border-white/10 bg-er-800'
                   )}
                 >
                   <div className="flex items-center gap-2 flex-wrap">
-                    <ShieldAlert className="h-4 w-4 text-accent-500 flex-shrink-0" aria-hidden="true" />
+                    <ShieldAlert className="h-4 w-4 text-er-300 flex-shrink-0" aria-hidden="true" />
                     <Badge variant="outline" size="sm">{r.targetType} #{r.targetId}</Badge>
                     <Badge variant="default" size="sm">{r.reason}</Badge>
                     <Badge variant={r.status === 'OPEN' ? 'warning' : 'success'} size="sm">{r.status}</Badge>
-                    <span className="text-caption text-surface-400 ml-auto">by {r.reporterName ?? `#${r.reporterId}`}</span>
+                    <span className="text-caption text-ink-400 ml-auto">by {r.reporterName ?? `#${r.reporterId}`}</span>
                   </div>
-                  {r.details && <p className="text-body-sm text-surface-600 mt-2 leading-relaxed">{r.details}</p>}
-                  {r.resolution && <p className="text-body-sm text-surface-500 mt-1.5 italic">Resolution: {r.resolution}</p>}
+                  {r.details && <p className="text-body-sm text-ink-300 mt-2 leading-relaxed">{r.details}</p>}
+                  {r.resolution && <p className="text-body-sm text-ink-400 mt-1.5 italic">Resolution: {r.resolution}</p>}
                   {r.status === 'OPEN' && (
                     resolvingId === r.id ? (
                       <div className="mt-3 flex gap-2 flex-wrap animate-slide-down">
@@ -212,12 +212,12 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section aria-label="Event approvals" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden mb-5">
-        <div className="px-5 pt-5 pb-4 border-b border-campus-900/[0.06]">
-          <p className="font-display font-semibold text-[16px] text-campus-950 flex items-center gap-2">
-            <CalendarPlus className="h-4 w-4 text-accent-500" aria-hidden="true" /> Event approvals
+      <section aria-label="Event approvals" className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden mb-5">
+        <div className="px-5 pt-5 pb-4 border-b border-white/10">
+          <p className="font-display font-semibold text-[16px] text-ink-50 flex items-center gap-2">
+            <CalendarPlus className="h-4 w-4 text-er-300" aria-hidden="true" /> Event approvals
           </p>
-          <p className="text-caption text-surface-400 mt-0.5">
+          <p className="text-caption text-ink-400 mt-0.5">
             New events start pending — approve to publish, hide to unpublish ·{' '}
             {adminEvents.filter(e => e.hidden).length} pending
           </p>
@@ -230,13 +230,13 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-1.5">
               {adminEvents.map(e => (
-                <div key={e.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-campus-50/70 transition-colors">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-100 flex-shrink-0" aria-hidden="true">
-                    <CalendarPlus className="h-4 w-4 text-surface-500" />
+                <div key={e.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/[0.04] transition-colors">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-er-800 flex-shrink-0" aria-hidden="true">
+                    <CalendarPlus className="h-4 w-4 text-ink-400" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-surface-900 text-body-sm truncate">{e.title}</p>
-                    <p className="text-micro text-surface-400 truncate">{e.type} · {e.eventDate}{e.location ? ` · ${e.location}` : ''}</p>
+                    <p className="font-medium text-ink-100 text-body-sm truncate">{e.title}</p>
+                    <p className="text-micro text-ink-400 truncate">{e.type} · {e.eventDate}{e.location ? ` · ${e.location}` : ''}</p>
                     {e.hidden
                       ? <Badge variant="warning" size="sm" className="mt-0.5">Pending approval</Badge>
                       : <Badge variant="success" size="sm" className="mt-0.5">Published</Badge>}
@@ -251,7 +251,7 @@ export default function AdminPage() {
                       onClick={() => eventVisibilityMutation.mutate({ id: e.id, hidden: true })}
                       aria-label={`Hide ${e.title}`}
                       title="Hide"
-                      className="p-2 rounded-lg text-surface-400 hover:text-campus-700 hover:bg-campus-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                      className="p-2 rounded-lg text-ink-400 hover:text-er-300 hover:bg-white/[0.06] transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                     >
                       <EyeOff className="h-4 w-4" />
                     </button>
@@ -263,10 +263,10 @@ export default function AdminPage() {
         </div>
       </section>
 
-      <section aria-label="Document curation" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden">
-        <div className="px-5 pt-5 pb-4 border-b border-campus-900/[0.06]">
-          <p className="font-display font-semibold text-[16px] text-campus-950">Documents</p>
-          <p className="text-caption text-surface-400 mt-0.5">All uploads including hidden — toggle visibility or delete · {docs.length} total</p>
+      <section aria-label="Document curation" className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden">
+        <div className="px-5 pt-5 pb-4 border-b border-white/10">
+          <p className="font-display font-semibold text-[16px] text-ink-50">Documents</p>
+          <p className="text-caption text-ink-400 mt-0.5">All uploads including hidden — toggle visibility or delete · {docs.length} total</p>
         </div>
         <div className="p-4 sm:p-5">
           {docsLoading ? (
@@ -276,19 +276,19 @@ export default function AdminPage() {
           ) : (
             <div className="space-y-1.5">
               {docs.map(d => (
-                <div key={d.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-campus-50/70 transition-colors">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-surface-100 flex-shrink-0" aria-hidden="true">
-                    <FileText className="h-4 w-4 text-surface-500" />
+                <div key={d.id} className="flex items-center gap-3 rounded-xl px-3 py-2.5 hover:bg-white/[0.04] transition-colors">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-er-800 flex-shrink-0" aria-hidden="true">
+                    <FileText className="h-4 w-4 text-ink-400" />
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-medium text-surface-900 text-body-sm truncate">{d.title}</p>
+                    <p className="font-medium text-ink-100 text-body-sm truncate">{d.title}</p>
                     {d.hidden && <Badge variant="warning" size="sm" className="mt-0.5">Hidden from AI</Badge>}
                   </div>
                   <button
                     onClick={() => visibilityMutation.mutate({ id: d.id, hidden: !d.hidden })}
                     aria-label={d.hidden ? `Unhide ${d.title}` : `Hide ${d.title}`}
                     title={d.hidden ? 'Unhide' : 'Hide'}
-                    className="p-2 rounded-lg text-surface-400 hover:text-campus-700 hover:bg-campus-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                    className="p-2 rounded-lg text-ink-400 hover:text-er-300 hover:bg-white/[0.06] transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                   >
                     {d.hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
@@ -296,7 +296,7 @@ export default function AdminPage() {
                     onClick={() => setPendingDelete({ id: d.id, title: d.title })}
                     aria-label={`Delete ${d.title}`}
                     title="Delete"
-                    className="p-2 rounded-lg text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                    className="p-2 rounded-lg text-ink-500 hover:text-red-300 hover:bg-red-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>

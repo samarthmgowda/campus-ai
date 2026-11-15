@@ -49,7 +49,7 @@ export default function PublicProfilePage() {
       <div className="mb-4">
         <Link
           to="/chat"
-          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700"
+          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> Back to chat
         </Link>
@@ -68,10 +68,10 @@ export default function PublicProfilePage() {
             sub={[data.branch, data.year != null ? `Year ${data.year}` : null].filter(Boolean).join(' · ') || 'Campus member'}
           />
 
-          <div className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 sm:p-6">
+          <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 sm:p-6">
             <div className="flex items-start gap-4">
               <span
-                className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-display font-bold text-[26px] flex-shrink-0"
+                className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-er-500 to-er-600 text-white font-display font-bold text-[26px] flex-shrink-0"
                 aria-hidden="true"
               >
                 {data.name ? data.name.charAt(0).toUpperCase() : <UserRound className="h-7 w-7" />}
@@ -86,16 +86,16 @@ export default function PublicProfilePage() {
                   {data.branch && <Badge variant="info">{data.branch}</Badge>}
                   {data.year != null && <Badge variant="outline">Year {data.year}</Badge>}
                 </div>
-                {data.bio && <p className="mt-3 text-body-sm text-surface-600 leading-relaxed">{data.bio}</p>}
+                {data.bio && <p className="mt-3 text-body-sm text-ink-300 leading-relaxed">{data.bio}</p>}
                 {(data.githubUrl || data.linkedinUrl) && (
                   <div className="mt-3 flex flex-wrap gap-2">
                     {data.githubUrl && (
-                      <a href={data.githubUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700">
+                      <a href={data.githubUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300">
                         <Github className="h-4 w-4" aria-hidden="true" /> GitHub
                       </a>
                     )}
                     {data.linkedinUrl && (
-                      <a href={data.linkedinUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700">
+                      <a href={data.linkedinUrl} target="_blank" rel="noreferrer" className="inline-flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300">
                         <Linkedin className="h-4 w-4" aria-hidden="true" /> LinkedIn
                       </a>
                     )}
@@ -106,12 +106,12 @@ export default function PublicProfilePage() {
           </div>
 
           {splitCsv(data.skills).length > 0 && (
-            <section aria-label="Skills" className="mt-4 rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 sm:p-6">
-              <p className="font-display font-semibold text-[16px] text-campus-950 mb-3">Skills</p>
+            <section aria-label="Skills" className="mt-4 rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 sm:p-6">
+              <p className="font-display font-semibold text-[16px] text-ink-50 mb-3">Skills</p>
               <div className="flex flex-wrap gap-2">
                 {splitCsv(data.skills).map((s) => (
-                  <span key={s} className="inline-flex items-center gap-1 rounded-full bg-campus-50 border border-campus-100 px-3 py-1 text-body-sm font-medium text-campus-700">
-                    <Sparkles className="h-3.5 w-3.5 text-accent-500" aria-hidden="true" /> {s}
+                  <span key={s} className="inline-flex items-center gap-1 rounded-full bg-er-900 border border-white/10 px-3 py-1 text-body-sm font-medium text-er-300">
+                    <Sparkles className="h-3.5 w-3.5 text-er-300" aria-hidden="true" /> {s}
                   </span>
                 ))}
               </div>
@@ -119,11 +119,11 @@ export default function PublicProfilePage() {
           )}
 
           {splitCsv(data.interests).length > 0 && (
-            <section aria-label="Interests" className="mt-4 rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 sm:p-6">
-              <p className="font-display font-semibold text-[16px] text-campus-950 mb-3">Interests</p>
+            <section aria-label="Interests" className="mt-4 rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 sm:p-6">
+              <p className="font-display font-semibold text-[16px] text-ink-50 mb-3">Interests</p>
               <div className="flex flex-wrap gap-2">
                 {splitCsv(data.interests).map((s) => (
-                  <span key={s} className="inline-flex items-center rounded-full bg-surface-50 border border-campus-900/[0.06] px-3 py-1 text-body-sm text-surface-600">
+                  <span key={s} className="inline-flex items-center rounded-full bg-er-900 border border-white/10 px-3 py-1 text-body-sm text-ink-300">
                     {s}
                   </span>
                 ))}

@@ -124,20 +124,20 @@ export function ConfirmDialog({
       role="presentation"
       onClick={cancel}
     >
-      <div className="absolute inset-0 bg-campus-950/40 backdrop-blur-[2px] animate-fade-in" aria-hidden="true" />
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-[2px] animate-fade-in" aria-hidden="true" />
       <div
         role="dialog"
         aria-modal="true"
         aria-labelledby="confirm-dialog-title"
         aria-describedby={body ? 'confirm-dialog-body' : undefined}
         onClick={e => e.stopPropagation()}
-        className="relative w-full max-w-md rounded-2xl border border-campus-900/[0.08] bg-white shadow-elevated p-5 sm:p-6 animate-scale-in"
+        className="relative w-full max-w-md rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 sm:p-6 animate-scale-in"
       >
-        <p id="confirm-dialog-title" className="font-display font-semibold text-[17px] text-campus-950 tracking-tight">
+        <p id="confirm-dialog-title" className="font-display font-semibold text-[17px] text-ink-50 tracking-tight">
           {title}
         </p>
         {body && (
-          <div id="confirm-dialog-body" className="text-body-sm text-surface-600 mt-2 leading-relaxed">
+          <div id="confirm-dialog-body" className="text-body-sm text-ink-300 mt-2 leading-relaxed">
             {body}
           </div>
         )}

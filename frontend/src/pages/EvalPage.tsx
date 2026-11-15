@@ -89,10 +89,10 @@ interface TeammateSummary {
 function VerdictBanner({ verdict }: { verdict: { winner: string; reason: string } }) {
   const tone =
     verdict.winner === 'improved' || verdict.winner === 'hybrid' || verdict.winner === 'hybrid+semantic'
-      ? 'from-[#667eea] to-[#764ba2] text-white border-transparent'
+      ? 'from-er-500 to-er-600 text-white border-transparent'
       : verdict.winner === 'tie'
-        ? 'bg-amber-50 border-amber-200 text-amber-900'
-        : 'bg-white border-campus-900/[0.07] text-campus-950'
+        ? 'bg-amber-500/12 border-amber-500/25 text-amber-200'
+        : 'bg-er-800 border-white/10 text-ink-50'
   return (
     <div className={cn('rounded-2xl border px-4 py-3.5 shadow-card bg-gradient-to-br flex items-start gap-3', tone)}>
       <Trophy className="h-5 w-5 flex-shrink-0 mt-0.5" aria-hidden="true" />
@@ -112,10 +112,10 @@ function MetricRow({ label, basic, improved, fmt }: { label: string; basic: numb
   const f = fmt ?? ((v: number) => v.toFixed(3))
   const better = improved > basic ? 'imp' : basic > improved ? 'bas' : 'tie'
   return (
-    <tr className="border-t border-campus-900/[0.06]">
-      <td className="py-2 pr-3 text-body-sm text-surface-600">{label}</td>
-      <td className={cn('py-2 pr-3 text-body-sm tabular-nums text-right', better === 'bas' && 'font-bold text-campus-700')}>{f(basic)}</td>
-      <td className={cn('py-2 text-body-sm tabular-nums text-right', better === 'imp' && 'font-bold text-campus-700')}>{f(improved)}</td>
+    <tr className="border-t border-white/10">
+      <td className="py-2 pr-3 text-body-sm text-ink-300">{label}</td>
+      <td className={cn('py-2 pr-3 text-body-sm tabular-nums text-right', better === 'bas' && 'font-bold text-er-300')}>{f(basic)}</td>
+      <td className={cn('py-2 text-body-sm tabular-nums text-right', better === 'imp' && 'font-bold text-er-300')}>{f(improved)}</td>
     </tr>
   )
 }
@@ -126,7 +126,7 @@ function BoolDot({ v, invert }: { v: boolean; invert?: boolean }) {
     <span
       className={cn(
         'inline-block h-2.5 w-2.5 rounded-full',
-        good ? 'bg-emerald-500' : v && invert ? 'bg-red-500' : 'bg-surface-300'
+        good ? 'bg-emerald-500' : v && invert ? 'bg-red-500' : 'bg-white/[0.10]'
       )}
       title={String(v)}
       aria-label={String(v)}
@@ -135,9 +135,9 @@ function BoolDot({ v, invert }: { v: boolean; invert?: boolean }) {
 }
 
 function rankCell(r: number) {
-  if (r < 0) return <span className="text-surface-300">miss</span>
+  if (r < 0) return <span className="text-ink-500">miss</span>
   return (
-    <span className={cn('tabular-nums font-medium', r <= 3 ? 'text-emerald-700' : r <= 5 ? 'text-amber-700' : 'text-surface-500')}>
+    <span className={cn('tabular-nums font-medium', r <= 3 ? 'text-emerald-300' : r <= 5 ? 'text-amber-200' : 'text-ink-400')}>
       #{r}
     </span>
   )
@@ -172,27 +172,27 @@ export default function EvalPage() {
       />
 
       {/* ——— RAG eval ——— */}
-      <section aria-label="RAG evaluation" className="rounded-2xl border border-campus-900/[0.06] bg-white p-5 shadow-card">
+      <section aria-label="RAG evaluation" className="rounded-2xl border border-white/10 bg-er-800 p-5 shadow-card">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-campus-50 border border-campus-100">
-              <FlaskConical className="h-5 w-5 text-campus-600" aria-hidden="true" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10">
+              <FlaskConical className="h-5 w-5 text-er-300" aria-hidden="true" />
             </span>
             <div>
-              <h3 className="font-display font-semibold text-[17px] text-campus-950">RAG harness</h3>
-              <p className="text-caption text-surface-500">9 curated cases · basic (fusion) vs improved (hybrid + rerank)</p>
+              <h3 className="font-display font-semibold text-[17px] text-ink-50">RAG harness</h3>
+              <p className="text-caption text-ink-400">9 curated cases · basic (fusion) vs improved (hybrid + rerank)</p>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <label className="flex items-center gap-2 text-body-sm text-surface-600 cursor-pointer">
+            <label className="flex items-center gap-2 text-body-sm text-ink-300 cursor-pointer">
               <input
                 type="checkbox"
                 checked={retrievalOnly}
                 onChange={e => setRetrievalOnly(e.target.checked)}
-                className="h-4 w-4 accent-[#764ba2]"
+                className="h-4 w-4 accent-er-500"
               />
               Retrieval only
-              <span className="text-caption text-surface-400">(uncheck for full generation — slower, needs Ollama)</span>
+              <span className="text-caption text-ink-400">(uncheck for full generation — slower, needs Ollama)</span>
             </label>
             <Button size="sm" loading={rag.isPending} onClick={() => rag.mutate()}>
               <Play className="h-4 w-4" aria-hidden="true" />
@@ -216,7 +216,7 @@ export default function EvalPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-micro font-semibold text-surface-400">
+                  <tr className="text-micro font-semibold text-ink-400">
                     <th className="pb-1 pr-3 font-semibold">Metric</th>
                     <th className="pb-1 pr-3 font-semibold text-right">Basic</th>
                     <th className="pb-1 font-semibold text-right">Improved</th>
@@ -238,7 +238,7 @@ export default function EvalPage() {
               </table>
             </div>
             <button
-              className="flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700"
+              className="flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300"
               onClick={() => setShowRagCases(!showRagCases)}
               aria-expanded={showRagCases}
             >
@@ -248,30 +248,30 @@ export default function EvalPage() {
             {showRagCases && (
               <div className="space-y-2.5">
                 {rag.data.cases.map((c, i) => (
-                  <div key={i} className="rounded-xl border border-campus-900/[0.07] bg-surface-100/50 p-3.5">
-                    <p className="text-body-sm font-medium text-campus-950">{c.question}</p>
-                    <p className="text-caption text-surface-500 mt-0.5">
+                  <div key={i} className="rounded-xl border border-white/10 bg-er-800/50 p-3.5">
+                    <p className="text-body-sm font-medium text-ink-50">{c.question}</p>
+                    <p className="text-caption text-ink-400 mt-0.5">
                       {c.answerable ? `expects ${c.expectedDocument ?? '—'}` : 'unanswerable (abstain expected)'}
                     </p>
                     <div className="grid sm:grid-cols-2 gap-2 mt-2.5">
                       {([['basic', c.basic], ['improved', c.improved]] as const).map(([arm, r]) => (
-                        <div key={arm} className="rounded-lg bg-white border border-campus-900/[0.06] p-2.5">
-                          <p className="text-micro font-semibold text-surface-400 uppercase tracking-wide">{arm}</p>
-                          <div className="flex items-center gap-2.5 mt-1.5 text-caption text-surface-600">
+                        <div key={arm} className="rounded-lg bg-er-800 border border-white/10 p-2.5">
+                          <p className="text-micro font-semibold text-ink-400 uppercase tracking-wide">{arm}</p>
+                          <div className="flex items-center gap-2.5 mt-1.5 text-caption text-ink-300">
                             <span className="flex items-center gap-1"><BoolDot v={r.recalled} /> recalled</span>
                             {!retrievalOnly && (
                               <>
                                 <span className="flex items-center gap-1"><BoolDot v={r.correct} /> correct</span>
                                 <span className="flex items-center gap-1"><BoolDot v={r.faithful} /> faithful</span>
                                 <span className="flex items-center gap-1"><BoolDot v={r.cited} /> cited</span>
-                                <span className="text-caption text-surface-500">per-fact cite: {r.perFactCitationPrecision.toFixed(2)}</span>
+                                <span className="text-caption text-ink-400">per-fact cite: {r.perFactCitationPrecision.toFixed(2)}</span>
                               </>
                             )}
                           </div>
-                          <p className="text-caption text-surface-500 mt-1.5 truncate" title={r.topTitles.join(' · ')}>
+                          <p className="text-caption text-ink-400 mt-1.5 truncate" title={r.topTitles.join(' · ')}>
                             {r.topTitles.join(' · ') || 'no hits'}
                           </p>
-                          {r.answerPreview && <p className="text-caption text-surface-600 mt-1 line-clamp-2">{r.answerPreview}</p>}
+                          {r.answerPreview && <p className="text-caption text-ink-300 mt-1 line-clamp-2">{r.answerPreview}</p>}
                         </div>
                       ))}
                     </div>
@@ -290,26 +290,26 @@ export default function EvalPage() {
       </section>
 
       {/* ——— Teammate eval ——— */}
-      <section aria-label="Teammate evaluation" className="rounded-2xl border border-campus-900/[0.06] bg-white p-5 shadow-card">
+      <section aria-label="Teammate evaluation" className="rounded-2xl border border-white/10 bg-er-800 p-5 shadow-card">
         <div className="flex items-start justify-between gap-4 flex-wrap mb-4">
           <div className="flex items-center gap-3">
-            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-campus-50 border border-campus-100">
-              <Users className="h-5 w-5 text-campus-600" aria-hidden="true" />
+            <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10">
+              <Users className="h-5 w-5 text-er-300" aria-hidden="true" />
             </span>
             <div>
-              <h3 className="font-display font-semibold text-[17px] text-campus-950">Teammate arms</h3>
-              <p className="text-caption text-surface-500">leave-one-out · overlap vs hybrid vs hybrid+semantic</p>
+              <h3 className="font-display font-semibold text-[17px] text-ink-50">Teammate arms</h3>
+              <p className="text-caption text-ink-400">leave-one-out · overlap vs hybrid vs hybrid+semantic</p>
             </div>
           </div>
           <div className="flex items-center gap-3 flex-wrap">
-            <label className="flex items-center gap-2 text-body-sm text-surface-600 cursor-pointer">
-              <input type="checkbox" checked={availableOnly} onChange={e => setAvailableOnly(e.target.checked)} className="h-4 w-4 accent-[#764ba2]" />
+            <label className="flex items-center gap-2 text-body-sm text-ink-300 cursor-pointer">
+              <input type="checkbox" checked={availableOnly} onChange={e => setAvailableOnly(e.target.checked)} className="h-4 w-4 accent-er-500" />
               Available only
             </label>
-            <label className="flex items-center gap-2 text-body-sm text-surface-600 cursor-pointer">
-              <input type="checkbox" checked={includeSemantic} onChange={e => setIncludeSemantic(e.target.checked)} className="h-4 w-4 accent-[#764ba2]" />
+            <label className="flex items-center gap-2 text-body-sm text-ink-300 cursor-pointer">
+              <input type="checkbox" checked={includeSemantic} onChange={e => setIncludeSemantic(e.target.checked)} className="h-4 w-4 accent-er-500" />
               +semantic arm
-              <span className="text-caption text-surface-400">(needs Ollama)</span>
+              <span className="text-caption text-ink-400">(needs Ollama)</span>
             </label>
             <Button size="sm" loading={tm.isPending} onClick={() => tm.mutate()}>
               <Play className="h-4 w-4" aria-hidden="true" />
@@ -331,7 +331,7 @@ export default function EvalPage() {
             <div className="overflow-x-auto">
               <table className="w-full text-left">
                 <thead>
-                  <tr className="text-micro font-semibold text-surface-400">
+                  <tr className="text-micro font-semibold text-ink-400">
                     <th className="pb-1 pr-3 font-semibold">Arm</th>
                     <th className="pb-1 pr-3 font-semibold text-right">hit@3</th>
                     <th className="pb-1 pr-3 font-semibold text-right">hit@5</th>
@@ -342,8 +342,8 @@ export default function EvalPage() {
                 </thead>
                 <tbody>
                   {tm.data.arms.map(a => (
-                    <tr key={a.arm} className="border-t border-campus-900/[0.06]">
-                      <td className="py-2 pr-3 text-body-sm font-medium text-campus-950">
+                    <tr key={a.arm} className="border-t border-white/10">
+                      <td className="py-2 pr-3 text-body-sm font-medium text-ink-50">
                         {a.arm}
                         {a.semanticUsed && <Badge variant="accent" size="sm" className="ml-2">semantic live</Badge>}
                       </td>
@@ -358,7 +358,7 @@ export default function EvalPage() {
               </table>
             </div>
             <button
-              className="flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700"
+              className="flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300"
               onClick={() => setShowTmCases(!showTmCases)}
               aria-expanded={showTmCases}
             >
@@ -369,7 +369,7 @@ export default function EvalPage() {
               <div className="overflow-x-auto">
                 <table className="w-full text-left">
                   <thead>
-                    <tr className="text-micro font-semibold text-surface-400">
+                    <tr className="text-micro font-semibold text-ink-400">
                       <th className="pb-1 pr-3 font-semibold">Project · held-out</th>
                       <th className="pb-1 pr-3 font-semibold">Gaps</th>
                       <th className="pb-1 pr-3 font-semibold text-right">Overlap</th>
@@ -379,15 +379,15 @@ export default function EvalPage() {
                   </thead>
                   <tbody>
                     {tm.data.detail.map((d, i) => (
-                      <tr key={i} className="border-t border-campus-900/[0.06]">
-                        <td className="py-2 pr-3 text-body-sm text-campus-950">
+                      <tr key={i} className="border-t border-white/10">
+                        <td className="py-2 pr-3 text-body-sm text-ink-50">
                           <span className="font-medium">{d.projectName}</span>
-                          <span className="text-surface-500"> · {d.heldOutStudent}</span>
+                          <span className="text-ink-400"> · {d.heldOutStudent}</span>
                         </td>
-                        <td className="py-2 pr-3 text-caption text-surface-500">{d.gaps.join(', ')}</td>
+                        <td className="py-2 pr-3 text-caption text-ink-400">{d.gaps.join(', ')}</td>
                         <td className="py-2 pr-3 text-body-sm text-right">{rankCell(d.rankOverlap)}</td>
                         <td className="py-2 pr-3 text-body-sm text-right">{rankCell(d.rankHybrid)}</td>
-                        <td className="py-2 text-body-sm text-right">{d.rankSemantic < 0 && !includeSemantic ? <span className="text-surface-300">—</span> : rankCell(d.rankSemantic)}</td>
+                        <td className="py-2 text-body-sm text-right">{d.rankSemantic < 0 && !includeSemantic ? <span className="text-ink-500">—</span> : rankCell(d.rankSemantic)}</td>
                       </tr>
                     ))}
                   </tbody>

@@ -18,12 +18,12 @@ interface Conversation { peerId: number; unreadCount: number }
 interface Notification { id: number; readFlag: boolean }
 
 const QUICK = [
-  { to: '/connect', icon: Users, label: 'Connect', hint: 'Network & Grow', tint: 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white' },
-  { to: '/community', icon: Users, label: 'Community', hint: 'Join the wall', tint: 'bg-campus-50 text-campus-700 border border-campus-100' },
-  { to: '/projects', icon: FolderKanban, label: 'Projects', hint: 'Ship together', tint: 'bg-violet-50 text-violet-700 border border-violet-100' },
-  { to: '/events', icon: CalendarDays, label: 'Events', hint: 'Show up', tint: 'bg-accent-50 text-accent-700 border border-accent-100' },
-  { to: '/placement-training', icon: GraduationCap, label: 'Placements', hint: 'Careers & Roadmaps', tint: 'bg-emerald-50 text-emerald-700 border border-emerald-100' },
-  { to: '/team-requests', icon: Users, label: 'Team Requests', hint: 'Find teammates', tint: 'bg-sky-50 text-sky-700 border border-sky-100' },
+  { to: '/connect', icon: Users, label: 'Connect', hint: 'Network & Grow', tint: 'bg-gradient-to-br from-er-500 to-er-600 text-white' },
+  { to: '/community', icon: Users, label: 'Community', hint: 'Join the wall', tint: 'bg-er-900 text-er-300 border border-white/10' },
+  { to: '/projects', icon: FolderKanban, label: 'Projects', hint: 'Ship together', tint: 'bg-teal-500/12 text-teal-300 border border-teal-500/25' },
+  { to: '/events', icon: CalendarDays, label: 'Events', hint: 'Show up', tint: 'bg-er-900 text-er-200 border border-er-500/25' },
+  { to: '/placement-training', icon: GraduationCap, label: 'Placements', hint: 'Careers & Roadmaps', tint: 'bg-emerald-500/12 text-emerald-300 border border-emerald-500/25' },
+  { to: '/team-requests', icon: Users, label: 'Team Requests', hint: 'Find teammates', tint: 'bg-sky-500/12 text-sky-300 border border-sky-500/25' },
 ]
 
 function greeting() {
@@ -71,13 +71,13 @@ export default function HomePage() {
         }
       />
 
-      <div className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 mb-5 bg-gradient-to-br from-[#667eea] via-[#764ba2] to-[#f093fb] shadow-elevated">
+      <div className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 mb-5 bg-gradient-to-br from-er-600 to-er-700 shadow-elevated">
         <div className="absolute -top-24 -right-16 h-72 w-72 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
         <div className="absolute -bottom-28 -left-12 h-60 w-60 rounded-full bg-white/[0.08] blur-3xl" aria-hidden="true" />
         <div className="relative flex flex-wrap items-center gap-5 justify-between">
           <div className="min-w-0">
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-micro font-medium text-campus-100">
-              <Sparkles className="h-3.5 w-3.5 text-accent-300" aria-hidden="true" />
+            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 border border-white/10 px-3 py-1 text-micro font-medium text-white">
+              <Sparkles className="h-3.5 w-3.5 text-er-200" aria-hidden="true" />
               Campus at a glance
             </p>
             <div className="flex gap-6 sm:gap-8 mt-4">
@@ -95,7 +95,7 @@ export default function HomePage() {
           </div>
           <Link
             to="/chat"
-            className="inline-flex items-center gap-2 rounded-2xl bg-accent-500 hover:bg-accent-600 active:scale-[0.98] transition-all px-5 py-3.5 font-semibold text-body-sm shadow-card focus:outline-none focus:ring-2 focus:ring-white/50"
+            className="inline-flex items-center gap-2 rounded-2xl bg-er-500 hover:bg-er-600 active:scale-[0.98] transition-all px-5 py-3.5 font-semibold text-body-sm shadow-card focus:outline-none focus:ring-2 focus:ring-white/50"
           >
             <MessageSquare className="h-4 w-4" aria-hidden="true" />
             Ask Campus AI
@@ -107,27 +107,27 @@ export default function HomePage() {
       {(unreadMsg > 0 || unreadNotif > 0) && (
         <div className="grid gap-2.5 sm:grid-cols-2 mb-5">
           {unreadNotif > 0 && (
-            <Link to="/notifications" className="flex items-center gap-3 rounded-2xl border border-campus-900/[0.07] bg-white shadow-card px-4 py-3.5 hover:shadow-card-hover hover:-translate-y-[1px] transition-all">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-50 border border-accent-100 flex-shrink-0" aria-hidden="true">
-                <Bell className="h-[18px] w-[18px] text-accent-600" />
+            <Link to="/notifications" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-er-800 shadow-card px-4 py-3.5 hover:shadow-card-hover hover:-translate-y-[1px] transition-all">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-er-500/25 flex-shrink-0" aria-hidden="true">
+                <Bell className="h-[18px] w-[18px] text-er-300" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-body-sm text-campus-950">{unreadNotif} unread notification{unreadNotif === 1 ? '' : 's'}</span>
-                <span className="block text-caption text-surface-400">Catch up on what you missed</span>
+                <span className="block font-semibold text-body-sm text-ink-50">{unreadNotif} unread notification{unreadNotif === 1 ? '' : 's'}</span>
+                <span className="block text-caption text-ink-400">Catch up on what you missed</span>
               </span>
-              <ArrowUpRight className="h-4 w-4 text-surface-300 flex-shrink-0" aria-hidden="true" />
+              <ArrowUpRight className="h-4 w-4 text-ink-500 flex-shrink-0" aria-hidden="true" />
             </Link>
           )}
           {unreadMsg > 0 && (
-            <Link to="/messages" className="flex items-center gap-3 rounded-2xl border border-campus-900/[0.07] bg-white shadow-card px-4 py-3.5 hover:shadow-card-hover hover:-translate-y-[1px] transition-all">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-campus-50 border border-campus-100 flex-shrink-0" aria-hidden="true">
-                <Inbox className="h-[18px] w-[18px] text-campus-600" />
+            <Link to="/messages" className="flex items-center gap-3 rounded-2xl border border-white/10 bg-er-800 shadow-card px-4 py-3.5 hover:shadow-card-hover hover:-translate-y-[1px] transition-all">
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10 flex-shrink-0" aria-hidden="true">
+                <Inbox className="h-[18px] w-[18px] text-er-300" />
               </span>
               <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-body-sm text-campus-950">{unreadMsg} unread message{unreadMsg === 1 ? '' : 's'}</span>
-                <span className="block text-caption text-surface-400">Your peers are waiting</span>
+                <span className="block font-semibold text-body-sm text-ink-50">{unreadMsg} unread message{unreadMsg === 1 ? '' : 's'}</span>
+                <span className="block text-caption text-ink-400">Your peers are waiting</span>
               </span>
-              <ArrowUpRight className="h-4 w-4 text-surface-300 flex-shrink-0" aria-hidden="true" />
+              <ArrowUpRight className="h-4 w-4 text-ink-500 flex-shrink-0" aria-hidden="true" />
             </Link>
           )}
         </div>
@@ -138,13 +138,13 @@ export default function HomePage() {
           <Link
             key={q.to}
             to={q.to}
-            className="group rounded-2xl border border-campus-900/[0.07] bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-4 focus:outline-none focus:ring-2 focus:ring-campus-500"
+            className="group rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-4 focus:outline-none focus:ring-2 focus:ring-er-500"
           >
             <span className={`flex h-10 w-10 items-center justify-center rounded-xl ${q.tint}`} aria-hidden="true">
               <q.icon className="h-5 w-5" />
             </span>
-            <span className="block font-semibold text-body-sm text-campus-950 mt-2.5">{q.label}</span>
-            <span className="block text-caption text-surface-400 mt-0.5">{q.hint}</span>
+            <span className="block font-semibold text-body-sm text-ink-50 mt-2.5">{q.label}</span>
+            <span className="block text-caption text-ink-400 mt-0.5">{q.hint}</span>
           </Link>
         ))}
       </div>
@@ -153,25 +153,25 @@ export default function HomePage() {
         <div className="grid gap-4 lg:grid-cols-2"><SkeletonCard /><SkeletonCard /></div>
       ) : (
         <div className="grid gap-4 lg:grid-cols-2 stagger">
-          <section aria-label="Upcoming events" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5" style={{ ['--stagger' as string]: 0 }}>
+          <section aria-label="Upcoming events" className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5" style={{ ['--stagger' as string]: 0 }}>
             <div className="flex items-center justify-between mb-3.5">
-              <p className="font-display font-semibold text-[16px] text-campus-950">Coming up</p>
-              <Link to="/events" className="text-body-sm font-semibold text-campus-600 hover:text-campus-800 inline-flex items-center gap-0.5">
+              <p className="font-display font-semibold text-[16px] text-ink-50">Coming up</p>
+              <Link to="/events" className="text-body-sm font-semibold text-er-300 hover:text-er-200 inline-flex items-center gap-0.5">
                 All events <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </div>
             {(events.data ?? []).length === 0 ? (
-              <p className="text-body-sm text-surface-400 py-4 text-center">Nothing scheduled — check back soon.</p>
+              <p className="text-body-sm text-ink-400 py-4 text-center">Nothing scheduled — check back soon.</p>
             ) : (
               <div className="space-y-2">
                 {(events.data ?? []).slice(0, 3).map(e => (
-                  <div key={e.id} className="flex items-center gap-3 rounded-xl bg-campus-50/60 border border-campus-100/60 px-3.5 py-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white flex-shrink-0" aria-hidden="true">
+                  <div key={e.id} className="flex items-center gap-3 rounded-xl bg-white/[0.04] border border-white/10 px-3.5 py-2.5">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-er-500 to-er-600 text-white flex-shrink-0" aria-hidden="true">
                       <CalendarDays className="h-4 w-4" />
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-body-sm text-campus-950 truncate">{e.title}</p>
-                      <p className="text-caption text-surface-400 truncate">{e.eventDate}{e.location ? ` · ${e.location}` : ''}</p>
+                      <p className="font-semibold text-body-sm text-ink-50 truncate">{e.title}</p>
+                      <p className="text-caption text-ink-400 truncate">{e.eventDate}{e.location ? ` · ${e.location}` : ''}</p>
                     </div>
                     <Badge variant="info" size="sm">{e.type}</Badge>
                   </div>
@@ -180,22 +180,22 @@ export default function HomePage() {
             )}
           </section>
 
-          <section aria-label="Latest on the wall" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5" style={{ ['--stagger' as string]: 1 }}>
+          <section aria-label="Latest on the wall" className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5" style={{ ['--stagger' as string]: 1 }}>
             <div className="flex items-center justify-between mb-3.5">
-              <p className="font-display font-semibold text-[16px] text-campus-950">On the wall</p>
-              <Link to="/community" className="text-body-sm font-semibold text-campus-600 hover:text-campus-800 inline-flex items-center gap-0.5">
+              <p className="font-display font-semibold text-[16px] text-ink-50">On the wall</p>
+              <Link to="/community" className="text-body-sm font-semibold text-er-300 hover:text-er-200 inline-flex items-center gap-0.5">
                 Community <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
               </Link>
             </div>
             {(feed.data ?? []).length === 0 ? (
-              <p className="text-body-sm text-surface-400 py-4 text-center">The wall is quiet — start a conversation.</p>
+              <p className="text-body-sm text-ink-400 py-4 text-center">The wall is quiet — start a conversation.</p>
             ) : (
               <div className="space-y-2.5">
                 {(feed.data ?? []).map(p => (
                   <div key={p.id}>
-                    <p className="text-body-sm font-semibold text-campus-950 truncate">{p.authorName ?? 'Someone'}</p>
-                    <p className="text-body-sm text-surface-600 line-clamp-2 mt-0.5 leading-relaxed">{p.content}</p>
-                    <p className="text-micro text-surface-400 mt-1 tabular-nums">{p.likeCount} likes · {p.commentCount} replies</p>
+                    <p className="text-body-sm font-semibold text-ink-50 truncate">{p.authorName ?? 'Someone'}</p>
+                    <p className="text-body-sm text-ink-300 line-clamp-2 mt-0.5 leading-relaxed">{p.content}</p>
+                    <p className="text-micro text-ink-400 mt-1 tabular-nums">{p.likeCount} likes · {p.commentCount} replies</p>
                   </div>
                 ))}
               </div>

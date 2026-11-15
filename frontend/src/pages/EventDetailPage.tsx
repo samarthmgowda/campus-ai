@@ -45,7 +45,7 @@ export default function EventDetailPage() {
       <div className="mb-4">
         <Link
           to="/events"
-          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-campus-600 hover:text-campus-700"
+          className="inline-flex items-center gap-1.5 text-body-sm font-medium text-er-300 hover:text-er-300"
         >
           <ArrowLeft className="h-4 w-4" aria-hidden="true" /> All events
         </Link>
@@ -61,22 +61,22 @@ export default function EventDetailPage() {
         <>
           <PageHeader title={data.title} sub={data.type} />
 
-          <div className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card p-5 sm:p-6">
+          <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-5 sm:p-6">
             <div className="flex flex-wrap gap-2 mb-4">
               {data.type && <Badge variant="info">{data.type}</Badge>}
             </div>
             <div className="space-y-2.5">
-              <div className="flex items-center gap-2.5 text-body-sm text-surface-700">
-                <Calendar className="h-4 w-4 text-campus-500 flex-shrink-0" aria-hidden="true" />
+              <div className="flex items-center gap-2.5 text-body-sm text-ink-200">
+                <Calendar className="h-4 w-4 text-er-400 flex-shrink-0" aria-hidden="true" />
                 {data.eventDate ?? 'Date to be announced'}
               </div>
-              <div className="flex items-center gap-2.5 text-body-sm text-surface-700">
-                <MapPin className="h-4 w-4 text-campus-500 flex-shrink-0" aria-hidden="true" />
+              <div className="flex items-center gap-2.5 text-body-sm text-ink-200">
+                <MapPin className="h-4 w-4 text-er-400 flex-shrink-0" aria-hidden="true" />
                 {data.location ?? 'Location to be announced'}
               </div>
             </div>
             {data.description && (
-              <p className="mt-4 text-body-sm text-surface-600 leading-relaxed whitespace-pre-line">{data.description}</p>
+              <p className="mt-4 text-body-sm text-ink-300 leading-relaxed whitespace-pre-line">{data.description}</p>
             )}
           </div>
 
@@ -97,12 +97,12 @@ export default function EventDetailPage() {
               )}
             </Button>
             {joinMutation.isSuccess && (
-              <span className="text-body-sm text-surface-500">
+              <span className="text-body-sm text-ink-400">
                 Attendees: {joinMutation.data.attendeeCount}
               </span>
             )}
             {joinMutation.isError && (
-              <span className="text-body-sm text-red-600">{(joinMutation.error as Error).message}</span>
+              <span className="text-body-sm text-red-300">{(joinMutation.error as Error).message}</span>
             )}
           </div>
         </>

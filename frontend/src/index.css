@@ -16,13 +16,16 @@
     text-rendering: optimizeLegibility;
   }
 
+  /* Midnight black canvas. The two washes are electric blue at very low
+     opacity: enough to stop the flat #090A10 reading as a dead grey, not
+     enough to become a decorative gradient. */
   body {
-    background-color: #f5f7fa;
+    background-color: #090A10;
     background-image:
-      radial-gradient(900px 320px at 85% -60px, rgba(102, 126, 234, 0.08), transparent 65%),
-      radial-gradient(700px 280px at 8% -40px, rgba(118, 75, 162, 0.06), transparent 60%);
+      radial-gradient(900px 340px at 88% -80px, rgba(47, 107, 255, 0.10), transparent 65%),
+      radial-gradient(760px 300px at 4% -60px, rgba(47, 107, 255, 0.06), transparent 60%);
     background-attachment: fixed;
-    color: #333;
+    color: #E3E7F0;
     min-height: 100vh;
   }
 
@@ -31,13 +34,13 @@
   }
 
   ::selection {
-    background-color: #667eea;
-    color: white;
+    background-color: #2F6BFF;
+    color: #ffffff;
   }
 
   :focus-visible {
     outline: none;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.35);
+    box-shadow: 0 0 0 3px rgba(47, 107, 255, 0.40);
     outline-offset: 2px;
   }
 
@@ -146,7 +149,7 @@
   }
   .scrollbar-light {
     scrollbar-width: thin;
-    scrollbar-color: #c7d2fe transparent;
+    scrollbar-color: rgba(47, 107, 255, 0.45) transparent;
   }
   .scrollbar-light::-webkit-scrollbar {
     width: 6px;
@@ -156,8 +159,11 @@
     background: transparent;
   }
   .scrollbar-light::-webkit-scrollbar-thumb {
-    background-color: #a5b4fc;
+    background-color: rgba(47, 107, 255, 0.40);
     border-radius: 3px;
+  }
+  .scrollbar-light::-webkit-scrollbar-thumb:hover {
+    background-color: rgba(47, 107, 255, 0.65);
   }
 
   /* Staggered list entrance: set style={{ ['--stagger' as string]: i }} */

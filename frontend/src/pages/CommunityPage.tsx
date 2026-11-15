@@ -36,10 +36,10 @@ interface BookmarkDto {
 }
 
 const AVATARS = [
-  'from-[#667eea] to-[#764ba2]',
-  'from-accent-400 to-accent-600',
+  'from-er-500 to-er-600',
+  'from-er-400 to-er-600',
   'from-emerald-400 to-emerald-600',
-  'from-violet-400 to-violet-600',
+  'from-er-400 to-er-600',
   'from-sky-400 to-sky-600',
   'from-amber-400 to-amber-600',
 ]
@@ -135,7 +135,7 @@ export default function CommunityPage() {
       />
 
       {/* Composer */}
-      <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-card p-4 mb-6 focus-within:ring-2 focus-within:ring-campus-500 focus-within:border-transparent transition-shadow">
+      <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-4 mb-6 focus-within:ring-2 focus-within:ring-er-500 focus-within:border-transparent transition-shadow">
         <label htmlFor="new-post" className="sr-only">Share something with campus</label>
         <textarea
           id="new-post"
@@ -143,13 +143,13 @@ export default function CommunityPage() {
           onChange={e => setNewPost(e.target.value)}
           rows={newPost ? 3 : 2}
           placeholder="What's happening on campus?"
-          className="w-full resize-none bg-transparent text-body placeholder:text-surface-400 focus:outline-none"
+          className="w-full resize-none bg-transparent text-body placeholder:text-ink-400 focus:outline-none"
         />
         {createMutation.isError && (
-          <p className="text-body-sm text-red-600 mt-1" role="alert">{(createMutation.error as Error).message}</p>
+          <p className="text-body-sm text-red-300 mt-1" role="alert">{(createMutation.error as Error).message}</p>
         )}
-        <div className="flex items-center justify-between mt-2 pt-2 border-t border-campus-900/[0.06]">
-          <p className="text-caption text-surface-400">Be kind — posts are visible to all students</p>
+        <div className="flex items-center justify-between mt-2 pt-2 border-t border-white/10">
+          <p className="text-caption text-ink-400">Be kind — posts are visible to all students</p>
           <Button
             size="sm"
             variant="accent"
@@ -182,7 +182,7 @@ export default function CommunityPage() {
             <article
               key={p.id}
               style={{ ['--stagger' as string]: Math.min(i, 8) }}
-              className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden"
+              className="rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover transition-shadow duration-200 overflow-hidden"
             >
               <div className="p-5 pb-4">
                 <div className="flex items-center gap-3">
@@ -190,11 +190,11 @@ export default function CommunityPage() {
                     {(p.authorName ?? '?').charAt(0).toUpperCase()}
                   </span>
                   <div className="min-w-0 flex-1">
-                    <p className="font-semibold text-body-sm text-campus-950 truncate">{p.authorName ?? `User #${p.authorId}`}</p>
-                    <p className="text-caption text-surface-400">{timeAgo(p.createdAt)}</p>
+                    <p className="font-semibold text-body-sm text-ink-50 truncate">{p.authorName ?? `User #${p.authorId}`}</p>
+                    <p className="text-caption text-ink-400">{timeAgo(p.createdAt)}</p>
                   </div>
                   {reportDone === p.id ? (
-                    <span className="inline-flex items-center gap-1 text-micro font-medium text-emerald-700">
+                    <span className="inline-flex items-center gap-1 text-micro font-medium text-emerald-300">
                       <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" /> Reported
                     </span>
                   ) : (
@@ -202,13 +202,13 @@ export default function CommunityPage() {
                       onClick={() => setReportId(reportId === p.id ? null : p.id)}
                       aria-label="Report post"
                       aria-expanded={reportId === p.id}
-                      className="p-2 rounded-lg text-surface-300 hover:text-surface-500 hover:bg-surface-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                      className="p-2 rounded-lg text-ink-500 hover:text-ink-400 hover:bg-er-900 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                     >
                       <Flag className="h-4 w-4" />
                     </button>
                   )}
                 </div>
-                <p className="text-body leading-relaxed text-surface-800 mt-3 whitespace-pre-wrap">{p.content}</p>
+                <p className="text-body leading-relaxed text-ink-100 mt-3 whitespace-pre-wrap">{p.content}</p>
               </div>
 
               <div className="flex items-center gap-1 px-3 pb-2">
@@ -216,19 +216,19 @@ export default function CommunityPage() {
                   onClick={() => likeMutation.mutate(p.id)}
                   aria-label={`Like post, ${p.likeCount} likes`}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-campus-500',
-                    p.likeCount > 0 ? 'text-accent-600 hover:bg-accent-50' : 'text-surface-400 hover:bg-surface-100 hover:text-surface-600'
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-er-500',
+                    p.likeCount > 0 ? 'text-er-300 hover:bg-er-900' : 'text-ink-400 hover:bg-er-800 hover:text-ink-300'
                   )}
                 >
-                  <Heart className={cn('h-[18px] w-[18px]', p.likeCount > 0 && 'fill-accent-500 text-accent-500')} aria-hidden="true" />
+                  <Heart className={cn('h-[18px] w-[18px]', p.likeCount > 0 && 'fill-er-500 text-er-300')} aria-hidden="true" />
                   <span className="tabular-nums">{p.likeCount || ''}</span>
                 </button>
                 <button
                   onClick={() => setExpandedId(expandedId === p.id ? null : p.id)}
                   aria-expanded={expandedId === p.id}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-campus-500',
-                    expandedId === p.id ? 'text-campus-700 bg-campus-50' : 'text-surface-400 hover:bg-surface-100 hover:text-surface-600'
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-er-500',
+                    expandedId === p.id ? 'text-er-300 bg-er-900' : 'text-ink-400 hover:bg-er-800 hover:text-ink-300'
                   )}
                 >
                   <MessageCircle className="h-[18px] w-[18px]" aria-hidden="true" />
@@ -239,30 +239,30 @@ export default function CommunityPage() {
                   aria-label={saved ? 'Remove bookmark' : 'Save post'}
                   aria-pressed={saved}
                   className={cn(
-                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-campus-500',
-                    saved ? 'text-campus-700 bg-campus-50' : 'text-surface-400 hover:bg-surface-100 hover:text-surface-600'
+                    'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-body-sm font-semibold transition-all active:scale-95 focus:outline-none focus:ring-2 focus:ring-er-500',
+                    saved ? 'text-er-300 bg-er-900' : 'text-ink-400 hover:bg-er-800 hover:text-ink-300'
                   )}
                 >
-                  <Bookmark className={cn('h-[18px] w-[18px]', saved && 'fill-campus-500 text-campus-500')} aria-hidden="true" />
+                  <Bookmark className={cn('h-[18px] w-[18px]', saved && 'fill-er-500 text-er-400')} aria-hidden="true" />
                 </button>
               </div>
 
               {expandedId === p.id && (
                 <div className="px-5 pb-4 animate-slide-down">
-                  <div className="rounded-xl bg-campus-50/70 border border-campus-100/70 p-3.5 space-y-3">
+                  <div className="rounded-xl bg-white/[0.04] border border-white/10 p-3.5 space-y-3">
                     {commentsLoading ? (
-                      <div className="flex justify-center py-3"><Loader2 className="h-5 w-5 animate-spin text-campus-500" /></div>
+                      <div className="flex justify-center py-3"><Loader2 className="h-5 w-5 animate-spin text-er-400" /></div>
                     ) : comments.length === 0 ? (
-                      <p className="text-caption text-surface-400 text-center py-1">No replies yet — start the thread.</p>
+                      <p className="text-caption text-ink-400 text-center py-1">No replies yet — start the thread.</p>
                     ) : (
                       comments.map(c => (
                         <div key={c.id} className="flex gap-2.5">
                           <span className={cn('flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br text-white text-micro font-bold flex-shrink-0', avatarFor(c.authorName, c.authorId))} aria-hidden="true">
                             {(c.authorName ?? '?').charAt(0).toUpperCase()}
                           </span>
-                          <div className="min-w-0 rounded-xl rounded-tl-sm bg-white border border-campus-900/[0.06] px-3 py-2 flex-1">
-                            <p className="text-micro font-semibold text-campus-900">{c.authorName ?? 'User'}</p>
-                            <p className="text-body-sm text-surface-700 mt-0.5">{c.content}</p>
+                          <div className="min-w-0 rounded-xl rounded-tl-sm bg-er-800 border border-white/10 px-3 py-2 flex-1">
+                            <p className="text-micro font-semibold text-ink-100">{c.authorName ?? 'User'}</p>
+                            <p className="text-body-sm text-ink-200 mt-0.5">{c.content}</p>
                           </div>
                         </div>
                       ))
@@ -290,15 +290,15 @@ export default function CommunityPage() {
               )}
 
               {reportId === p.id && (
-                <div className="mx-5 mb-4 rounded-xl border border-amber-200/70 bg-amber-50/60 p-3.5 animate-slide-down">
+                <div className="mx-5 mb-4 rounded-xl border border-amber-500/25 bg-amber-500/12 p-3.5 animate-slide-down">
                   <div className="grid gap-2.5 sm:grid-cols-2">
                     <div>
-                      <label htmlFor={`reason-${p.id}`} className="block text-body-sm font-medium text-surface-700 mb-1">Reason</label>
+                      <label htmlFor={`reason-${p.id}`} className="block text-body-sm font-medium text-ink-200 mb-1">Reason</label>
                       <select
                         id={`reason-${p.id}`}
                         value={reportReason}
                         onChange={e => setReportReason(e.target.value)}
-                        className="w-full rounded-xl border border-surface-300 px-3 py-2 text-body-sm bg-white focus:outline-none focus:ring-2 focus:ring-campus-500"
+                        className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm bg-er-900 focus:outline-none focus:ring-2 focus:ring-er-500"
                       >
                         <option value="SPAM">Spam</option>
                         <option value="HARASSMENT">Harassment</option>
@@ -309,7 +309,7 @@ export default function CommunityPage() {
                     <Input label="Details" value={reportDetails} onChange={e => setReportDetails(e.target.value)} placeholder="What is wrong?" />
                   </div>
                   {reportMutation.isError && (
-                    <p className="text-body-sm text-red-600 mt-2" role="alert">{(reportMutation.error as Error).message}</p>
+                    <p className="text-body-sm text-red-300 mt-2" role="alert">{(reportMutation.error as Error).message}</p>
                   )}
                   <div className="flex gap-2 mt-3">
                     <Button size="sm" variant="outline" disabled={reportMutation.isPending} loading={reportMutation.isPending}

@@ -47,12 +47,12 @@ function Stars({ value, onPick, size = 'md' }: { value: number; onPick?: (n: num
             aria-checked={value === n}
             aria-label={`${n} star${n === 1 ? '' : 's'}`}
             onClick={() => onPick(n)}
-            className="p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-campus-500 transition-transform active:scale-90"
+            className="p-0.5 rounded focus:outline-none focus:ring-2 focus:ring-er-500 transition-transform active:scale-90"
           >
-            <Star className={cn(cls, n <= value ? 'fill-amber-400 text-amber-400' : 'text-surface-300')} aria-hidden="true" />
+            <Star className={cn(cls, n <= value ? 'fill-amber-400 text-amber-400' : 'text-ink-500')} aria-hidden="true" />
           </button>
         ) : (
-          <Star key={n} className={cn(cls, n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-surface-300')} aria-hidden="true" />
+          <Star key={n} className={cn(cls, n <= Math.round(value) ? 'fill-amber-400 text-amber-400' : 'text-ink-500')} aria-hidden="true" />
         )
       ))}
     </div>
@@ -104,13 +104,13 @@ export default function ReviewsPage() {
         }
       />
 
-      <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-card p-4 mb-5">
-        <label htmlFor="review-peer" className="block text-body-sm font-medium text-surface-700 mb-1.5">Whose reputation?</label>
+      <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-4 mb-5">
+        <label htmlFor="review-peer" className="block text-body-sm font-medium text-ink-200 mb-1.5">Whose reputation?</label>
         <select
           id="review-peer"
           value={peerId}
           onChange={e => { setPeerId(e.target.value); setShowForm(false) }}
-          className="w-full rounded-xl border border-surface-300 px-3 py-2.5 text-body-sm bg-white focus:outline-none focus:ring-2 focus:ring-campus-500"
+          className="w-full rounded-xl border border-white/12 px-3 py-2.5 text-body-sm bg-er-900 focus:outline-none focus:ring-2 focus:ring-er-500"
         >
           <option value="">Choose a student…</option>
           {peers.map(u => (
@@ -131,9 +131,9 @@ export default function ReviewsPage() {
         <ErrorState message={(error as Error).message} onRetry={() => refetch()} />
       ) : (
         <>
-          <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white px-5 py-4 mb-4 shadow-card">
+          <div className="flex items-center gap-4 rounded-2xl bg-gradient-to-br from-er-500 to-er-600 text-white px-5 py-4 mb-4 shadow-card">
             <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 flex-shrink-0" aria-hidden="true">
-              <Award className="h-6 w-6 text-accent-300" />
+              <Award className="h-6 w-6 text-er-200" />
             </span>
             <div className="min-w-0 flex-1">
               <p className="font-display font-bold text-[22px] leading-none tabular-nums">
@@ -148,11 +148,11 @@ export default function ReviewsPage() {
           </div>
 
           {showForm && (
-            <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-elevated p-5 mb-4 animate-slide-down">
-              <p className="font-display font-semibold text-[16px] text-campus-950">
+            <div className="rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 mb-4 animate-slide-down">
+              <p className="font-display font-semibold text-[16px] text-ink-50">
                 Review {bundle?.reviews[0]?.revieweeName ?? 'student'}
               </p>
-              <p className="text-caption text-surface-400 mt-0.5 mb-3">Posted as you — identity comes from your sign-in</p>
+              <p className="text-caption text-ink-400 mt-0.5 mb-3">Posted as you — identity comes from your sign-in</p>
               <Stars value={rating} onPick={setRating} />
               <div className="mt-3">
                 <Input
@@ -163,7 +163,7 @@ export default function ReviewsPage() {
                 />
               </div>
               {writeMutation.isError && (
-                <p className="text-body-sm text-red-600 mt-2" role="alert">{(writeMutation.error as Error).message}</p>
+                <p className="text-body-sm text-red-300 mt-2" role="alert">{(writeMutation.error as Error).message}</p>
               )}
               <div className="flex gap-2 mt-3">
                 <Button
@@ -193,22 +193,22 @@ export default function ReviewsPage() {
                 <article
                   key={r.id}
                   style={{ ['--stagger' as string]: Math.min(i, 8) }}
-                  className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card px-4 py-3.5"
+                  className="rounded-2xl border border-white/10 bg-er-800 shadow-card px-4 py-3.5"
                 >
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white text-body-sm font-bold flex-shrink-0" aria-hidden="true">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-gradient-to-br from-er-500 to-er-600 text-white text-body-sm font-bold flex-shrink-0" aria-hidden="true">
                       {(r.reviewerName ?? '?').charAt(0).toUpperCase()}
                     </span>
                     <div className="min-w-0 flex-1">
-                      <p className="font-semibold text-body-sm text-campus-950 truncate">{r.reviewerName ?? 'Someone'}</p>
-                      {r.projectName && <p className="text-micro text-surface-400 truncate">on {r.projectName}</p>}
+                      <p className="font-semibold text-body-sm text-ink-50 truncate">{r.reviewerName ?? 'Someone'}</p>
+                      {r.projectName && <p className="text-micro text-ink-400 truncate">on {r.projectName}</p>}
                     </div>
                     <Stars value={r.rating} size="sm" />
                     <Badge variant={r.rating >= 4 ? 'success' : r.rating === 3 ? 'default' : 'warning'} size="sm">
                       <span className="tabular-nums">{r.rating}/5</span>
                     </Badge>
                   </div>
-                  {r.comment && <p className="text-body-sm text-surface-600 mt-2 leading-relaxed">“{r.comment}”</p>}
+                  {r.comment && <p className="text-body-sm text-ink-300 mt-2 leading-relaxed">“{r.comment}”</p>}
                 </article>
               ))}
             </div>

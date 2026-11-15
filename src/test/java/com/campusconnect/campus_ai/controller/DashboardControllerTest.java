@@ -32,9 +32,15 @@ class DashboardControllerTest {
     private DashboardService dashboardService;
 
     // The JWT filter is auto-registered in the web slice; it needs a JwtService
-    // even though these tests set the principal directly via TestAuth.
+    // and a UserRepository even though these tests set the principal directly
+    // via TestAuth. Without the repository mock the filter cannot be
+    // constructed and the whole slice fails to load with an
+    // UnsatisfiedDependencyException that reads nothing like "missing mock".
     @MockitoBean
     private com.campusconnect.campus_ai.service.JwtService jwtService;
+
+    @MockitoBean
+    private com.campusconnect.campus_ai.repository.UserRepository userRepository;
 
     @AfterEach
     void clearCaller() {

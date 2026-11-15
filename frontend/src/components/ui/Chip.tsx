@@ -19,11 +19,11 @@ const SIZES = {
  * combination of 8/9/10/11/14 px box, lg/xl/2xl radius, tinted/white/gradient
  * fill), which is why no two screens' list rows lined up.
  *
- * `fill="brand"` switches to the solid violet gradient for the chips that
- * anchor a page (the AI sparkle, an upload affordance) — those are visually
- * "louder" on purpose and shouldn't be tinted like an ordinary list row.
- * `fill="ghost"` is for chips sitting *on* a violet banner, where a tinted
- * background would disappear and the icon needs to be the accent colour.
+ * `fill="brand"` switches to the solid electric-blue gradient for the chips
+ * that anchor a page (the AI sparkle, an upload affordance) — those are
+ * visually "louder" on purpose and shouldn't be tinted like an ordinary list
+ * row. `fill="ghost"` is for chips sitting *on* a blue banner, where a tinted
+ * background would disappear and the icon needs to be white.
  */
 export function IconChip({
   icon: Icon,
@@ -43,7 +43,7 @@ export function IconChip({
     fill === 'brand'
       ? cn(BRAND_GRADIENT, 'border-transparent text-white')
       : fill === 'ghost'
-        ? 'border-transparent bg-white/10 text-accent-300'
+        ? 'border-transparent bg-white/15 text-white'
         : TINTS[tint]
   return (
     <span
@@ -97,7 +97,7 @@ export function Avatar({
         'flex flex-shrink-0 items-center justify-center font-display font-bold',
         square ? 'rounded-2xl' : 'rounded-full',
         AVATAR_SIZES[size],
-        muted ? 'bg-surface-100 text-surface-500' : cn(BRAND_GRADIENT, 'text-white'),
+        muted ? 'bg-white/[0.07] text-ink-400' : cn(BRAND_GRADIENT, 'text-white'),
         className
       )}
       aria-hidden="true"
@@ -110,14 +110,14 @@ export function Avatar({
 /**
  * SkillPill / TagList
  * ───────────────────
- * The small violet-bordered pills used for skills, categories and event types.
+ * The small blue-bordered pills used for skills, categories and event types.
  * Wraps by default so a long list never pushes a layout wider than its column.
  */
 export function SkillPill({ children, className }: { children: ReactNode; className?: string }) {
   return (
     <span
       className={cn(
-        'inline-flex items-center gap-1.5 rounded-full border border-campus-100 bg-campus-50 px-2.5 py-1 text-micro font-medium text-campus-700',
+        'inline-flex items-center gap-1.5 rounded-full border border-er-500/25 bg-er-500/10 px-2.5 py-1 text-micro font-medium text-er-200',
         className
       )}
     >

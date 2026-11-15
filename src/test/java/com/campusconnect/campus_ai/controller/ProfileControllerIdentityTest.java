@@ -46,6 +46,12 @@ class ProfileControllerIdentityTest {
     @MockitoBean
     private com.campusconnect.campus_ai.service.JwtService jwtService;
 
+    // JwtAuthFilter takes a UserRepository as well as a JwtService; without
+    // this mock the web slice cannot build the filter and every test in the
+    // class errors with a context-load failure rather than a real assertion.
+    @MockitoBean
+    private com.campusconnect.campus_ai.repository.UserRepository userRepository;
+
     @AfterEach
     void clearCaller() {
         TestAuth.clear();

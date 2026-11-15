@@ -8,7 +8,7 @@ import { cn } from '../../utils/cn'
  * *views* and gets the loud filled treatment.
  *
  * These pills are a filter, not navigation, so the selected state is a quiet
- * tinted chip rather than the brand gradient. They were previously styled as a
+ * blue tint rather than the solid brand fill. They were previously styled as a
  * gradient-filled segmented control on six pages, which made a status filter
  * look like a primary action and competed with the page's real CTA.
  *
@@ -41,10 +41,10 @@ export function FilterRow<T extends string>({
             aria-pressed={active}
             className={cn(
               'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-all',
-              'focus:outline-none focus-visible:ring-2 focus-visible:ring-campus-500',
+              'focus:outline-none focus-visible:ring-2 focus-visible:ring-er-500',
               active
-                ? 'bg-campus-100 text-campus-800'
-                : 'text-surface-400 hover:bg-campus-50 hover:text-campus-900'
+                ? 'bg-er-500/15 text-er-200 border border-er-500/30'
+                : 'border border-transparent text-ink-400 hover:bg-white/[0.05] hover:text-ink-100'
             )}
           >
             {o.label}

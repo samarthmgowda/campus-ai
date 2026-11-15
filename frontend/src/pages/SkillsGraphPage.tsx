@@ -96,26 +96,26 @@ export default function SkillsGraphPage() {
                 {dash.topSkills.map((s: TopSkill) => (
                   <span
                     key={s.skill}
-                    className="inline-flex items-center gap-1.5 rounded-full bg-campus-50 border border-campus-100 px-2.5 py-1"
+                    className="inline-flex items-center gap-1.5 rounded-full bg-er-900 border border-white/10 px-2.5 py-1"
                   >
-                    <span className="text-caption font-semibold text-campus-700">{s.skill}</span>
-                    <span className="text-micro text-campus-500 tabular-nums">{s.count}</span>
+                    <span className="text-caption font-semibold text-er-300">{s.skill}</span>
+                    <span className="text-micro text-er-400 tabular-nums">{s.count}</span>
                   </span>
                 ))}
               </div>
             ) : (
-              <p className="text-body-sm text-surface-400">No skills recorded yet.</p>
+              <p className="text-body-sm text-ink-400">No skills recorded yet.</p>
             )}
           </GraphCard>
 
           <GraphCard title="Campus reach" description="Coverage across profiles">
             <div className="flex items-baseline gap-2">
-              <span className="font-display font-bold text-[34px] leading-none tabular-nums text-campus-950">
+              <span className="font-display font-bold text-[34px] leading-none tabular-nums text-ink-50">
                 {dash?.totalProfiles || 0}
               </span>
-              <span className="text-body-sm text-surface-500">profiles with skills</span>
+              <span className="text-body-sm text-ink-400">profiles with skills</span>
             </div>
-            <p className="text-caption text-surface-400 mt-2">
+            <p className="text-caption text-ink-400 mt-2">
               {dash?.totalSkills || 0} distinct skills tracked
             </p>
           </GraphCard>
@@ -126,22 +126,22 @@ export default function SkillsGraphPage() {
                 <ul className="space-y-2">
                   {dash.skillsToGrow.map((s: SkillToGrow) => (
                     <li key={s.skill} className="flex items-center justify-between gap-3">
-                      <span className="inline-flex items-center gap-1.5 rounded-full bg-accent-50 border border-accent-100 px-2.5 py-1 text-caption font-semibold text-accent-700">
+                      <span className="inline-flex items-center gap-1.5 rounded-full bg-er-900 border border-er-500/25 px-2.5 py-1 text-caption font-semibold text-er-200">
                         {s.skill}
                       </span>
-                      <span className="text-micro text-surface-400 text-right tabular-nums">
+                      <span className="text-micro text-ink-400 text-right tabular-nums">
                         via {s.fromSkill} · {s.cooccurrence}×
                       </span>
                     </li>
                   ))}
                 </ul>
               ) : (
-                <p className="text-body-sm text-surface-400">
+                <p className="text-body-sm text-ink-400">
                   Add skills to your profile to unlock suggestions.
                 </p>
               )
             ) : (
-              <p className="text-body-sm text-surface-400">Sign in to see personalised suggestions.</p>
+              <p className="text-body-sm text-ink-400">Sign in to see personalised suggestions.</p>
             )}
           </GraphCard>
 
@@ -151,19 +151,19 @@ export default function SkillsGraphPage() {
                 {dash.topRelated.map((p: TopRelated) => (
                   <li
                     key={`${p.skill}-${p.related}`}
-                    className="flex items-center justify-between gap-2 rounded-lg bg-surface-50/70 border border-surface-200/60 px-3 py-2"
+                    className="flex items-center justify-between gap-2 rounded-lg bg-white/[0.04] border border-white/10 px-3 py-2"
                   >
-                    <span className="text-body-sm text-surface-700 truncate">
-                      {p.skill} <span className="text-surface-300 mx-0.5">→</span> {p.related}
+                    <span className="text-body-sm text-ink-200 truncate">
+                      {p.skill} <span className="text-ink-500 mx-0.5">→</span> {p.related}
                     </span>
-                    <span className="text-micro font-semibold text-campus-600 tabular-nums flex-shrink-0">
+                    <span className="text-micro font-semibold text-er-300 tabular-nums flex-shrink-0">
                       {p.count}
                     </span>
                   </li>
                 ))}
               </ul>
             ) : (
-              <p className="text-body-sm text-surface-400">No pairs yet.</p>
+              <p className="text-body-sm text-ink-400">No pairs yet.</p>
             )}
           </GraphCard>
 
@@ -171,7 +171,7 @@ export default function SkillsGraphPage() {
             {categories.length ? (
               <CategoryBars data={categories} />
             ) : (
-              <p className="text-body-sm text-surface-400">No categories yet.</p>
+              <p className="text-body-sm text-ink-400">No categories yet.</p>
             )}
           </GraphCard>
         </div>
@@ -194,8 +194,8 @@ function GraphCard({
 }) {
   return (
     <Card className={cn('p-5', className)}>
-      <h3 className="font-display font-semibold text-[16px] text-campus-950 tracking-tight">{title}</h3>
-      {description && <p className="text-caption text-surface-400 mt-0.5 mb-3.5">{description}</p>}
+      <h3 className="font-display font-semibold text-[16px] text-ink-50 tracking-tight">{title}</h3>
+      {description && <p className="text-caption text-ink-400 mt-0.5 mb-3.5">{description}</p>}
       {!description && <div className="mb-3.5" />}
       {children}
     </Card>
@@ -209,15 +209,15 @@ function CategoryBars({ data }: { data: [string, number][] }) {
     <div className="space-y-2.5" role="list">
       {data.slice(0, 7).map(([cat, count]) => (
         <div key={cat} role="listitem" className="flex items-center gap-3">
-          <span className="text-caption text-surface-600 w-24 truncate flex-shrink-0" title={cat}>{cat}</span>
-          <span className="flex-1 h-2 rounded-full bg-campus-500/10 overflow-hidden">
+          <span className="text-caption text-ink-300 w-24 truncate flex-shrink-0" title={cat}>{cat}</span>
+          <span className="flex-1 h-2 rounded-full bg-er-500/10 overflow-hidden">
             <span
-              className="block h-full rounded-full bg-gradient-to-r from-[#667eea] to-[#764ba2] transition-all duration-500"
+              className="block h-full rounded-full bg-gradient-to-r from-er-500 to-er-600 transition-all duration-500"
               style={{ width: `${Math.max(6, (count / max) * 100)}%` }}
               aria-hidden="true"
             />
           </span>
-          <span className="text-caption font-semibold text-campus-950 tabular-nums w-8 text-right flex-shrink-0">
+          <span className="text-caption font-semibold text-ink-50 tabular-nums w-8 text-right flex-shrink-0">
             {count}
           </span>
         </div>

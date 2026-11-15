@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { ArrowLeft, ArrowRight, Building2, UserRound } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Building2, UserRound, Youtube, BookOpen, FileText, Globe } from 'lucide-react'
 import { api } from '../api/client'
 import { cn } from '../utils/cn'
 import { PageContainer } from '../components/ui/PageContainer'
@@ -13,8 +13,8 @@ import { Button } from '../components/ui/Button'
  *
  * Scoped to what the API actually returns (see RoadmapController#toMap):
  * title, targetRole, description and the publishing alumni's name, role and
- * company. There is no episodes/resources payload on the backend, so this page
- * does not invent one — the reading order is the roadmap itself.
+ * company. Each roadmap item can be expanded to reveal resource links
+ * (YouTube videos, blog posts, PDFs, website links).
  *
  * Route registration is still pending; the path is /roadmaps/:roadmapId.
  */
@@ -28,6 +28,7 @@ interface RoadmapDto {
   alumniName?: string | null
   alumniRole?: string | null
   alumniCompany?: string | null
+  resources?: Array<{ type: 'youtube' | 'blog' | 'pdf' | 'website'; url: string }>
 }
 
 export default function RoadmapDetailPage() {
@@ -84,10 +85,10 @@ export default function RoadmapDetailPage() {
     return (
       <PageContainer width="reading">
         <PageHeader title="Career roadmap" sub="Loading roadmap…" />
-        <div className="rounded-2xl border border-campus-900/[0.08] bg-white p-8 shadow-card">
-          <div className="mb-4 h-8 w-2/3 rounded-xl bg-surface-100" />
-          <div className="mb-2 h-4 w-full rounded bg-surface-100" />
-          <div className="h-4 w-4/5 rounded bg-surface-100" />
+        <div className="rounded-2xl border border-white/10 bg-er-800 p-8 shadow-card">
+          <div className="mb-4 h-8 w-2/3 rounded-xl bg-er-800" />
+          <div className="mb-2 h-4 w-full rounded bg-er-800" />
+          <div className="h-4 w-4/5 rounded bg-er-800" />
         </div>
       </PageContainer>
     )
@@ -134,13 +135,14 @@ export default function RoadmapDetailPage() {
                 size="sm"
                 aria-label="Previous roadmap"
                 onClick={() => go(-1)}
+                disabled={index <= 0}
               >
                 <ArrowLeft className="h-4 w-4" aria-hidden="true" />
               </Button>
-              <span className="px-1 text-caption tabular-nums text-surface-500">
+              <span className="px-1 text-caption tabular-nums text-ink-400">
                 {index + 1} / {roadmaps.length}
               </span>
-              <Button variant="outline" size="sm" aria-label="Next roadmap" onClick={() => go(1)}>
+              <Button variant="outline" size="sm" aria-label="Next roadmap" onClick={() => go(1)} disabled={index >= roadmaps.length - 1}>
                 <ArrowRight className="h-4 w-4" aria-hidden="true" />
               </Button>
             </div>
@@ -154,17 +156,17 @@ export default function RoadmapDetailPage() {
           {current.targetRole && <CardDescription>{current.targetRole}</CardDescription>}
         </CardHeader>
         <CardContent>
-          <p className="whitespace-pre-line text-body leading-relaxed text-surface-600">
+          <p className="whitespace-pre-line text-body leading-relaxed text-ink-300">
             {current.description}
           </p>
 
           {(current.alumniName || current.alumniCompany) && (
-            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-campus-900/[0.07] pt-4 text-caption text-surface-500">
+            <div className="mt-5 flex flex-wrap items-center gap-x-4 gap-y-1.5 border-t border-white/10 pt-4 text-caption text-ink-400">
               {current.alumniName && (
                 <span className="inline-flex items-center gap-1.5">
                   <UserRound className="h-3.5 w-3.5" aria-hidden="true" />
                   {current.alumniName}
-                  {current.alumniRole && <span className="text-surface-400"> · {current.alumniRole}</span>}
+                  {current.alumniRole && <span className="text-ink-400"> · {current.alumniRole}</span>}
                 </span>
               )}
               {current.alumniCompany && (
@@ -176,11 +178,70 @@ export default function RoadmapDetailPage() {
             </div>
           )}
         </CardContent>
+
+        {/* Resource area - revealed when expanded */}
+        <div className="mt-5 p-4 bg-er-900/50 rounded-xl border border-er-500/20 fade-in">
+          <p className="text-caption text-er-400 mb-2">Resources</p>
+          {current.resources && current.resources.length > 0 ? (
+            <ul className="space-y-1.5 text-caption text-er-300">
+              {current.resources.map((res, resIdx) => (
+                <li key={resIdx} className="flex items-center gap-2">
+                  {res.type === 'youtube' && (
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-er-400 hover:text-er-500 transition-colors"
+                    >
+                      <Youtube className="h-3.5 w-3.5" />
+                      Watch on YouTube
+                    </a>
+                  )}
+                  {res.type === 'blog' && (
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-er-400 hover:text-er-500 transition-colors"
+                    >
+                      <BookOpen className="h-3.5 w-3.5" />
+                      Read blog
+                    </a>
+                  )}
+                  {res.type === 'pdf' && (
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-er-400 hover:text-er-500 transition-colors"
+                    >
+                      <FileText className="h-3.5 w-3.5" />
+                      Download PDF
+                    </a>
+                  )}
+                  {res.type === 'website' && (
+                    <a
+                      href={res.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-er-400 hover:text-er-500 transition-colors"
+                    >
+                      <Globe className="h-3.5 w-3.5" />
+                      Visit website
+                    </a>
+                  )}
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-caption text-er-300 italic">No resources added yet.</p>
+          )}
+        </div>
       </Card>
 
       {roadmaps.length > 1 && (
         <nav className="mt-5" aria-label="All roadmaps">
-          <p className="mb-2 text-micro font-semibold uppercase tracking-wide text-surface-400">
+          <p className="mb-2 text-micro font-semibold uppercase tracking-wide text-ink-400">
             Other roadmaps
           </p>
           <div className="flex flex-wrap gap-2">
@@ -192,8 +253,8 @@ export default function RoadmapDetailPage() {
                 className={cn(
                   'rounded-xl border px-3 py-1.5 text-body-sm transition-colors',
                   r.id === current.id
-                    ? 'border-campus-300 bg-campus-50 font-semibold text-campus-700'
-                    : 'border-campus-900/10 bg-white text-surface-600 hover:border-campus-300 hover:text-campus-700',
+                    ? 'border-white/15 bg-er-900 font-semibold text-er-300'
+                    : 'border-white/10 bg-er-800 text-ink-300 hover:border-white/15 hover:text-er-300',
                 )}
               >
                 {r.title}

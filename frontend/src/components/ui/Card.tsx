@@ -9,11 +9,13 @@ interface CardProps extends HTMLAttributes<HTMLDivElement> {
 
 export const Card = forwardRef<HTMLDivElement, CardProps>(
   ({ className, variant = 'default', padding = 'md', interactive, children, ...props }, ref) => {
+    // `er-50` is #EEF3FF — a near-white blue, which is what made every card a
+    // white block. Surfaces live at the bottom of the ramp, not the top.
     const variants = {
-      default: 'bg-white shadow-card border border-campus-900/[0.04]',
-      elevated: 'bg-white shadow-elevated border border-campus-900/[0.04]',
-      outlined: 'bg-white border border-campus-900/15',
-      ink: 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white border border-white/20',
+      default: 'bg-er-800 shadow-card border border-white/[0.07]',
+      elevated: 'bg-er-800 shadow-elevated border border-white/[0.09]',
+      outlined: 'bg-transparent border border-white/12',
+      ink: 'bg-gradient-to-br from-er-500 to-er-700 text-white border border-white/20',
     }
 
     const paddings = {
@@ -30,7 +32,7 @@ export const Card = forwardRef<HTMLDivElement, CardProps>(
           'rounded-2xl',
           variants[variant],
           paddings[padding],
-          interactive && 'transition-all duration-200 hover:shadow-card-hover hover:-translate-y-[2px] hover:border-campus-900/10',
+          interactive && 'transition-all duration-200 hover:shadow-card-hover hover:-translate-y-[2px] hover:border-er-500/30',
           className
         )}
         {...props}
@@ -55,7 +57,7 @@ CardHeader.displayName = 'CardHeader'
 
 export const CardTitle = forwardRef<HTMLHeadingElement, HTMLAttributes<HTMLHeadingElement>>(
   ({ className, children, ...props }, ref) => (
-    <h3 ref={ref} className={cn('font-display font-semibold text-[17px] tracking-tight text-campus-950', className)} {...props}>
+    <h3 ref={ref} className={cn('font-display font-semibold text-[17px] tracking-tight text-ink-50', className)} {...props}>
       {children}
     </h3>
   )
@@ -65,7 +67,7 @@ CardTitle.displayName = 'CardTitle'
 
 export const CardDescription = forwardRef<HTMLParagraphElement, HTMLAttributes<HTMLParagraphElement>>(
   ({ className, children, ...props }, ref) => (
-    <p ref={ref} className={cn('mt-1 text-body-sm text-surface-500', className)} {...props}>
+    <p ref={ref} className={cn('mt-1 text-body-sm text-ink-400', className)} {...props}>
       {children}
     </p>
   )

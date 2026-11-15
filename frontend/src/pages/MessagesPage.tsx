@@ -130,15 +130,15 @@ export default function MessagesPage() {
       />
 
       {showNew && (
-        <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-card p-4 mb-5 animate-slide-down">
+        <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-4 mb-5 animate-slide-down">
           <div className="grid gap-3 sm:grid-cols-[220px_1fr_auto] sm:items-end">
             <div>
-              <label htmlFor="new-peer" className="block text-body-sm font-medium text-surface-700 mb-1.5">To</label>
+              <label htmlFor="new-peer" className="block text-body-sm font-medium text-ink-200 mb-1.5">To</label>
               <select
                 id="new-peer"
                 value={newPeerId}
                 onChange={e => setNewPeerId(e.target.value)}
-                className="w-full rounded-xl border border-surface-300 px-3 py-2 text-body-sm bg-white focus:outline-none focus:ring-2 focus:ring-campus-500"
+                className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm bg-er-900 focus:outline-none focus:ring-2 focus:ring-er-500"
               >
                 <option value="">Choose a student…</option>
                 {peers.map(u => (
@@ -158,7 +158,7 @@ export default function MessagesPage() {
             </Button>
           </div>
           {newMutation.isError && (
-            <p className="text-body-sm text-red-600 mt-2" role="alert">{(newMutation.error as Error).message}</p>
+            <p className="text-body-sm text-red-300 mt-2" role="alert">{(newMutation.error as Error).message}</p>
           )}
         </div>
       )}
@@ -177,9 +177,9 @@ export default function MessagesPage() {
       ) : (
         <div className="grid gap-5 lg:grid-cols-[300px_1fr] items-start">
           {/* Conversation list */}
-          <div className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden">
-            <div className="px-4 py-3 border-b border-campus-900/[0.06] bg-campus-50/50">
-              <p className="text-micro font-semibold text-surface-500 tracking-wide">INBOX · {inbox.length}</p>
+          <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden">
+            <div className="px-4 py-3 border-b border-white/10 bg-white/[0.04]">
+              <p className="text-micro font-semibold text-ink-400 tracking-wide">INBOX · {inbox.length}</p>
             </div>
             <div role="listbox" aria-label="Conversations" className="p-2 space-y-0.5 max-h-[480px] overflow-y-auto scrollbar-light">
               {inbox.map(c => {
@@ -191,33 +191,33 @@ export default function MessagesPage() {
                     aria-selected={active}
                     onClick={() => setSelected({ id: c.peerId, name: c.peerName ?? `User #${c.peerId}` })}
                     className={cn(
-                      'w-full text-left rounded-xl px-3 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-campus-500 flex items-center gap-3',
-                      active ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-card' : 'hover:bg-campus-50'
+                      'w-full text-left rounded-xl px-3 py-3 transition-all focus:outline-none focus:ring-2 focus:ring-er-500 flex items-center gap-3',
+                      active ? 'bg-gradient-to-br from-er-500 to-er-600 text-white shadow-card' : 'hover:bg-er-900'
                     )}
                   >
                     <span className="relative flex-shrink-0" aria-hidden="true">
                       <span className={cn(
                         'flex h-10 w-10 items-center justify-center rounded-full font-display font-bold text-body-sm',
-                        active ? 'bg-white/15 text-white' : 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white'
+                        active ? 'bg-white/15 text-white' : 'bg-gradient-to-br from-er-500 to-er-600 text-white'
                       )}>
                         {initialOf(c.peerName, c.peerId)}
                       </span>
                       {c.unreadCount > 0 && (
-                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-accent-500 text-white text-micro font-bold flex items-center justify-center tabular-nums ring-2 ring-white">
+                        <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-er-500 text-white text-micro font-bold flex items-center justify-center tabular-nums ring-2 ring-white">
                           {c.unreadCount > 9 ? '9+' : c.unreadCount}
                         </span>
                       )}
                     </span>
                     <span className="min-w-0 flex-1">
                       <span className="flex items-baseline justify-between gap-2">
-                        <span className={cn('font-semibold text-body-sm truncate', active ? 'text-white' : 'text-campus-950')}>
+                        <span className={cn('font-semibold text-body-sm truncate', active ? 'text-white' : 'text-ink-50')}>
                           {c.peerName ?? `User #${c.peerId}`}
                         </span>
-                        <span className={cn('text-micro flex-shrink-0 tabular-nums', active ? 'text-white/60' : 'text-surface-400')}>
+                        <span className={cn('text-micro flex-shrink-0 tabular-nums', active ? 'text-white/60' : 'text-ink-400')}>
                           {threadTime(c.lastAt)}
                         </span>
                       </span>
-                      <span className={cn('block text-caption truncate mt-0.5', active ? 'text-white/70' : 'text-surface-400')}>
+                      <span className={cn('block text-caption truncate mt-0.5', active ? 'text-white/70' : 'text-ink-400')}>
                         {c.preview || 'No messages yet'}
                       </span>
                     </span>
@@ -228,31 +228,31 @@ export default function MessagesPage() {
           </div>
 
           {/* Thread */}
-          <div className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden flex flex-col min-h-[480px]">
+          <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden flex flex-col min-h-[480px]">
             {!selected ? (
               <div className="flex-1 flex flex-col items-center justify-center text-center py-16 px-6">
-                <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-campus-50 border border-campus-100 mb-4">
-                  <MessagesSquare className="h-6 w-6 text-campus-500" aria-hidden="true" />
+                <span className="flex h-[52px] w-[52px] items-center justify-center rounded-2xl bg-er-900 border border-white/10 mb-4">
+                  <MessagesSquare className="h-6 w-6 text-er-400" aria-hidden="true" />
                 </span>
-                <p className="font-display font-semibold text-[17px] text-campus-950">Pick a conversation</p>
-                <p className="text-body-sm text-surface-500 mt-1">Your thread appears here — unread messages mark read on open.</p>
+                <p className="font-display font-semibold text-[17px] text-ink-50">Pick a conversation</p>
+                <p className="text-body-sm text-ink-400 mt-1">Your thread appears here — unread messages mark read on open.</p>
               </div>
             ) : (
               <>
-                <div className="px-5 py-3.5 border-b border-campus-900/[0.06] bg-campus-50/50 flex items-center gap-3">
-                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-display font-bold text-body-sm flex-shrink-0" aria-hidden="true">
+                <div className="px-5 py-3.5 border-b border-white/10 bg-white/[0.04] flex items-center gap-3">
+                  <span className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-er-500 to-er-600 text-white font-display font-bold text-body-sm flex-shrink-0" aria-hidden="true">
                     {initialOf(selected.name, selected.id)}
                   </span>
                   <div className="min-w-0">
-                    <p className="font-semibold text-body-sm text-campus-950 truncate">{selected.name}</p>
-                    <p className="text-micro text-surface-400">Student · MIT Mysore</p>
+                    <p className="font-semibold text-body-sm text-ink-50 truncate">{selected.name}</p>
+                    <p className="text-micro text-ink-400">Student · MIT Mysore</p>
                   </div>
                 </div>
                 <div className="flex-1 overflow-y-auto px-5 py-4 space-y-2 max-h-[400px] scrollbar-light" role="log" aria-live="polite" aria-label={`Messages with ${selected.name}`}>
                   {threadLoading ? (
-                    <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-campus-500" /></div>
+                    <div className="flex justify-center py-10"><Loader2 className="h-6 w-6 animate-spin text-er-400" /></div>
                   ) : thread.length === 0 ? (
-                    <p className="text-body-sm text-surface-400 text-center py-10">No messages yet — say hello below.</p>
+                    <p className="text-body-sm text-ink-400 text-center py-10">No messages yet — say hello below.</p>
                   ) : (
                     thread.map(m => {
                       const mine = m.senderId === me
@@ -261,11 +261,11 @@ export default function MessagesPage() {
                           <div className={cn(
                             'max-w-[78%] px-4 py-2.5 text-body-sm animate-fade-in',
                             mine
-                              ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-card'
-                              : 'rounded-2xl rounded-bl-md bg-campus-50 border border-campus-100/70 text-surface-800'
+                              ? 'rounded-2xl rounded-br-md bg-gradient-to-br from-er-500 to-er-600 text-white shadow-card'
+                              : 'rounded-2xl rounded-bl-md bg-er-900 border border-white/10 text-ink-100'
                           )}>
                             <p className="whitespace-pre-wrap leading-relaxed">{m.content}</p>
-                            <p className={cn('text-micro mt-1 flex items-center justify-end gap-1 tabular-nums', mine ? 'text-white/60' : 'text-surface-400')}>
+                            <p className={cn('text-micro mt-1 flex items-center justify-end gap-1 tabular-nums', mine ? 'text-white/60' : 'text-ink-400')}>
                               {m.createdAt ? new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : ''}
                               {mine && m.readFlag && <CheckCheck className="h-3.5 w-3.5" aria-label="Read" />}
                             </p>
@@ -276,12 +276,12 @@ export default function MessagesPage() {
                   )}
                   <div ref={threadEndRef} />
                 </div>
-                <div className="p-3 border-t border-campus-900/[0.06] bg-white">
+                <div className="p-3 border-t border-white/10 bg-er-800">
                   {sendMutation.isError && (
-                    <p className="text-body-sm text-red-600 mb-2" role="alert">{(sendMutation.error as Error).message}</p>
+                    <p className="text-body-sm text-red-300 mb-2" role="alert">{(sendMutation.error as Error).message}</p>
                   )}
                   <form
-                    className="flex items-center gap-2 rounded-xl border border-campus-900/10 bg-campus-50/60 p-1.5 pl-4 focus-within:ring-2 focus-within:ring-campus-500 focus-within:bg-white transition-all"
+                    className="flex items-center gap-2 rounded-xl border border-white/10 bg-white/[0.04] p-1.5 pl-4 focus-within:ring-2 focus-within:ring-er-500 focus-within:bg-er-800 transition-all"
                     onSubmit={e => {
                       e.preventDefault()
                       if (!draft.trim()) return
@@ -293,13 +293,13 @@ export default function MessagesPage() {
                       onChange={e => setDraft(e.target.value)}
                       placeholder={`Reply to ${selected.name}…`}
                       aria-label={`Reply to ${selected.name}`}
-                      className="flex-1 min-w-0 bg-transparent text-body-sm placeholder:text-surface-400 focus:outline-none"
+                      className="flex-1 min-w-0 bg-transparent text-body-sm placeholder:text-ink-400 focus:outline-none"
                     />
                     <button
                       type="submit"
                       disabled={!draft.trim() || sendMutation.isPending}
                       aria-label="Send message"
-                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-accent-500 text-white hover:bg-accent-600 active:scale-95 transition-all disabled:opacity-40 flex-shrink-0"
+                      className="flex h-9 w-9 items-center justify-center rounded-lg bg-er-500 text-white hover:bg-er-600 active:scale-95 transition-all disabled:opacity-40 flex-shrink-0"
                     >
                       <Send className="h-4 w-4" aria-hidden="true" />
                     </button>

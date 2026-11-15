@@ -62,8 +62,8 @@ export default function AlumniDashboardPage() {
     return (
       <PageContainer>
         <PageHeader title="Dashboard" sub="Alumni overview" />
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4">
-          <p className="text-body-sm text-amber-900">
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/12 px-5 py-4">
+          <p className="text-body-sm text-amber-200">
             No demo user selected. Choose a user from the login page.
           </p>
         </div>
@@ -116,7 +116,7 @@ export default function AlumniDashboardPage() {
 
       {/* Identity banner — carries the person, not just a number. */}
       <Reveal>
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white p-6 sm:p-7 mb-5 shadow-card">
+        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-er-500 to-er-600 text-white p-6 sm:p-7 mb-5 shadow-card">
           <div className="absolute -top-20 -right-14 h-56 w-56 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
           <div className="relative flex items-center gap-4 flex-wrap">
             <span
@@ -186,7 +186,7 @@ export default function AlumniDashboardPage() {
           action={
             <Link
               to="/mentorship"
-              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200"
             >
               Manage <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
@@ -199,22 +199,22 @@ export default function AlumniDashboardPage() {
                   <div
                     key={r.id}
                     style={{ ['--stagger' as string]: Math.min(i, 6) }}
-                    className="rounded-xl border border-campus-100 bg-campus-50/60 px-3.5 py-3"
+                    className="rounded-xl border border-white/10 bg-white/[0.04] px-3.5 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <p className="font-semibold text-body-sm text-campus-950">{r.studentName}</p>
+                      <p className="font-semibold text-body-sm text-ink-50">{r.studentName}</p>
                       <Badge variant={r.status === 'PENDING' ? 'warning' : 'outline'} size="sm">
                         {r.status}
                       </Badge>
                     </div>
                     {r.message && (
-                      <p className="text-caption text-surface-500 mt-1 line-clamp-2 leading-relaxed">{r.message}</p>
+                      <p className="text-caption text-ink-400 mt-1 line-clamp-2 leading-relaxed">{r.message}</p>
                     )}
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-body-sm text-surface-400 text-center py-6">No mentorship requests yet.</p>
+              <p className="text-body-sm text-ink-400 text-center py-6">No mentorship requests yet.</p>
             )}
           </Card>
         </PageSection>
@@ -225,7 +225,7 @@ export default function AlumniDashboardPage() {
           action={
             <Link
               to="/referrals"
-              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+              className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200"
             >
               Manage <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
             </Link>
@@ -238,22 +238,22 @@ export default function AlumniDashboardPage() {
                   <div
                     key={r.id}
                     style={{ ['--stagger' as string]: Math.min(i, 6) }}
-                    className="rounded-xl border border-accent-100 bg-accent-50/50 px-3.5 py-3"
+                    className="rounded-xl border border-er-500/25 bg-white/[0.04] px-3.5 py-3"
                   >
                     <div className="flex items-start justify-between gap-3">
-                      <p className="font-semibold text-body-sm text-campus-950">{r.studentName}</p>
+                      <p className="font-semibold text-body-sm text-ink-50">{r.studentName}</p>
                       <Badge variant={r.status === 'PENDING' ? 'warning' : 'outline'} size="sm">
                         {r.status}
                       </Badge>
                     </div>
-                    <p className="text-caption text-surface-500 mt-1">
+                    <p className="text-caption text-ink-400 mt-1">
                       {r.role} at {r.company}
                     </p>
                   </div>
                 ))}
               </div>
             ) : (
-              <p className="text-body-sm text-surface-400 text-center py-6">No referral requests yet.</p>
+              <p className="text-body-sm text-ink-400 text-center py-6">No referral requests yet.</p>
             )}
           </Card>
         </PageSection>

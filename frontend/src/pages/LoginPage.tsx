@@ -212,7 +212,7 @@ export default function LoginPage() {
           <form onSubmit={handleAuth} className="mt-6">
             {error && (
               <div
-                className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-body-sm text-red-200"
+                className="mb-4 flex items-start gap-2.5 rounded-xl border border-red-500/25 bg-red-500/10 px-4 py-3 text-body-sm text-red-200"
                 role="alert"
               >
                 <AlertTriangle className="mt-0.5 h-4 w-4 flex-shrink-0" aria-hidden="true" />

@@ -94,24 +94,24 @@ export default function DocumentsPage() {
             { label: 'Documents', value: stats.total },
             { label: 'Knowledge chunks', value: stats.totalChunks },
           ].map(s => (
-            <div key={s.label} role="listitem" className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card px-4 py-3.5">
-              <p className="font-display font-bold text-[24px] leading-none text-campus-950 tabular-nums">{s.value}</p>
-              <p className="text-caption text-surface-500 mt-1.5">{s.label}</p>
+            <div key={s.label} role="listitem" className="rounded-2xl border border-white/10 bg-er-800 shadow-card px-4 py-3.5">
+              <p className="font-display font-bold text-[24px] leading-none text-ink-50 tabular-nums">{s.value}</p>
+              <p className="text-caption text-ink-400 mt-1.5">{s.label}</p>
             </div>
           ))}
         </div>
       )}
 
-      <div className="rounded-2xl border border-dashed border-campus-900/15 bg-white/70 px-5 py-4 mb-5">
+      <div className="rounded-2xl border border-dashed border-white/10 bg-white/70 px-5 py-4 mb-5">
         <div className="flex items-center gap-3 flex-wrap">
-          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] flex-shrink-0" aria-hidden="true">
-            <Upload className="h-[18px] w-[18px] text-accent-300" />
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br from-er-500 to-er-600 flex-shrink-0" aria-hidden="true">
+            <Upload className="h-[18px] w-[18px] text-er-200" />
           </span>
           <div className="min-w-0 flex-1">
-            <p className="font-semibold text-body-sm text-campus-950">Upload a file</p>
-            <p className="text-caption text-surface-400">.txt or .md, max 5 MB — chunked and embedded automatically</p>
+            <p className="font-semibold text-body-sm text-ink-50">Upload a file</p>
+            <p className="text-caption text-ink-400">.txt or .md, max 5 MB — chunked and embedded automatically</p>
           </div>
-          <label className="cursor-pointer rounded-xl border border-campus-900/10 bg-white px-3 py-2 text-body-sm font-semibold text-surface-600 hover:border-campus-900/25 hover:text-campus-900 transition-all focus-within:ring-2 focus-within:ring-campus-500">
+          <label className="cursor-pointer rounded-xl border border-white/10 bg-er-800 px-3 py-2 text-body-sm font-semibold text-ink-300 hover:border-white/10 hover:text-ink-100 transition-all focus-within:ring-2 focus-within:ring-er-500">
             {uploadFile ? uploadFile.name : 'Choose file'}
             <input
               type="file"
@@ -132,37 +132,37 @@ export default function DocumentsPage() {
           </Button>
         </div>
         {uploadMutation.data && (
-          <p className="inline-flex items-center gap-1.5 text-body-sm font-medium text-emerald-700 mt-3" role="status">
+          <p className="inline-flex items-center gap-1.5 text-body-sm font-medium text-emerald-300 mt-3" role="status">
             <CheckCircle2 className="h-4 w-4" aria-hidden="true" />
             Doc #{uploadMutation.data.documentId} — {uploadMutation.data.chunksCreated} chunks created
           </p>
         )}
         {uploadMutation.isError && (
-          <p className="text-body-sm text-red-600 mt-3" role="alert">{(uploadMutation.error as Error).message}</p>
+          <p className="text-body-sm text-red-300 mt-3" role="alert">{(uploadMutation.error as Error).message}</p>
         )}
       </div>
 
       {showCreate && (
-        <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-elevated p-5 sm:p-6 mb-5 animate-slide-down">
-          <p className="font-display font-semibold text-[17px] text-campus-950">Write a document</p>
-          <p className="text-body-sm text-surface-500 mt-0.5">Titles are unique — one fact per document answers best</p>
+        <div className="rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 sm:p-6 mb-5 animate-slide-down">
+          <p className="font-display font-semibold text-[17px] text-ink-50">Write a document</p>
+          <p className="text-body-sm text-ink-400 mt-0.5">Titles are unique — one fact per document answers best</p>
           <div className="grid gap-3 mt-4">
             <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Hackathon team rules" />
             <div>
-              <label htmlFor="doc-content" className="block text-body-sm font-medium text-surface-700 mb-1.5">Content</label>
+              <label htmlFor="doc-content" className="block text-body-sm font-medium text-ink-200 mb-1.5">Content</label>
               <textarea
                 id="doc-content"
                 value={content}
                 onChange={e => setContent(e.target.value)}
                 rows={4}
                 placeholder="Each team must contain between 2 and 4 students…"
-                className="w-full rounded-xl border border-surface-300 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-campus-500 resize-y"
+                className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-er-500 resize-y"
               />
-              <p className="text-caption text-surface-400 mt-1">Plain sentences beat formatting — the AI chunks and embeds this text.</p>
+              <p className="text-caption text-ink-400 mt-1">Plain sentences beat formatting — the AI chunks and embeds this text.</p>
             </div>
           </div>
           {createMutation.isError && (
-            <p className="text-body-sm text-red-600 mt-3" role="alert">{(createMutation.error as Error).message}</p>
+            <p className="text-body-sm text-red-300 mt-3" role="alert">{(createMutation.error as Error).message}</p>
           )}
           <div className="flex gap-2 mt-4">
             <Button size="sm" variant="accent" disabled={!title.trim() || !content.trim() || createMutation.isPending} loading={createMutation.isPending}
@@ -175,13 +175,13 @@ export default function DocumentsPage() {
       )}
 
       <div className="relative mb-5">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-surface-400 pointer-events-none" aria-hidden="true" />
+        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400 pointer-events-none" aria-hidden="true" />
         <input
           value={search}
           onChange={e => setSearch(e.target.value)}
           placeholder="Search the library…"
           aria-label="Search documents"
-          className="w-full bg-white border border-campus-900/10 rounded-xl pl-10 pr-3 py-2.5 text-body-sm shadow-card placeholder:text-surface-400 focus:outline-none focus:ring-2 focus:ring-campus-500"
+          className="w-full bg-er-900 border border-white/10 rounded-xl pl-10 pr-3 py-2.5 text-body-sm shadow-card placeholder:text-ink-400 focus:outline-none focus:ring-2 focus:ring-er-500"
         />
         {search && (
           <span className="absolute right-3 top-1/2 -translate-y-1/2">
@@ -193,7 +193,7 @@ export default function DocumentsPage() {
       {/* Row-level actions (hide/unhide, delete) have no form to attach an error
           to, so a failure here would otherwise look like the click did nothing. */}
       {(visibilityMutation.isError || deleteMutation.isError) && (
-        <p className="mb-4 text-body-sm text-red-600" role="alert">
+        <p className="mb-4 text-body-sm text-red-300" role="alert">
           {((visibilityMutation.error ?? deleteMutation.error) as Error)?.message}
         </p>
       )}
@@ -214,18 +214,18 @@ export default function DocumentsPage() {
             <article
               key={d.id}
               style={{ ['--stagger' as string]: Math.min(i, 8) }}
-              className="group rounded-2xl border border-campus-900/[0.07] bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
+              className="group rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
             >
               <div className="flex items-start gap-3">
-                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-campus-50 border border-campus-100 flex-shrink-0" aria-hidden="true">
-                  <FileText className="h-5 w-5 text-campus-600" />
+                <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10 flex-shrink-0" aria-hidden="true">
+                  <FileText className="h-5 w-5 text-er-300" />
                 </span>
                 <div className="min-w-0 flex-1">
                   <div className="flex items-center gap-2">
-                    <p className="font-display font-semibold text-[15px] text-campus-950 tracking-tight leading-snug">{d.title}</p>
+                    <p className="font-display font-semibold text-[15px] text-ink-50 tracking-tight leading-snug">{d.title}</p>
                     {d.hidden && <Badge variant="warning" size="sm">Hidden from AI</Badge>}
                   </div>
-                  <p className="text-micro text-surface-400 mt-0.5 tabular-nums">
+                  <p className="text-micro text-ink-400 mt-0.5 tabular-nums">
                     #{d.id}{d.createdAt ? ` · ${new Date(d.createdAt).toLocaleDateString([], { month: 'short', day: 'numeric', year: 'numeric' })}` : ''}
                   </p>
                 </div>
@@ -234,7 +234,7 @@ export default function DocumentsPage() {
                     onClick={() => visibilityMutation.mutate({ id: d.id, hidden: !d.hidden })}
                     aria-label={d.hidden ? `Unhide ${d.title}` : `Hide ${d.title}`}
                     title={d.hidden ? 'Unhide' : 'Hide'}
-                    className="p-2 rounded-lg text-surface-400 hover:text-campus-700 hover:bg-campus-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                    className="p-2 rounded-lg text-ink-400 hover:text-er-300 hover:bg-white/[0.06] transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                   >
                     {d.hidden ? <Eye className="h-4 w-4" /> : <EyeOff className="h-4 w-4" />}
                   </button>
@@ -242,13 +242,13 @@ export default function DocumentsPage() {
                     onClick={() => setPendingDelete(d)}
                     aria-label={`Delete ${d.title}`}
                     title="Delete"
-                    className="p-2 rounded-lg text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                    className="p-2 rounded-lg text-ink-500 hover:text-red-300 hover:bg-red-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                   >
                     <Trash2 className="h-4 w-4" />
                   </button>
                 </div>
               </div>
-              <p className="text-body-sm text-surface-600 leading-relaxed mt-3 line-clamp-3">{d.content}</p>
+              <p className="text-body-sm text-ink-300 leading-relaxed mt-3 line-clamp-3">{d.content}</p>
             </article>
           ))}
         </div>

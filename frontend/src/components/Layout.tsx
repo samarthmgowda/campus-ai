@@ -33,9 +33,26 @@ function NavBadge({ kind, account }: { kind: string; account: string | null }) {
   const count = useBadge(kind, account)
   if (count === null) return null
   return (
-    <span className="ml-auto min-w-[20px] px-1.5 py-0.5 text-micro font-semibold text-white bg-accent-500 rounded-full text-center tabular-nums">
+    <span className="ml-auto min-w-[20px] px-1.5 py-0.5 text-micro font-semibold text-white bg-er-500 rounded-full text-center tabular-nums">
       {count > 99 ? '99+' : count}
     </span>
+  )
+}
+
+/** The unread dot on the header icons — only rendered when there is something. */
+function UnreadDot({ kind, account }: { kind: string; account: string | null }) {
+  const count = useBadge(kind, account)
+  if (count === null) return null
+  // Coloured on the sidebar's own canvas, so the ring matches the shell rather
+  // than the white ring the old light theme used.
+  return (
+    <span
+      className={cn(
+        'absolute right-1 top-1 h-2 w-2 rounded-full border-2 border-er-950',
+        kind === 'inbox' ? 'bg-er-400' : 'bg-orange-500'
+      )}
+      aria-hidden="true"
+    />
   )
 }
 
@@ -49,23 +66,26 @@ function NavRow({ item, onNavigate, account }: { item: NavItem; onNavigate: () =
       aria-current={isActive ? 'page' : undefined}
       className={cn(
         'group relative flex items-center gap-3 px-3.5 py-2 text-body-sm font-medium transition-colors duration-150',
-        'rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-300',
+        'rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-er-500',
         isActive
-          ? 'text-campus-700 bg-campus-50 font-semibold'
-          : 'text-surface-500 hover:text-campus-700 hover:bg-surface-100'
+          ? 'bg-er-500/12 text-ink-50 font-semibold'
+          : 'text-ink-400 hover:bg-white/[0.05] hover:text-ink-100'
       )}
     >
       {/* Active marker: a small bar rather than a colour change alone, so the
           current page is legible without relying on hue. */}
       <span
         className={cn(
-          'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-accent-500 transition-opacity',
+          'absolute left-0 top-1/2 h-5 w-[3px] -translate-y-1/2 rounded-r-full bg-er-500 transition-opacity',
           isActive ? 'opacity-100' : 'opacity-0'
         )}
         aria-hidden="true"
       />
       <item.icon
-        className={cn('h-[18px] w-[18px] flex-shrink-0', isActive ? 'text-campus-600' : 'text-surface-400 group-hover:text-campus-500')}
+        className={cn(
+          'h-[18px] w-[18px] flex-shrink-0 transition-colors',
+          isActive ? 'text-er-300' : 'text-ink-500 group-hover:text-er-400'
+        )}
         aria-hidden="true"
       />
       <span className="truncate">{item.label}</span>
@@ -93,19 +113,19 @@ function SidebarContent({
   return (
     <div className="flex h-full flex-col">
       <div className="flex h-16 items-center gap-2.5 px-4">
-        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] shadow-card">
+        <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-gradient-to-br from-er-500 to-er-600 shadow-glow">
           <Sparkles className="h-[18px] w-[18px] text-white" aria-hidden="true" />
         </div>
         <div className="leading-tight">
-          <p className="font-display font-bold text-[17px] text-campus-950 tracking-tight">Campus Connect</p>
-          <p className="text-micro text-surface-400">MIT Mysore</p>
+          <p className="font-display font-bold text-[17px] text-ink-50 tracking-tight">Campus Connect</p>
+          <p className="text-micro text-ink-500">MIT Mysore</p>
         </div>
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 space-y-5 scrollbar-light" aria-label="Primary">
         {groups.map((group) => (
           <div key={group.label}>
-            <p className="px-3.5 mb-1.5 text-micro font-semibold text-surface-400 tracking-wide">{group.label}</p>
+            <p className="px-3.5 mb-1.5 text-micro font-semibold uppercase tracking-wider text-ink-500">{group.label}</p>
             <div className="space-y-0.5">
               {group.items.map((item) => (
                 <NavRow
@@ -121,48 +141,46 @@ function SidebarContent({
       </nav>
 
       <div className="p-3">
-        <div className="rounded-2xl bg-surface-100 border border-campus-900/[0.06] p-2">
+        <div className="rounded-2xl bg-white/[0.04] border border-white/[0.07] p-2">
           <div className="relative">
             <button
-              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 text-body-sm transition-colors hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-campus-300"
+              className="w-full flex items-center gap-2.5 rounded-xl px-2 py-2 text-body-sm transition-colors hover:bg-white/[0.06] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-er-500"
               onClick={() => setUserMenuOpen(!userMenuOpen)}
               aria-expanded={userMenuOpen}
               aria-haspopup="true"
             >
               <div
-                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white font-display font-bold text-body-sm flex-shrink-0"
+                className="flex h-9 w-9 items-center justify-center rounded-full bg-gradient-to-br from-er-500 to-er-600 text-white font-display font-bold text-body-sm flex-shrink-0"
                 aria-hidden="true"
               >
                 {displayName.charAt(0).toUpperCase()}
               </div>
               <div className="flex-1 text-left min-w-0">
-                <p className="font-medium text-campus-950 truncate">{displayName}</p>
-                <p className="text-micro text-surface-400 truncate">{roleLabel ? `${roleLabel} · ` : ''}MIT Mysore</p>
+                <p className="font-medium text-ink-100 truncate">{displayName}</p>
+                <p className="text-micro text-ink-500 truncate">{roleLabel ? `${roleLabel} · ` : ''}MIT Mysore</p>
               </div>
-              <ChevronDown className={cn('h-4 w-4 text-surface-400 transition-transform', userMenuOpen && 'rotate-180')} />
+              <ChevronDown className={cn('h-4 w-4 text-ink-500 transition-transform', userMenuOpen && 'rotate-180')} />
             </button>
             {userMenuOpen && (
               <div className="absolute bottom-full left-0 right-0 mb-2 animate-slide-up">
-                <div className="bg-white rounded-xl border border-campus-900/10 shadow-elevated p-1">
-                  <NavLink
-                    to="/profile"
-                    onClick={onNavigate}
-                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
-                  >
-                    <UserIcon className="h-4 w-4" aria-hidden="true" />
-                    View &amp; edit profile
-                  </NavLink>
-                  <NavLink
-                    to="/settings"
-                    onClick={onNavigate}
-                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
-                  >
-                    <SettingsIcon className="h-4 w-4" aria-hidden="true" />
-                    Settings
-                  </NavLink>
+                <div className="bg-er-800 rounded-xl border border-white/10 shadow-elevated p-1">
+                  {[
+                    { to: '/profile', icon: UserIcon, label: 'View & edit profile' },
+                    { to: '/settings', icon: SettingsIcon, label: 'Settings' },
+                  ].map(({ to, icon: Icon, label }) => (
+                    <NavLink
+                      key={to}
+                      to={to}
+                      onClick={onNavigate}
+                      className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-ink-300 hover:bg-white/[0.06] hover:text-ink-50"
+                    >
+                      <Icon className="h-4 w-4" aria-hidden="true" />
+                      {label}
+                    </NavLink>
+                  ))}
                   <button
                     onClick={onLogout}
-                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-surface-600 hover:bg-surface-100 hover:text-campus-950"
+                    className="w-full flex items-center gap-2.5 rounded-lg px-3 py-2 text-body-sm text-ink-300 hover:bg-red-500/12 hover:text-red-300"
                   >
                     <LogOut className="h-4 w-4" aria-hidden="true" />
                     Sign out
@@ -204,17 +222,17 @@ function Layout() {
   const trail = breadcrumbFor(location.pathname)
 
   return (
-    <div className="min-h-screen bg-[#f5f7fa]">
+    <div className="min-h-screen bg-er-950">
       <a
         href="#main-content"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-white focus:px-4 focus:py-2.5 focus:text-body-sm focus:font-semibold focus:shadow-elevated"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[60] focus:rounded-xl focus:bg-er-500 focus:px-4 focus:py-2.5 focus:text-white focus:font-semibold focus:shadow-elevated"
       >
         Skip to content
       </a>
 
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-campus-950/40 backdrop-blur-[2px] lg:hidden"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-[2px] lg:hidden"
           onClick={() => setSidebarOpen(false)}
           aria-hidden="true"
         />
@@ -222,7 +240,7 @@ function Layout() {
 
       <aside
         className={cn(
-          'fixed left-0 top-0 z-50 h-full w-[248px] bg-white shadow-card border-r border-campus-900/[0.06]',
+          'fixed left-0 top-0 z-50 h-full w-[248px] bg-er-950 border-r border-white/[0.07]',
           'transform transition-transform duration-200 ease-out lg:translate-x-0',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full'
         )}
@@ -230,7 +248,7 @@ function Layout() {
       >
         <div className="absolute top-0 right-0 p-2 lg:hidden">
           <button
-            className="p-2 rounded-lg text-surface-400 hover:bg-surface-100"
+            className="p-2 rounded-lg text-ink-400 hover:bg-white/[0.06] hover:text-ink-100"
             onClick={() => setSidebarOpen(false)}
             aria-label="Close sidebar"
           >
@@ -246,10 +264,10 @@ function Layout() {
       </aside>
 
       <div className="lg:pl-[248px] min-h-screen flex flex-col">
-        <header className="sticky top-0 z-30 border-b border-campus-900/[0.06] bg-[#f5f7fa]/85 backdrop-blur-md">
+        <header className="sticky top-0 z-30 border-b border-white/[0.07] bg-er-950/85 backdrop-blur-md">
           <div className="flex h-16 items-center gap-3 px-4 lg:px-8">
             <button
-              className="lg:hidden p-2 -ml-2 rounded-xl text-surface-600 hover:bg-campus-900/[0.05]"
+              className="lg:hidden p-2 -ml-2 rounded-xl text-ink-300 hover:bg-white/[0.06] hover:text-ink-50"
               onClick={() => setSidebarOpen(true)}
               aria-label="Open menu"
             >
@@ -262,12 +280,12 @@ function Layout() {
                   return (
                     <li key={`${crumb.label}-${i}`} className="flex items-center gap-1.5 min-w-0">
                       {i > 0 && (
-                        <span className="text-surface-300 select-none" aria-hidden="true">/</span>
+                        <span className="text-ink-600 select-none" aria-hidden="true">/</span>
                       )}
                       {crumb.to && !last ? (
                         <Link
                           to={crumb.to}
-                          className="text-surface-500 hover:text-campus-700 truncate transition-colors"
+                          className="text-ink-400 hover:text-er-300 truncate transition-colors"
                         >
                           {crumb.label}
                         </Link>
@@ -275,7 +293,7 @@ function Layout() {
                         <span
                           className={cn(
                             'truncate',
-                            last ? 'font-display font-semibold text-campus-950' : 'text-surface-500'
+                            last ? 'font-display font-semibold text-ink-50' : 'text-ink-400'
                           )}
                           aria-current={last ? 'page' : undefined}
                         >
@@ -287,22 +305,22 @@ function Layout() {
                 })}
               </ol>
             </nav>
-            <div className="ml-auto flex items-center gap-3">
+            <div className="ml-auto flex items-center gap-1">
               <button
-                className="p-2 rounded-xl text-surface-600 hover:bg-campus-900/[0.05] relative group"
+                className="relative p-2 rounded-xl text-ink-400 hover:bg-white/[0.06] hover:text-ink-100 transition-colors"
                 onClick={() => navigate('/notifications')}
                 aria-label="Notifications"
               >
                 <Bell className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-red-500 border-2 border-white" />
+                <UnreadDot kind="notif" account={session?.userId ?? null} />
               </button>
               <button
-                className="p-2 rounded-xl text-surface-600 hover:bg-campus-900/[0.05] relative group"
+                className="relative p-2 rounded-xl text-ink-400 hover:bg-white/[0.06] hover:text-ink-100 transition-colors"
                 onClick={() => navigate('/messages')}
                 aria-label="Messages"
               >
                 <Inbox className="h-5 w-5" />
-                <span className="absolute top-1 right-1 h-2 w-2 rounded-full bg-accent-500 border-2 border-white" />
+                <UnreadDot kind="inbox" account={session?.userId ?? null} />
               </button>
             </div>
           </div>

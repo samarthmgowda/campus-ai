@@ -20,13 +20,13 @@ interface NotificationDto {
 }
 
 function iconFor(type: string) {
-  const t = type.toUpperCase()
-  if (t.includes('LIKE') || t.includes('ENDORSE')) return { Icon: Heart, tint: 'bg-accent-50 text-accent-600 border-accent-100' }
-  if (t.includes('COMMENT') || t.includes('MESSAGE')) return { Icon: MessageCircle, tint: 'bg-sky-50 text-sky-600 border-sky-100' }
-  if (t.includes('JOB') || t.includes('POSTING') || t.includes('APPL')) return { Icon: Briefcase, tint: 'bg-violet-50 text-violet-600 border-violet-100' }
-  if (t.includes('MENTOR')) return { Icon: GraduationCap, tint: 'bg-emerald-50 text-emerald-600 border-emerald-100' }
-  if (t.includes('FOLLOW')) return { Icon: Users, tint: 'bg-amber-50 text-amber-600 border-amber-100' }
-  return { Icon: Bell, tint: 'bg-campus-50 text-campus-600 border-campus-100' }
+  const t = (type ?? '').toUpperCase()
+  if (t.includes('LIKE') || t.includes('ENDORSE')) return { Icon: Heart, tint: 'bg-er-900 text-er-300 border-er-500/25' }
+  if (t.includes('COMMENT') || t.includes('MESSAGE')) return { Icon: MessageCircle, tint: 'bg-sky-500/12 text-sky-300 border-sky-500/25' }
+  if (t.includes('JOB') || t.includes('POSTING') || t.includes('APPL')) return { Icon: Briefcase, tint: 'bg-teal-500/12 text-teal-300 border border-teal-500/25' }
+  if (t.includes('MENTOR')) return { Icon: GraduationCap, tint: 'bg-emerald-500/12 text-emerald-300 border-emerald-500/25' }
+  if (t.includes('FOLLOW')) return { Icon: Users, tint: 'bg-amber-500/12 text-amber-200 border-amber-500/25' }
+  return { Icon: Bell, tint: 'bg-er-900 text-er-300 border-white/10' }
 }
 
 function dayLabel(iso: string | null) {
@@ -109,15 +109,15 @@ export default function NotificationsPage() {
       {/* Marking read is optimistic-feeling but not optimistic: if the request
           fails the dot stays, so say so rather than leaving a dead click. */}
       {(readMutation.isError || readAllMutation.isError) && (
-        <p className="mb-4 text-body-sm text-red-600" role="alert">
+        <p className="mb-4 text-body-sm text-red-300" role="alert">
           {((readMutation.error ?? readAllMutation.error) as Error)?.message}
         </p>
       )}
 
       {unread > 0 && (
-        <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white px-5 py-4 mb-6 shadow-card animate-fade-in">
+        <div className="flex items-center gap-3 rounded-2xl bg-gradient-to-br from-er-500 to-er-600 text-white px-5 py-4 mb-6 shadow-card animate-fade-in">
           <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-white/10 flex-shrink-0" aria-hidden="true">
-            <BellRing className="h-5 w-5 text-accent-300" />
+            <BellRing className="h-5 w-5 text-er-200" />
           </span>
           <div className="min-w-0">
             <p className="font-display font-semibold text-body-sm">{unread} thing{unread === 1 ? '' : 's'} need{unread === 1 ? 's' : ''} your attention</p>
@@ -140,8 +140,8 @@ export default function NotificationsPage() {
         <div className="space-y-6 stagger">
           {groups.map((g, gi) => (
             <section key={g.label} style={{ ['--stagger' as string]: gi }}>
-              <p className="text-micro font-semibold text-surface-400 tracking-wide px-1 mb-2">{g.label.toUpperCase()}</p>
-              <div className="rounded-2xl border border-campus-900/[0.07] bg-white shadow-card overflow-hidden divide-y divide-campus-900/[0.05]">
+              <p className="text-micro font-semibold text-ink-400 tracking-wide px-1 mb-2">{g.label.toUpperCase()}</p>
+              <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card overflow-hidden divide-y divide-white/10">
                 {g.items.map(n => {
                   const { Icon, tint } = iconFor(n.type)
                   return (
@@ -149,24 +149,24 @@ export default function NotificationsPage() {
                       key={n.id}
                       className={cn(
                         'flex items-start gap-3.5 px-4 py-3.5 transition-colors',
-                        !n.readFlag ? 'bg-campus-50/50' : 'hover:bg-surface-50/60'
+                        !n.readFlag ? 'bg-white/[0.04]' : 'hover:bg-white/[0.04]'
                       )}
                     >
                       <span className={cn('flex h-10 w-10 items-center justify-center rounded-xl border flex-shrink-0', tint)} aria-hidden="true">
                         <Icon className="h-[18px] w-[18px]" />
                       </span>
                       <div className="min-w-0 flex-1">
-                        <p className={cn('text-body-sm leading-snug', n.readFlag ? 'text-surface-600' : 'font-semibold text-campus-950')}>
+                        <p className={cn('text-body-sm leading-snug', n.readFlag ? 'text-ink-300' : 'font-semibold text-ink-50')}>
                           {n.title}
                         </p>
-                        {n.body && <p className="text-body-sm text-surface-500 mt-0.5 line-clamp-2">{n.body}</p>}
-                        <p className="text-micro text-surface-400 mt-1 tabular-nums">
+                        {n.body && <p className="text-body-sm text-ink-400 mt-0.5 line-clamp-2">{n.body}</p>}
+                        <p className="text-micro text-ink-400 mt-1 tabular-nums">
                           {timeOf(n.createdAt)}
                           {n.refType && n.refId ? ` · ${n.refType} #${n.refId}` : ''}
                         </p>
                       </div>
                       {!n.readFlag ? (
-                        <span className="h-2.5 w-2.5 rounded-full bg-accent-500 flex-shrink-0 mt-1.5" aria-label="Unread" role="img" />
+                        <span className="h-2.5 w-2.5 rounded-full bg-er-500 flex-shrink-0 mt-1.5" aria-label="Unread" role="img" />
                       ) : (
                         <span className="w-2.5 flex-shrink-0" aria-hidden="true" />
                       )}
@@ -174,7 +174,7 @@ export default function NotificationsPage() {
                         <button
                           onClick={() => readMutation.mutate(n.id)}
                           aria-label={`Mark "${n.title}" as read`}
-                          className="p-1.5 -m-1 rounded-lg text-surface-300 hover:text-campus-600 hover:bg-campus-100 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500 flex-shrink-0"
+                          className="p-1.5 -m-1 rounded-lg text-ink-500 hover:text-er-300 hover:bg-white/[0.06] transition-colors focus:outline-none focus:ring-2 focus:ring-er-500 flex-shrink-0"
                         >
                           <CheckCheck className="h-4 w-4" />
                         </button>

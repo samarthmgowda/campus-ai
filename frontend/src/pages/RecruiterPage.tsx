@@ -108,21 +108,21 @@ export default function RecruiterPage() {
       />
 
       {showCreate && (
-        <div className="rounded-2xl border border-campus-900/[0.08] bg-white shadow-elevated p-5 sm:p-6 mb-5 animate-slide-down">
-          <p className="font-display font-semibold text-[17px] text-campus-950">Post a role</p>
-          <p className="text-body-sm text-surface-500 mt-0.5">Publishes under your demo user as the recruiter</p>
+        <div className="rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 sm:p-6 mb-5 animate-slide-down">
+          <p className="font-display font-semibold text-[17px] text-ink-50">Post a role</p>
+          <p className="text-body-sm text-ink-400 mt-0.5">Publishes under your demo user as the recruiter</p>
           <div className="grid gap-3 sm:grid-cols-2 mt-4">
             <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Backend Intern" />
             <Input label="Required skills" value={skills} onChange={e => setSkills(e.target.value)} placeholder="Java, SQL" />
             <div className="sm:col-span-2">
-              <label htmlFor="posting-desc" className="block text-body-sm font-medium text-surface-700 mb-1.5">About the role</label>
+              <label htmlFor="posting-desc" className="block text-body-sm font-medium text-ink-200 mb-1.5">About the role</label>
               <textarea
                 id="posting-desc"
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={2}
                 placeholder="What they'll do, duration, stipend…"
-                className="w-full rounded-xl border border-surface-300 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-campus-500 resize-none"
+                className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-er-500 resize-none"
               />
             </div>
           </div>
@@ -143,14 +143,14 @@ export default function RecruiterPage() {
             onClick={() => setStatusFilter(s)}
             aria-pressed={statusFilter === s}
             className={cn(
-              'rounded-xl px-3.5 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-campus-500',
-              statusFilter === s ? 'bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white shadow-card' : 'bg-white border border-campus-900/10 text-surface-500 hover:text-campus-900'
+              'rounded-xl px-3.5 py-2 text-body-sm font-semibold transition-all focus:outline-none focus:ring-2 focus:ring-er-500',
+              statusFilter === s ? 'bg-gradient-to-br from-er-500 to-er-600 text-white shadow-card' : 'bg-er-800 border border-white/10 text-ink-400 hover:text-ink-100'
             )}
           >
             {s === '' ? 'All' : s.charAt(0) + s.slice(1).toLowerCase()}
           </button>
         ))}
-        <span className="text-caption text-surface-400 ml-2 tabular-nums">{postings.length} roles</span>
+        <span className="text-caption text-ink-400 ml-2 tabular-nums">{postings.length} roles</span>
       </div>
 
       {anyError && (
@@ -179,36 +179,36 @@ export default function RecruiterPage() {
                 key={p.id}
                 style={{ ['--stagger' as string]: Math.min(i, 8) }}
                 className={cn(
-                  'rounded-2xl border bg-white shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5',
-                  open ? 'border-campus-900/[0.07]' : 'border-campus-900/[0.05] opacity-90'
+                  'rounded-2xl border bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5',
+                  open ? 'border-white/10' : 'border-white/10 opacity-90'
                 )}
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-[#667eea] to-[#764ba2] flex-shrink-0" aria-hidden="true">
-                    <Briefcase className="h-5 w-5 text-accent-300" />
+                  <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-er-500 to-er-600 flex-shrink-0" aria-hidden="true">
+                    <Briefcase className="h-5 w-5 text-er-200" />
                   </span>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-2 flex-wrap">
-                      <p className="font-display font-semibold text-[16px] text-campus-950 tracking-tight leading-tight">{p.title}</p>
+                      <p className="font-display font-semibold text-[16px] text-ink-50 tracking-tight leading-tight">{p.title}</p>
                       <Badge variant={open ? 'success' : 'outline'} size="sm">{p.status}</Badge>
                     </div>
-                    <p className="text-caption text-surface-400 mt-0.5 truncate">{p.company ?? p.recruiterName ?? ''}</p>
+                    <p className="text-caption text-ink-400 mt-0.5 truncate">{p.company ?? p.recruiterName ?? ''}</p>
                   </div>
                 </div>
-                {p.description && <p className="text-body-sm text-surface-600 mt-3 leading-relaxed line-clamp-2">{p.description}</p>}
+                {p.description && <p className="text-body-sm text-ink-300 mt-3 leading-relaxed line-clamp-2">{p.description}</p>}
                 {skillList.length > 0 && (
                   <div className="flex flex-wrap gap-1.5 mt-3">
                     {skillList.slice(0, 5).map(s => (
-                      <span key={s} className="rounded-full bg-campus-50 border border-campus-100 px-2.5 py-0.5 text-micro font-medium text-campus-700">{s}</span>
+                      <span key={s} className="rounded-full bg-er-900 border border-white/10 px-2.5 py-0.5 text-micro font-medium text-er-300">{s}</span>
                     ))}
                   </div>
                 )}
-                <div className="flex items-center gap-2 mt-3.5 text-caption text-surface-400 tabular-nums">
+                <div className="flex items-center gap-2 mt-3.5 text-caption text-ink-400 tabular-nums">
                   <Users className="h-3.5 w-3.5" aria-hidden="true" />
                   {p.applicantCount} applicant{p.applicantCount === 1 ? '' : 's'}
                   {myApp && <Badge variant="outline" size="sm" className="ml-1">{myApp.status}</Badge>}
                 </div>
-                <div className="flex flex-wrap items-center gap-2 mt-3.5 pt-3.5 border-t border-campus-900/[0.06]">
+                <div className="flex flex-wrap items-center gap-2 mt-3.5 pt-3.5 border-t border-white/10">
                   {open && !applied && (
                     <Button size="sm" variant="accent" disabled={applyMutation.isPending} onClick={() => applyMutation.mutate(p.id)}>
                       Apply now
@@ -223,8 +223,8 @@ export default function RecruiterPage() {
                     onClick={() => setAppsFor(appsFor === p.id ? null : p.id)}
                     aria-expanded={appsFor === p.id}
                     className={cn(
-                      'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500',
-                      appsFor === p.id ? 'bg-campus-50 text-campus-800' : 'text-surface-400 hover:text-campus-900 hover:bg-campus-50'
+                      'rounded-lg px-2.5 py-1.5 text-body-sm font-semibold transition-colors focus:outline-none focus:ring-2 focus:ring-er-500',
+                      appsFor === p.id ? 'bg-er-900 text-er-200' : 'text-ink-400 hover:text-ink-100 hover:bg-er-900'
                     )}
                   >
                     Applicants{appsFor === p.id ? ' ▲' : ''}
@@ -232,39 +232,39 @@ export default function RecruiterPage() {
                   {open && (
                     <button
                       onClick={() => closeMutation.mutate(p.id)}
-                      className="rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500 ml-auto"
+                      className="rounded-lg px-2.5 py-1.5 text-body-sm font-medium text-ink-500 hover:text-red-300 hover:bg-red-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500 ml-auto"
                     >
                       Close
                     </button>
                   )}
                 </div>
                 {appsFor === p.id && (
-                  <div className="mt-3 rounded-xl bg-campus-50/70 border border-campus-100/70 p-2 animate-slide-down">
+                  <div className="mt-3 rounded-xl bg-white/[0.04] border border-white/10 p-2 animate-slide-down">
                     {appsLoading ? (
-                      <p className="text-caption text-surface-400 text-center py-3">Loading applicants…</p>
+                      <p className="text-caption text-ink-400 text-center py-3">Loading applicants…</p>
                     ) : applicants.length === 0 ? (
-                      <p className="text-caption text-surface-400 text-center py-3">No applicants yet — share the posting.</p>
+                      <p className="text-caption text-ink-400 text-center py-3">No applicants yet — share the posting.</p>
                     ) : (
                       applicants.map(a => (
-                        <div key={a.id} className="flex items-center gap-2 px-2 py-2 border-b border-campus-900/[0.05] last:border-0">
-                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-[#667eea] to-[#764ba2] text-white text-micro font-bold flex-shrink-0" aria-hidden="true">
+                        <div key={a.id} className="flex items-center gap-2 px-2 py-2 border-b border-white/10 last:border-0">
+                          <span className="flex h-7 w-7 items-center justify-center rounded-full bg-gradient-to-br from-er-500 to-er-600 text-white text-micro font-bold flex-shrink-0" aria-hidden="true">
                             {(a.studentName ?? '?').charAt(0).toUpperCase()}
                           </span>
-                          <span className="text-body-sm text-surface-800 flex-1 truncate">{a.studentName ?? `Student #${a.studentId}`}</span>
+                          <span className="text-body-sm text-ink-100 flex-1 truncate">{a.studentName ?? `Student #${a.studentId}`}</span>
                           <Badge variant={a.status === 'SHORTLISTED' ? 'success' : a.status === 'REJECTED' ? 'danger' : 'default'} size="sm">{a.status}</Badge>
                           {a.status === 'APPLIED' && (
                             <>
                               <button
                                 onClick={() => decideMutation.mutate({ postingId: p.id, appId: a.id, action: 'SHORTLIST' })}
                                 aria-label={`Shortlist ${a.studentName}`}
-                                className="p-1.5 rounded-lg text-emerald-600 hover:bg-emerald-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                                className="p-1.5 rounded-lg text-emerald-300 hover:bg-emerald-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                               >
                                 <Check className="h-4 w-4" />
                               </button>
                               <button
                                 onClick={() => decideMutation.mutate({ postingId: p.id, appId: a.id, action: 'REJECT' })}
                                 aria-label={`Reject ${a.studentName}`}
-                                className="p-1.5 rounded-lg text-surface-300 hover:text-red-600 hover:bg-red-50 transition-colors focus:outline-none focus:ring-2 focus:ring-campus-500"
+                                className="p-1.5 rounded-lg text-ink-500 hover:text-red-300 hover:bg-red-500/12 transition-colors focus:outline-none focus:ring-2 focus:ring-er-500"
                               >
                                 <Ban className="h-4 w-4" />
                               </button>

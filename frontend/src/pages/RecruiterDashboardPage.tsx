@@ -45,8 +45,8 @@ export default function RecruiterDashboardPage() {
     return (
       <PageContainer>
         <PageHeader title="Dashboard" sub="Recruiter overview" />
-        <div className="rounded-2xl border border-amber-200/70 bg-amber-50/80 px-5 py-4">
-          <p className="text-body-sm text-amber-900">
+        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/12 px-5 py-4">
+          <p className="text-body-sm text-amber-200">
             No demo user selected. Choose a recruiter from the login page.
           </p>
         </div>
@@ -95,7 +95,7 @@ export default function RecruiterDashboardPage() {
         actions={
           <Link
             to="/recruiter"
-            className="inline-flex items-center gap-1.5 rounded-xl bg-campus-950 text-white px-4 py-2.5 text-body-sm font-semibold hover:bg-campus-900 transition-colors"
+            className="inline-flex items-center gap-1.5 rounded-xl bg-er-950 text-white px-4 py-2.5 text-body-sm font-semibold hover:bg-er-900 transition-colors"
           >
             Manage careers <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
           </Link>
@@ -112,7 +112,7 @@ export default function RecruiterDashboardPage() {
             value={openCount}
             hint={closedCount > 0 ? `${closedCount} closed` : 'All active'}
           />
-          <StatTile icon={Users} tint="violet" label="Total applicants" value={totalApplicants} />
+          <StatTile icon={Users} tint="teal" label="Total applicants" value={totalApplicants} />
           <StatTile
             icon={Bell}
             tint="amber"
@@ -127,17 +127,17 @@ export default function RecruiterDashboardPage() {
         <PageSection title="Your postings" description="Every role you have listed, newest first">
           <Card className="p-0 overflow-hidden">
             {postings?.items?.length ? (
-              <ul className="divide-y divide-campus-900/[0.05]">
+              <ul className="divide-y divide-white/10">
                 {postings.items.map((p, i) => (
                   <li
                     key={p.id}
                     style={{ ['--stagger' as string]: Math.min(i, 8) }}
-                    className="px-5 py-4 hover:bg-campus-50/40 transition-colors"
+                    className="px-5 py-4 hover:bg-white/[0.04] transition-colors"
                   >
                     <div className="flex items-start justify-between gap-3 flex-wrap">
                       <div className="min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <p className="font-display font-semibold text-[15px] text-campus-950 tracking-tight">
+                          <p className="font-display font-semibold text-[15px] text-ink-50 tracking-tight">
                             {p.title}
                           </p>
                           <Badge variant={p.status === 'OPEN' ? 'success' : 'outline'} size="sm">
@@ -145,7 +145,7 @@ export default function RecruiterDashboardPage() {
                           </Badge>
                         </div>
                         {p.description && (
-                          <p className="text-body-sm text-surface-500 mt-1 line-clamp-2 leading-relaxed">
+                          <p className="text-body-sm text-ink-400 mt-1 line-clamp-2 leading-relaxed">
                             {p.description}
                           </p>
                         )}
@@ -154,7 +154,7 @@ export default function RecruiterDashboardPage() {
                             {p.requiredSkills.split(',').map(s => s.trim()).filter(Boolean).slice(0, 5).map(s => (
                               <span
                                 key={s}
-                                className="rounded-full bg-campus-50 border border-campus-100 px-2.5 py-0.5 text-micro font-medium text-campus-700"
+                                className="rounded-full bg-er-900 border border-white/10 px-2.5 py-0.5 text-micro font-medium text-er-300"
                               >
                                 {s}
                               </span>
@@ -163,13 +163,13 @@ export default function RecruiterDashboardPage() {
                         )}
                       </div>
                       <div className="text-right flex-shrink-0">
-                        <p className="font-display font-bold text-[22px] leading-none tabular-nums text-campus-950">
+                        <p className="font-display font-bold text-[22px] leading-none tabular-nums text-ink-50">
                           {p.applicantCount || 0}
                         </p>
-                        <p className="text-micro text-surface-400 mt-1">
+                        <p className="text-micro text-ink-400 mt-1">
                           applicant{p.applicantCount === 1 ? '' : 's'}
                         </p>
-                        <p className="text-micro text-surface-300 mt-2 inline-flex items-center gap-1 tabular-nums">
+                        <p className="text-micro text-ink-500 mt-2 inline-flex items-center gap-1 tabular-nums">
                           <Clock className="h-3 w-3" aria-hidden="true" />
                           {new Date(p.createdAt).toLocaleDateString()}
                         </p>
@@ -180,10 +180,10 @@ export default function RecruiterDashboardPage() {
               </ul>
             ) : (
               <div className="px-5 py-12 text-center">
-                <p className="text-body-sm text-surface-400">No postings yet.</p>
+                <p className="text-body-sm text-ink-400">No postings yet.</p>
                 <Link
                   to="/recruiter"
-                  className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-campus-600 hover:text-campus-800"
+                  className="mt-3 inline-flex items-center gap-1 text-body-sm font-semibold text-er-300 hover:text-er-200"
                 >
                   Create your first posting <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
                 </Link>
