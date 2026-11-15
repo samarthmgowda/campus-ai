@@ -2,6 +2,8 @@ package com.campusconnect.campus_ai.controller;
 
 import com.campusconnect.campus_ai.service.PlagiarismDetectionService;
 import com.campusconnect.campus_ai.service.PlagiarismDetectionService.ScanResult;
+import com.campusconnect.campus_ai.service.PlagiarismService;
+import com.campusconnect.campus_ai.service.PlagiarismService.CrossScanResult;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -36,14 +38,23 @@ public class PlagiarismController {
     private static final int MAX_CHARS = 50_000;
 
     private final PlagiarismDetectionService plagiarismDetectionService;
+    private final PlagiarismService plagiarismService;
 
-    public PlagiarismController(PlagiarismDetectionService plagiarismDetectionService) {
+    public PlagiarismController(PlagiarismDetectionService plagiarismDetectionService,
+                                PlagiarismService plagiarismService) {
         this.plagiarismDetectionService = plagiarismDetectionService;
+        this.plagiarismService = plagiarismService;
     }
 
     /** Body is a record rather than a bare String so the JSON shape can grow. */
     public record ScanRequest(String text) {}
 
+    /**
+     * Scan a submission against the library corpus (document chunks).
+     * Gated to ADMIN only — the people who need this are the ones who curate
+     * the corpus. A student being able to call it would turn it into a way to
+     * probe what the corpus contains.
+     */
     @PostMapping("/scan")
     public ResponseEntity<?> scan(@RequestBody(required = false) ScanRequest request) {
         if (request == null || request.text() == null || request.text().isBlank()) {
@@ -57,6 +68,32 @@ public class PlagiarismController {
         }
 
         ScanResult result = plagiarismDetectionService.scan(request.text());
+        return ResponseEntity.ok(result);
+    }
+
+    /**
+     * Scan a submission against ALL other submissions in the corpus.
+     *
+     * This catches the "biggest one" use case: two students who copy from each
+     * other, with NEITHER text in the library, would both score NONE against the
+     * library but would match each other.
+     *
+     * Gated to ADMIN only — the people who need this are the ones who curate
+     * the corpus and manage the submission pipeline.
+     */
+    @PostMapping("/scan-all-submissions")
+    public ResponseEntity<?> scanAllSubmissions(@RequestBody(required = false) ScanRequest request) {
+        if (request == null || request.text() == null || request.text().isBlank()) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "Paste the text you want to check."));
+        }
+        if (request.text().length() > MAX_CHARS) {
+            return ResponseEntity.badRequest()
+                    .body(Map.of("error", "That is " + request.text().length()
+                            + " characters. The limit is " + MAX_CHARS + " — check a section at a time."));
+        }
+
+        CrossScanResult result = plagiarismService.scanAgainstAllSubmissions(request.text());
         return ResponseEntity.ok(result);
     }
 }

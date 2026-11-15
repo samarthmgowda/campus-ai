@@ -151,6 +151,12 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // The submission corpus the cross-submission originality check reads and
+      // writes. Same failure mode as /auth and /evaluation without it.
+      '/submissions': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/dashboard': {
         target: 'http://localhost:8080',
         changeOrigin: true,

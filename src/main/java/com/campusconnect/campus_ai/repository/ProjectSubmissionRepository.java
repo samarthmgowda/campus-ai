@@ -11,4 +11,8 @@ public interface ProjectSubmissionRepository extends JpaRepository<ProjectSubmis
     List<ProjectSubmission> findByStatusOrderByCreatedAtDesc(String status);
 
     List<ProjectSubmission> findPendingByUserId(String userId);
+
+    List<ProjectSubmission> findByUserId(String userId);
+
+    List<ProjectSubmission> findByStatusAndUserId(String status, String userId);
 }

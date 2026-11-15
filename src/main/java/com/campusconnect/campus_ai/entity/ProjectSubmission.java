@@ -16,6 +16,9 @@ public class ProjectSubmission {
     @Column(columnDefinition = "TEXT")
     private String description;
 
+    @Column(columnDefinition = "TEXT")
+    private String submissionText;
+
     private String githubRepoUrl;
 
     private String githubOwner;
@@ -66,6 +69,8 @@ public class ProjectSubmission {
     public Long getId() { return id; }
     public String getTitle() { return title; }
     public String getDescription() { return description; }
+    public String getSubmissionText() { return submissionText; }
+    public void setSubmissionText(String submissionText) { this.submissionText = submissionText; }
     public String getGithubRepoUrl() { return githubRepoUrl; }
     public String getGithubOwner() { return githubOwner; }
     public String getBranchName() { return branchName; }

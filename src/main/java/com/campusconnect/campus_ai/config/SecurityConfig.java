@@ -154,6 +154,11 @@ public class SecurityConfig {
                 // submission overlaps with, so they belong to whoever curates the
                 // corpus — same gate as the Library below.
                 .requestMatchers("/evaluation/**").hasRole("ADMIN")
+                // The submission corpus that the cross-submission originality
+                // check compares against. Listing it hands one person every
+                // other student's body text, so it belongs to the same audience
+                // as the check itself — whoever curates the corpus.
+                .requestMatchers("/submissions/**").hasRole("ADMIN")
                 // Campus analytics is an admin view; recruiters get their own hub.
                 .requestMatchers("/analytics/**").hasRole("ADMIN")
                 .anyRequest().authenticated()

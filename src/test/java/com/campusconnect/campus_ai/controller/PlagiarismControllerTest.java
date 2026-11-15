@@ -30,6 +30,9 @@ class PlagiarismControllerTest {
     private PlagiarismDetectionService plagiarismDetectionService;
 
     @MockitoBean
+    private com.campusconnect.campus_ai.service.PlagiarismService plagiarismService;
+
+    @MockitoBean
     private com.campusconnect.campus_ai.service.JwtService jwtService;
 
     @MockitoBean
@@ -106,6 +109,42 @@ class PlagiarismControllerTest {
                 .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.containsString("limit")));
 
         verifyNoInteractions(plagiarismDetectionService);
+    }
+
+    @Test
+    void crossScanReturnsSubmissionMatches() throws Exception {
+        when(plagiarismService.scanAgainstAllSubmissions(anyString())).thenReturn(
+                new com.campusconnect.campus_ai.service.PlagiarismService.CrossScanResult(
+                        "HIGH", 0.88, 3, 41, "Close match with \"Placement report\".",
+                        List.of(new com.campusconnect.campus_ai.service.PlagiarismService.SubmissionMatch(
+                                7L, "Placement report", "aarav@campus.edu", "SUBMITTED",
+                                0.88, 0.90, 0.85))));
+
+        mockMvc.perform(post("/evaluation/plagiarism/scan-all-submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"Students apply to dozens of companies and still struggle.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.verdict").value("HIGH"))
+                .andExpect(jsonPath("$.topScore").value(0.88))
+                // The field names differ from the library scan on purpose: a peer
+                // submission has no section or page, and does have an author.
+                .andExpect(jsonPath("$.scannedSubmissions").value(3))
+                .andExpect(jsonPath("$.matches[0].submissionId").value(7))
+                .andExpect(jsonPath("$.matches[0].title").value("Placement report"))
+                .andExpect(jsonPath("$.matches[0].userId").value("aarav@campus.edu"))
+                .andExpect(jsonPath("$.matches[0].status").value("SUBMITTED"))
+                .andExpect(jsonPath("$.matches[0].wordCoverage").value(0.90));
+    }
+
+    @Test
+    void blankTextOnTheCrossScanIs400() throws Exception {
+        mockMvc.perform(post("/evaluation/plagiarism/scan-all-submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"  \"}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.error").isString());
+
+        verifyNoInteractions(plagiarismService);
     }
 
     @Test

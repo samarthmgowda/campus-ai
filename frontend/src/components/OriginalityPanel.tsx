@@ -1,12 +1,22 @@
 import { useState } from 'react'
-import { useMutation } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
-import { ScanSearch, ShieldCheck, ShieldAlert, FileWarning, Info } from 'lucide-react'
+import { TabRow } from '../components/ui/TabRow'
+import {
+  ScanSearch,
+  ShieldCheck,
+  ShieldAlert,
+  FileWarning,
+  Info,
+  Library,
+  Users,
+  Database,
+} from 'lucide-react'
 import { cn } from '../utils/cn'
 
-/* ——— Mirrors PlagiarismDetectionService.ScanResult ——— */
+/* ——— Mirrors PlagiarismDetectionService.ScanResult (library corpus) ——— */
 
 interface SourceMatch {
   documentId: number
@@ -27,6 +37,37 @@ interface ScanResult {
   matches: SourceMatch[]
 }
 
+/* ——— Mirrors PlagiarismService.CrossScanResult (other submissions) ——— */
+
+interface SubmissionMatch {
+  submissionId: number
+  title: string
+  userId: string | null
+  status: string | null
+  score: number
+  wordCoverage: number
+  phraseCoverage: number
+}
+
+interface CrossScanResult {
+  verdict: 'NONE' | 'LOW' | 'MODERATE' | 'HIGH' | 'INSUFFICIENT'
+  topScore: number
+  scannedSubmissions: number
+  submissionWords: number
+  summary: string
+  matches: SubmissionMatch[]
+}
+
+/** Mirrors SubmissionController.SubmissionSummary. */
+interface StoredSubmission {
+  id: number
+  title: string
+  userId: string | null
+  status: string | null
+  words: number
+  excerpt: string
+}
+
 const VERDICT = {
   HIGH: { tone: 'danger', label: 'Close match', Icon: ShieldAlert },
   MODERATE: { tone: 'warning', label: 'Substantial overlap', Icon: FileWarning },
@@ -37,26 +78,78 @@ const VERDICT = {
 
 const pct = (v: number) => `${Math.round(v * 100)}%`
 
+type Scope = 'library' | 'submissions'
+
+const SCOPES = [
+  { id: 'library' as const, label: 'Library documents', icon: <Library className="h-3.5 w-3.5" aria-hidden="true" /> },
+  { id: 'submissions' as const, label: 'Other submissions', icon: <Users className="h-3.5 w-3.5" aria-hidden="true" /> },
+]
+
 /**
- * Originality check against the Library corpus.
+ * Originality check, against two different corpora.
  *
- * The score is a containment measure (see PlagiarismDetectionService), not a
- * percentage of "plagiarism". The copy says so explicitly, because a number
- * this precise invites a conclusion the method cannot support — it points a
- * human at a document to compare, and nothing more.
+ * The two checks answer different questions and neither substitutes for the
+ * other. "Library documents" asks whether a submission lifted text from the
+ * curated knowledge base. "Other submissions" asks whether it overlaps with
+ * another student's work — the case the library check is structurally blind to,
+ * because neither student's text is in the library at all, so both would come
+ * back clean against it while being word-for-word copies of each other.
+ *
+ * Both scores are containment measures (see PlagiarismDetectionService), not a
+ * percentage of "plagiarism". The copy says so, because a number this precise
+ * invites a conclusion the method cannot support — it points a human at two
+ * documents to read side by side, and nothing more.
  */
 export function OriginalityPanel() {
+  const [scope, setScope] = useState<Scope>('library')
   const [text, setText] = useState('')
+  const [title, setTitle] = useState('')
+  const queryClient = useQueryClient()
 
-  const scan = useMutation({
+  const libraryScan = useMutation({
     mutationFn: (body: string) =>
       api.post<ScanResult>('/evaluation/plagiarism/scan', { text: body }),
   })
 
-  const result = scan.data
+  const crossScan = useMutation({
+    mutationFn: (body: string) =>
+      api.post<CrossScanResult>('/evaluation/plagiarism/scan-all-submissions', { text: body }),
+  })
+
+  const corpus = useQuery({
+    queryKey: ['submissions', 'corpus'],
+    queryFn: () => api.get<StoredSubmission[]>('/submissions'),
+    // Only the submissions scope actually reads the corpus, but it is a small
+    // list and fetching it up front means the count is already there the first
+    // time the scope is opened rather than flashing empty.
+    staleTime: 30_000,
+  })
+
+  const store = useMutation({
+    mutationFn: (body: { title: string; text: string }) =>
+      api.post<{ id: number }>('/submissions', body),
+    onSuccess: () => {
+      setTitle('')
+      queryClient.invalidateQueries({ queryKey: ['submissions', 'corpus'] })
+      // A stored submission changes what the cross-check compares against, so
+      // a result from before the store is no longer about the same corpus.
+      crossScan.reset()
+    },
+  })
+
+  const active = scope === 'library' ? libraryScan : crossScan
+  const result = scope === 'library' ? libraryScan.data : crossScan.data
   const verdict = result ? VERDICT[result.verdict] : null
+
   const chars = text.length
   const overLimit = chars > 50_000
+  const canRun = !!text.trim() && !overLimit && !active.isPending
+  // The text may have been edited since the check ran — showing the old score
+  // against new text would be a quiet lie, so say so instead.
+  const textChangedSinceScan =
+    !!result && typeof active.variables === 'string' && active.variables !== text
+
+  const stored = corpus.data?.length ?? 0
 
   return (
     <section
@@ -75,13 +168,28 @@ export function OriginalityPanel() {
             Originality check
           </h2>
           <p className="text-caption text-ink-400 mt-0.5">
-            Paste a submission to see which library documents it overlaps with. Runs locally — no
-            model server needed.
+            Paste a submission once, then compare it against the library or against every other
+            stored submission. Runs locally — no model server needed.
           </p>
         </div>
       </div>
 
-      <div className="mt-4">
+      <TabRow
+        tabs={SCOPES}
+        value={scope}
+        onChange={setScope}
+        size="sm"
+        ariaLabel="Compare against"
+        className="mt-4"
+      />
+
+      <p className="text-caption text-ink-500 mt-2 min-h-[1.25rem]">
+        {scope === 'library'
+          ? 'Checks the text against every chunk of the curated knowledge base.'
+          : `Checks the text against the ${stored} submission${stored === 1 ? '' : 's'} stored on this campus — the only way to catch two students copying from each other.`}
+      </p>
+
+      <div className="mt-3">
         <label htmlFor="plagiarism-text" className="block text-body-sm font-medium text-ink-200 mb-1.5">
           Submission text
         </label>
@@ -106,26 +214,34 @@ export function OriginalityPanel() {
         </div>
       </div>
 
-      <div className="flex gap-2 mt-3">
+      <div className="flex flex-wrap items-center gap-2 mt-3">
         <Button
           size="sm"
           variant="accent"
-          disabled={!text.trim() || overLimit || scan.isPending}
-          loading={scan.isPending}
-          onClick={() => scan.mutate(text)}
+          disabled={!canRun}
+          loading={active.isPending}
+          onClick={() => active.mutate(text)}
         >
-          Check originality
+          {scope === 'library' ? 'Check against library' : 'Check against all submissions'}
         </Button>
         {result && (
-          <Button size="sm" variant="ghost" onClick={() => { setText(''); scan.reset() }}>
+          <Button
+            size="sm"
+            variant="ghost"
+            onClick={() => {
+              setText('')
+              libraryScan.reset()
+              crossScan.reset()
+            }}
+          >
             Clear
           </Button>
         )}
       </div>
 
-      {scan.isError && (
+      {active.isError && (
         <p className="text-body-sm text-red-300 mt-3" role="alert">
-          {(scan.error as Error).message}
+          {(active.error as Error).message}
         </p>
       )}
 
@@ -136,18 +252,28 @@ export function OriginalityPanel() {
               <verdict.Icon className="h-3.5 w-3.5 mr-1" aria-hidden="true" />
               {verdict.label}
             </Badge>
-            {result.verdict !== 'INSUFFICIENT' && result.scannedChunks > 0 && (
+            {result.verdict !== 'INSUFFICIENT' && (
               <span className="text-micro text-ink-400 tabular-nums">
-                best match {pct(result.topScore)} · {result.submissionWords} words compared against{' '}
-                {result.scannedChunks} chunks
+                best match {pct(result.topScore)} · {result.submissionWords} words compared{' '}
+                {scope === 'library'
+                  ? `against ${(result as ScanResult).scannedChunks} library chunks`
+                  : `against ${(result as CrossScanResult).scannedSubmissions} other submission${
+                      (result as CrossScanResult).scannedSubmissions === 1 ? '' : 's'
+                    }`}
               </span>
             )}
           </div>
           <p className="text-body-sm text-ink-300 mt-2 leading-relaxed">{result.summary}</p>
 
-          {result.matches.length > 0 && (
+          {textChangedSinceScan && (
+            <p className="text-caption text-amber-300 mt-2">
+              The text was edited after this check ran — run it again for a result that matches.
+            </p>
+          )}
+
+          {scope === 'library' && (result as ScanResult).matches.length > 0 && (
             <ul className="mt-3 space-y-2">
-              {result.matches.map(m => (
+              {(result as ScanResult).matches.map(m => (
                 <li
                   key={m.documentId}
                   className="rounded-xl border border-white/10 bg-er-900 px-3.5 py-2.5"
@@ -163,25 +289,119 @@ export function OriginalityPanel() {
                     {m.pageNumber != null && <>page {m.pageNumber} · </>}
                     {pct(m.wordCoverage)} of words · {pct(m.phraseCoverage)} of phrases
                   </p>
-                  {/* The bar shows the same number the text does — it is a
-                      second reading of the score for scanning, not new info. */}
-                  <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
-                    <div
-                      className="h-full rounded-full bg-er-500"
-                      style={{ width: `${Math.max(2, Math.round(m.score * 100))}%` }}
-                    />
+                  <ScoreBar score={m.score} />
+                </li>
+              ))}
+            </ul>
+          )}
+
+          {scope === 'submissions' && (result as CrossScanResult).matches.length > 0 && (
+            <ul className="mt-3 space-y-2">
+              {(result as CrossScanResult).matches.map(m => (
+                <li
+                  key={m.submissionId}
+                  className="rounded-xl border border-white/10 bg-er-900 px-3.5 py-2.5"
+                >
+                  <div className="flex items-baseline justify-between gap-3">
+                    <p className="font-medium text-body-sm text-ink-100 truncate">{m.title}</p>
+                    <p className="text-body-sm font-bold tabular-nums text-ink-50 flex-shrink-0">
+                      {pct(m.score)}
+                    </p>
                   </div>
+                  <p className="text-micro text-ink-400 mt-0.5 tabular-nums">
+                    {m.userId ?? 'unattributed'}
+                    {m.status && <> · {m.status.toLowerCase()}</>}
+                    {' · '}
+                    {pct(m.wordCoverage)} of words · {pct(m.phraseCoverage)} of phrases
+                  </p>
+                  <ScoreBar score={m.score} />
                 </li>
               ))}
             </ul>
           )}
 
           <p className="text-micro text-ink-500 mt-3">
-            Shared vocabulary is not proof of copying. Treat this as a pointer to the document worth
-            reading side by side.
+            {scope === 'library'
+              ? 'Shared vocabulary is not proof of copying. Treat this as a pointer to the document worth reading side by side.'
+              : 'A high score is a pair of submissions to read side by side, not a verdict against a student. A synonym-swapped or translated copy can still score low.'}
           </p>
         </div>
       )}
+
+      {scope === 'submissions' && (
+        <div className="mt-4 pt-4 border-t border-white/10">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <p className="flex items-center gap-1.5 text-caption text-ink-400">
+              <Database className="h-3.5 w-3.5 text-ink-500" aria-hidden="true" />
+              {corpus.isLoading
+                ? 'Reading the submission corpus…'
+                : corpus.isError
+                  ? 'Could not read the submission corpus.'
+                  : `${stored} submission${stored === 1 ? '' : 's'} stored`}
+            </p>
+          </div>
+
+          {!corpus.isLoading && !corpus.isError && (
+            <p className="text-micro text-ink-500 mt-1">
+              {stored === 0
+                ? 'Nothing is stored yet, so there is nothing to compare against. Store the text below to start the corpus.'
+                : stored === 1
+                  ? 'Comparing submissions needs at least two, so store one more before the check can find anything.'
+                  : 'Storing a submission adds it to the corpus every future check compares against.'}
+            </p>
+          )}
+
+          <div className="mt-2.5 flex flex-wrap items-end gap-2">
+            <div className="min-w-0 flex-1">
+              <label htmlFor="plagiarism-store-title" className="block text-micro text-ink-400 mb-1">
+                Title for the stored copy
+              </label>
+              <input
+                id="plagiarism-store-title"
+                value={title}
+                onChange={e => setTitle(e.target.value)}
+                placeholder="e.g. Data Structures — final report"
+                className="w-full rounded-lg border border-white/12 bg-er-900 px-3 py-1.5 text-body-sm text-ink-100 placeholder:text-ink-500 focus:outline-none focus:ring-2 focus:ring-er-500"
+              />
+            </div>
+            <Button
+              size="sm"
+              variant="secondary"
+              disabled={!text.trim() || overLimit || store.isPending}
+              loading={store.isPending}
+              onClick={() => store.mutate({ title: title.trim(), text })}
+            >
+              Store this text
+            </Button>
+          </div>
+
+          {store.isError && (
+            <p className="text-body-sm text-red-300 mt-2" role="alert">
+              {(store.error as Error).message}
+            </p>
+          )}
+          {store.isSuccess && (
+            <p className="text-caption text-emerald-300 mt-2" role="status">
+              Stored. It is now part of the corpus the cross-check compares against.
+            </p>
+          )}
+        </div>
+      )}
     </section>
+  )
+}
+
+/**
+ * A second reading of the same score — a bar to scan down a list by, not new
+ * information. Kept local because both match shapes render it identically.
+ */
+function ScoreBar({ score }: { score: number }) {
+  return (
+    <div className="mt-2 h-1 rounded-full bg-white/[0.06] overflow-hidden" aria-hidden="true">
+      <div
+        className="h-full rounded-full bg-er-500"
+        style={{ width: `${Math.max(2, Math.round(score * 100))}%` }}
+      />
+    </div>
   )
 }
