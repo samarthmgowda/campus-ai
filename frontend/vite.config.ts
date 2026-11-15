@@ -144,6 +144,13 @@ export default defineConfig({
         target: 'http://localhost:8080',
         changeOrigin: true,
       },
+      // The originality check posts here. A missing entry is the same failure
+      // /auth had: Vite answers the request itself and the panel 404s only
+      // when run against the dev server, never in the built bundle.
+      '/evaluation': {
+        target: 'http://localhost:8080',
+        changeOrigin: true,
+      },
       '/dashboard': {
         target: 'http://localhost:8080',
         changeOrigin: true,
