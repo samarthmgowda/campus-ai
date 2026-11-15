@@ -62,9 +62,9 @@ public class RoadmapController {
     @PostMapping
     public Map<String, Object> create(@RequestBody Map<String, Object> body) {
         Long alumniId = toLong(body != null ? body.get("alumniId") : null);
-        String title = body != null && body.get("title") instanceof String s ? s.trim() : null;
-        String targetRole = body != null && body.get("targetRole") instanceof String s ? s.trim() : null;
-        String description = body != null && body.get("description") instanceof String s ? s.trim() : null;
+        String title = getString(body, "title");
+        String targetRole = getString(body, "targetRole");
+        String description = getString(body, "description");
         if (alumniId == null) throw new IllegalArgumentException("alumniId required");
         if (title == null || title.length() < 3 || title.length() > 150)
             throw new IllegalArgumentException("Title must be 3-150 characters");
@@ -113,11 +113,12 @@ public class RoadmapController {
                 throw new IllegalArgumentException("Each resource must be an object with type and url");
             Object typeVal = m.get("type");
             Object urlVal = m.get("url");
-            if (!(typeVal instanceof String type) || !RESOURCE_TYPES.contains(type))
+            if (!(typeVal instanceof String) || !RESOURCE_TYPES.contains((String) typeVal))
                 throw new IllegalArgumentException("Resource type must be one of " + RESOURCE_TYPES);
-            if (!(urlVal instanceof String url) || url.isBlank())
+            if (!(urlVal instanceof String) || ((String) urlVal).isBlank())
                 throw new IllegalArgumentException("Resource url is required");
-            url = url.trim();
+            String type = (String) typeVal;
+            String url = (String) urlVal;
             if (url.length() > MAX_URL_LENGTH)
                 throw new IllegalArgumentException("Resource url too long (max " + MAX_URL_LENGTH + ")");
             String lower = url.toLowerCase(Locale.ROOT);
@@ -128,8 +129,11 @@ public class RoadmapController {
             entry.put("type", type);
             entry.put("url", url);
             Object labelVal = m.get("label");
-            if (labelVal instanceof String label && !label.isBlank())
-                entry.put("label", label.trim().length() > 120 ? label.trim().substring(0, 120) : label.trim());
+            if (labelVal instanceof String) {
+                String label = (String) labelVal;
+                if (!label.isBlank())
+                    entry.put("label", label.length() > 120 ? label.substring(0, 120) : label.trim());
+            }
             clean.add(entry);
         }
         if (clean.isEmpty()) return null;
@@ -169,8 +173,23 @@ public class RoadmapController {
 
     private Long toLong(Object v) {
         if (v == null) return null;
-        if (v instanceof Number n) return n.longValue();
-        if (v instanceof String s && !s.isBlank()) return Long.valueOf(s.trim());
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof String) {
+            String s = (String) v;
+            if (!s.isBlank()) {
+                return Long.valueOf(s.trim());
+            }
+        }
+        return null;
+    }
+
+    private String getString(Map<String, Object> m, String key) {
+        Object v = m.get(key);
+        if (v instanceof String) {
+            return (String) v;
+        }
         return null;
     }
 }

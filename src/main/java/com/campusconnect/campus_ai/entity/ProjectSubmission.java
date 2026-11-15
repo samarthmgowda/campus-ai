@@ -1,6 +1,11 @@
 package com.campusconnect.campus_ai.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
+import org.hibernate.annotations.Array;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+
 import java.time.LocalDateTime;
 
 @Entity
@@ -18,6 +23,22 @@ public class ProjectSubmission {
 
     @Column(columnDefinition = "TEXT")
     private String submissionText;
+
+    /**
+     * Semantic fingerprint of {@link #submissionText}, used by the cross-submission
+     * originality check to catch copies that word overlap misses — a synonym-swapped
+     * or translated submission shares almost no tokens with its source but means the
+     * same thing.
+     *
+     * <p>Null is a normal state, not an error: embedding requires Ollama, and the word
+     * overlap check deliberately works with Ollama down. A row with no vector is
+     * compared on words alone and says so.
+     */
+    @JdbcTypeCode(SqlTypes.VECTOR)
+    @Array(length = 1024)
+    @Column(columnDefinition = "vector(1024)")
+    @JsonIgnore
+    private float[] embedding;
 
     private String githubRepoUrl;
 
@@ -71,6 +92,8 @@ public class ProjectSubmission {
     public String getDescription() { return description; }
     public String getSubmissionText() { return submissionText; }
     public void setSubmissionText(String submissionText) { this.submissionText = submissionText; }
+    public float[] getEmbedding() { return embedding; }
+    public void setEmbedding(float[] embedding) { this.embedding = embedding; }
     public String getGithubRepoUrl() { return githubRepoUrl; }
     public String getGithubOwner() { return githubOwner; }
     public String getBranchName() { return branchName; }

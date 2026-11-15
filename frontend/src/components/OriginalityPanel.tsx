@@ -47,6 +47,8 @@ interface SubmissionMatch {
   score: number
   wordCoverage: number
   phraseCoverage: number
+  /** Raw embedding cosine, or null when either side has no vector. */
+  semanticScore: number | null
 }
 
 interface CrossScanResult {
@@ -54,6 +56,8 @@ interface CrossScanResult {
   topScore: number
   scannedSubmissions: number
   submissionWords: number
+  /** How many pairs had embeddings on both sides. Zero means word-only. */
+  semanticComparisons: number
   summary: string
   matches: SubmissionMatch[]
 }
@@ -127,7 +131,9 @@ export function OriginalityPanel() {
 
   const store = useMutation({
     mutationFn: (body: { title: string; text: string }) =>
-      api.post<{ id: number }>('/submissions', body),
+      // `embedded` says whether the stored copy also got a semantic vector.
+      // It changes what future checks can find, so the response reports it.
+      api.post<{ id: number; embedded: boolean }>('/submissions', body),
     onSuccess: () => {
       setTitle('')
       queryClient.invalidateQueries({ queryKey: ['submissions', 'corpus'] })
@@ -169,7 +175,8 @@ export function OriginalityPanel() {
           </h2>
           <p className="text-caption text-ink-400 mt-0.5">
             Paste a submission once, then compare it against the library or against every other
-            stored submission. Runs locally — no model server needed.
+            stored submission. The library check never leaves this server; the submission check
+            also compares meaning, which needs the model server when it is running.
           </p>
         </div>
       </div>
@@ -313,6 +320,7 @@ export function OriginalityPanel() {
                     {m.status && <> · {m.status.toLowerCase()}</>}
                     {' · '}
                     {pct(m.wordCoverage)} of words · {pct(m.phraseCoverage)} of phrases
+                    {m.semanticScore != null && <> · {pct(m.semanticScore)} of meaning</>}
                   </p>
                   <ScoreBar score={m.score} />
                 </li>
@@ -320,10 +328,29 @@ export function OriginalityPanel() {
             </ul>
           )}
 
+          {scope === 'submissions' && (
+            <p className="text-caption text-ink-400 mt-3">
+              {(() => {
+                const cross = result as CrossScanResult
+                if (cross.semanticComparisons === 0) {
+                  return 'Meaning was not compared on this run — the model server was unreachable, so this result covers wording only. A reworded copy could be missing from it.'
+                }
+                const total = cross.scannedSubmissions
+                // Partial coverage is the quiet case: some rows have vectors and
+                // some do not, so neither "we checked meaning" nor "we did not"
+                // is true of the whole result.
+                if (cross.semanticComparisons < total) {
+                  return `Meaning was compared for ${cross.semanticComparisons} of ${total} submissions; the rest predate the embedding column, so a reworded copy of one of those would be missing.`
+                }
+                return `Meaning was compared as well as wording, across all ${total} submission${total === 1 ? '' : 's'}.`
+              })()}
+            </p>
+          )}
+
           <p className="text-micro text-ink-500 mt-3">
             {scope === 'library'
               ? 'Shared vocabulary is not proof of copying. Treat this as a pointer to the document worth reading side by side.'
-              : 'A high score is a pair of submissions to read side by side, not a verdict against a student. A synonym-swapped or translated copy can still score low.'}
+              : 'A high score is a pair of submissions to read side by side, not a verdict against a student.'}
           </p>
         </div>
       )}
@@ -381,8 +408,16 @@ export function OriginalityPanel() {
             </p>
           )}
           {store.isSuccess && (
-            <p className="text-caption text-emerald-300 mt-2" role="status">
-              Stored. It is now part of the corpus the cross-check compares against.
+            <p
+              className={cn(
+                'text-caption mt-2',
+                store.data.embedded ? 'text-emerald-300' : 'text-amber-300',
+              )}
+              role="status"
+            >
+              {store.data.embedded
+                ? 'Stored, with a semantic fingerprint. Future checks compare it on meaning as well as wording.'
+                : 'Stored, but without a semantic fingerprint — the model server was unreachable. It still counts for word overlap; a reworded copy of it would be missed.'}
             </p>
           )}
         </div>

@@ -35,6 +35,10 @@ class SubmissionControllerTest {
     @MockitoBean
     private ProjectSubmissionRepository submissionRepository;
 
+    /** Stored bodies are embedded on write so the semantic check can use them. */
+    @MockitoBean
+    private com.campusconnect.campus_ai.service.EmbeddingService embeddingService;
+
     @MockitoBean
     private com.campusconnect.campus_ai.service.JwtService jwtService;
 
@@ -80,6 +84,9 @@ class SubmissionControllerTest {
             s.setId(7L);
             return s;
         });
+        float[] vector = new float[1024];
+        vector[3] = 1.0f;
+        when(embeddingService.embed(anyString())).thenReturn(vector);
         TestAuth.asAdmin();
 
         mockMvc.perform(post("/submissions")
@@ -89,7 +96,39 @@ class SubmissionControllerTest {
                 .andExpect(jsonPath("$.id").value(7))
                 .andExpect(jsonPath("$.title").value("Data Structures — final report"))
                 .andExpect(jsonPath("$.status").value("SUBMITTED"))
-                .andExpect(jsonPath("$.words").value(4));
+                .andExpect(jsonPath("$.words").value(4))
+                // The row carries its vector, so a paraphrase of it can be
+                // caught later rather than only a copy-paste.
+                .andExpect(jsonPath("$.embedded").value(true));
+
+        org.mockito.ArgumentCaptor<ProjectSubmission> saved =
+                org.mockito.ArgumentCaptor.forClass(ProjectSubmission.class);
+        verify(submissionRepository).save(saved.capture());
+        org.junit.jupiter.api.Assertions.assertArrayEquals(vector, saved.getValue().getEmbedding());
+    }
+
+    /**
+     * Ollama down is a normal state, not a failed store. The body still counts
+     * for word overlap, and the response says the vector is missing so the gap
+     * can be fixed instead of silently degrading every future scan.
+     */
+    @Test
+    void whenOllamaIsDownTheBodyIsStillStoredWithoutAVector() throws Exception {
+        when(submissionRepository.save(any(ProjectSubmission.class))).thenAnswer(inv -> {
+            ProjectSubmission s = inv.getArgument(0);
+            s.setId(11L);
+            return s;
+        });
+        when(embeddingService.embed(anyString()))
+                .thenThrow(new IllegalStateException("Read timed out"));
+        TestAuth.asAdmin();
+
+        mockMvc.perform(post("/submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"one two three four\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.id").value(11))
+                .andExpect(jsonPath("$.embedded").value(false));
     }
 
     @Test

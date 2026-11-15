@@ -32,6 +32,15 @@ class PlagiarismControllerTest {
     @MockitoBean
     private com.campusconnect.campus_ai.service.PlagiarismService plagiarismService;
 
+    /**
+     * The cross-scan embeds the pasted text before comparing. Stubbed to look
+     * like Ollama is down (the default: no stub → null) unless a test says
+     * otherwise, because "the check still answers without the model server" is
+     * the property that must not regress.
+     */
+    @MockitoBean
+    private com.campusconnect.campus_ai.service.EmbeddingService embeddingService;
+
     @MockitoBean
     private com.campusconnect.campus_ai.service.JwtService jwtService;
 
@@ -113,12 +122,12 @@ class PlagiarismControllerTest {
 
     @Test
     void crossScanReturnsSubmissionMatches() throws Exception {
-        when(plagiarismService.scanAgainstAllSubmissions(anyString())).thenReturn(
+        when(plagiarismService.scanAgainstAllSubmissions(anyString(), any())).thenReturn(
                 new com.campusconnect.campus_ai.service.PlagiarismService.CrossScanResult(
-                        "HIGH", 0.88, 3, 41, "Close match with \"Placement report\".",
+                        "HIGH", 0.88, 3, 41, 3, "Close match with \"Placement report\".",
                         List.of(new com.campusconnect.campus_ai.service.PlagiarismService.SubmissionMatch(
                                 7L, "Placement report", "aarav@campus.edu", "SUBMITTED",
-                                0.88, 0.90, 0.85))));
+                                0.88, 0.90, 0.85, 0.97))));
 
         mockMvc.perform(post("/evaluation/plagiarism/scan-all-submissions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -134,6 +143,63 @@ class PlagiarismControllerTest {
                 .andExpect(jsonPath("$.matches[0].userId").value("aarav@campus.edu"))
                 .andExpect(jsonPath("$.matches[0].status").value("SUBMITTED"))
                 .andExpect(jsonPath("$.matches[0].wordCoverage").value(0.90));
+    }
+
+    /**
+     * The whole point of the embedding column: when Ollama answers, the vector
+     * reaches the service so a paraphrase can be caught.
+     */
+    @Test
+    void theCrossScanPassesTheEmbeddingToTheService() throws Exception {
+        float[] vector = new float[1024];
+        vector[0] = 1.0f;
+        when(embeddingService.embed(anyString())).thenReturn(vector);
+        when(plagiarismService.scanAgainstAllSubmissions(anyString(), any())).thenReturn(
+                new com.campusconnect.campus_ai.service.PlagiarismService.CrossScanResult(
+                        "HIGH", 0.82, 2, 40, 2, "Close match with \"Placement report\".",
+                        List.of(new com.campusconnect.campus_ai.service.PlagiarismService.SubmissionMatch(
+                                7L, "Placement report", "aarav@campus.edu", "SUBMITTED",
+                                0.82, 0.10, 0.05, 0.98))));
+
+        mockMvc.perform(post("/evaluation/plagiarism/scan-all-submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"Applicants send resumes everywhere yet get few replies.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.semanticComparisons").value(2))
+                // The raw cosine is exposed so a reader can see that meaning,
+                // not words, is what drove a 0.82 out of 0.10 word coverage.
+                .andExpect(jsonPath("$.matches[0].semanticScore").value(0.98));
+
+        verify(plagiarismService).scanAgainstAllSubmissions(anyString(), org.mockito.ArgumentMatchers.eq(vector));
+    }
+
+    /**
+     * The check has to keep working with the model server down — that was true
+     * before it had any model dependency. A failed embed must reach the service
+     * as a null vector, not as a 500.
+     */
+    @Test
+    void whenOllamaIsDownTheCrossScanStillAnswers() throws Exception {
+        when(embeddingService.embed(anyString()))
+                .thenThrow(new IllegalStateException("Connection refused"));
+        when(plagiarismService.scanAgainstAllSubmissions(anyString(), org.mockito.ArgumentMatchers.isNull()))
+                .thenReturn(new com.campusconnect.campus_ai.service.PlagiarismService.CrossScanResult(
+                        "NONE", 0.0, 2, 40, 0,
+                        "No word overlap with the 2 other submissions compared. Semantic "
+                                + "comparison was unavailable, so a paraphrase of one of them "
+                                + "would not be visible here.",
+                        List.of()));
+
+        mockMvc.perform(post("/evaluation/plagiarism/scan-all-submissions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"text\":\"Applicants send resumes everywhere yet get few replies.\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.verdict").value("NONE"))
+                // Zero is the machine-readable form of "we could not check", so
+                // the UI can say that instead of implying a clean result.
+                .andExpect(jsonPath("$.semanticComparisons").value(0));
+
+        verify(plagiarismService).scanAgainstAllSubmissions(anyString(), org.mockito.ArgumentMatchers.isNull());
     }
 
     @Test

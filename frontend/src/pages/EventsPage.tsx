@@ -4,11 +4,11 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Event as CampusEvent } from '../types'
 import { Button } from '../components/ui/Button'
-import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
 import { CalendarDays, MapPin, Plus, X, Check, CalendarPlus } from 'lucide-react'
 import { cn } from '../utils/cn'
+import { DragEventBuilder } from '../components/DragEventBuilder'
 
 function dateBlock(iso: string) {
   try {
@@ -35,11 +35,6 @@ export default function EventsPage() {
   const queryClient = useQueryClient()
   const [upcomingOnly, setUpcomingOnly] = useState(false)
   const [showCreate, setShowCreate] = useState(false)
-  const [title, setTitle] = useState('')
-  const [type, setType] = useState('HACKATHON')
-  const [date, setDate] = useState('')
-  const [description, setDescription] = useState('')
-  const [location, setLocation] = useState('')
   const [justSubmitted, setJustSubmitted] = useState(false)
 
   const { data: events = [], isLoading, error, refetch } = useQuery({
@@ -54,15 +49,6 @@ export default function EventsPage() {
 
   const myEventIds = new Set(myRsvps.map(r => r.eventId))
   const joinedCount = myEventIds.size
-
-  const createMutation = useMutation({
-    mutationFn: (body: Record<string, string>) => api.post<CampusEvent>('/events', body),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] })
-      setTitle(''); setType('HACKATHON'); setDate(''); setDescription(''); setLocation(''); setShowCreate(false)
-      setJustSubmitted(true)
-    },
-  })
 
   const joinMutation = useMutation({
     mutationFn: (eventId: number) => api.post(`/events/${eventId}/join`, {}),
@@ -122,51 +108,7 @@ export default function EventsPage() {
       )}
 
       {showCreate && (
-        <div className="rounded-2xl border border-white/10 bg-er-800 shadow-elevated p-5 sm:p-6 mb-6 animate-slide-down">
-          <p className="font-display font-semibold text-[17px] text-ink-50">Create event</p>
-          <p className="text-body-sm text-ink-400 mt-0.5">Type like HACKATHON, WORKSHOP, SEMINAR · new events need admin approval before publishing</p>
-          <div className="grid gap-3 sm:grid-cols-2 mt-4">
-            <Input label="Title" value={title} onChange={e => setTitle(e.target.value)} placeholder="Winter Hack Night" />
-            <div className="w-full">
-              <label htmlFor="evt-type" className="block text-body-sm font-medium text-ink-200 mb-1.5">Type</label>
-              <select
-                id="evt-type"
-                value={type}
-                onChange={e => setType(e.target.value)}
-                className="w-full rounded-lg border border-white/12 bg-er-900 px-3 py-2 text-body focus:outline-none focus:ring-2 focus:ring-er-500 transition-colors"
-              >
-                <option value="HACKATHON">Hackathon</option>
-                <option value="WORKSHOP">Workshop</option>
-                <option value="SEMINAR">Seminar</option>
-                <option value="NETWORKING">Networking</option>
-                <option value="PLACEMENT">Placement Drive</option>
-              </select>
-            </div>
-            <Input label="Date" type="date" value={date} onChange={e => setDate(e.target.value)} />
-            <Input label="Location" value={location} onChange={e => setLocation(e.target.value)} placeholder="Innovation Hall A" />
-            <div className="sm:col-span-2">
-              <label htmlFor="evt-desc" className="block text-body-sm font-medium text-ink-200 mb-1.5">What is happening?</label>
-              <textarea
-                id="evt-desc"
-                value={description}
-                onChange={e => setDescription(e.target.value)}
-                rows={2}
-                placeholder="Agenda, guests, what to bring…"
-                className="w-full rounded-xl border border-white/12 px-3 py-2 text-body-sm focus:outline-none focus:ring-2 focus:ring-er-500 resize-none"
-              />
-            </div>
-          </div>
-          {createMutation.isError && (
-            <p className="text-body-sm text-red-300 mt-3" role="alert">{(createMutation.error as Error).message}</p>
-          )}
-          <div className="flex gap-2 mt-4">
-            <Button size="sm" variant="accent" disabled={!title.trim() || !date || createMutation.isPending} loading={createMutation.isPending}
-              onClick={() => createMutation.mutate({ title: title.trim(), type: type.trim(), eventDate: date, description: description.trim(), location: location.trim() })}>
-              Create
-            </Button>
-            <Button size="sm" variant="ghost" onClick={() => setShowCreate(false)}>Cancel</Button>
-          </div>
-        </div>
+        <DragEventBuilder />
       )}
 
       {isLoading ? (

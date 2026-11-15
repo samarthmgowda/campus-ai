@@ -17,14 +17,14 @@ public class RecruiterPostingController {
         this.postingService = postingService;
     }
 
- /** POST /recruiter/postings {title, description, requiredSkills} as recruiterId */
+    /** POST /recruiter/postings {title, description, requiredSkills} as recruiterId */
     @PostMapping
     public RecruiterPostingService.PostingDto create(
             @RequestBody Map<String, Object> body) {
         Long recruiterId = AuthContext.id();
-        String title = body != null && body.get("title") instanceof String s ? s : null;
-        String description = body != null && body.get("description") instanceof String s ? s : (body != null && body.get("desc") instanceof String d ? d : null);
-        String requiredSkills = body != null && body.get("requiredSkills") instanceof String s ? s : (body != null && body.get("skills") instanceof String k ? k : null);
+        String title = (String) body.get("title");
+        String description = (String) body.get("description");
+        String requiredSkills = (String) body.get("requiredSkills");
         return postingService.createPosting(recruiterId, title, description, requiredSkills);
     }
 
@@ -49,7 +49,7 @@ public class RecruiterPostingController {
         return postingService.closePosting(recruiterId, id);
     }
 
- /** POST /recruiter/postings/{id}/apply as studentId */
+    /** POST /recruiter/postings/{id}/apply as studentId */
     @PostMapping("/{id}/apply")
     public RecruiterPostingService.ApplicationDto apply(
             @PathVariable Long id,
@@ -65,8 +65,8 @@ public class RecruiterPostingController {
             @PathVariable Long appId,
             @RequestBody(required = false) Map<String, Object> body) {
         Long recruiterId = AuthContext.id();
-        String action = body != null && body.get("action") instanceof String a ? a : null;
-        if (action == null && body != null && body.get("status") instanceof String s) action = s;
+        String action = (String) body.get("action");
+        if (action == null && body != null && body.get("status") instanceof String) action = (String) body.get("status");
         return postingService.decide(recruiterId, id, appId, action);
     }
 

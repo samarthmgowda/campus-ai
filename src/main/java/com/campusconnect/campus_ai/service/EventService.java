@@ -27,6 +27,7 @@ public class EventService {
     private static final java.util.Set<String> ALLOWED_TYPES = java.util.Set.of("HACKATHON", "WORKSHOP", "SEMINAR", "NETWORKING", "PLACEMENT");
 
     public Event createEvent(Long userId, String title, String type, LocalDate eventDate, String description, String location) {
+        if (userId == null) throw new IllegalArgumentException("User ID required to create event");
         currentUserService.requireUser(userId);
         if (title == null || title.isBlank()) throw new IllegalArgumentException("Event title required");
         String tt = title.trim();

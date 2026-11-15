@@ -124,18 +124,38 @@ public class ProfileController {
 
     private void applyField(Student student, String field, String value) {
         switch (field) {
-            case "name" -> student.setName(value);
-            case "branch" -> student.setBranch(value);
-            case "year" -> {
+            case "name":
+                student.setName(value);
+                break;
+            case "branch":
+                student.setBranch(value);
+                break;
+            case "year":
                 try { student.setYear(Integer.parseInt(value.trim())); }
                 catch (NumberFormatException e) { throw new IllegalArgumentException("Year must be a number (1-4)"); }
-            }
-            case "skills" -> student.setSkills(value);
-            case "interests" -> student.setInterests(value);
-            case "bio" -> student.setBio(value);
-            case "githubUrl", "github_url", "github" -> student.setGithubUrl(value);
-            case "linkedinUrl", "linkedin_url", "linkedin" -> student.setLinkedinUrl(value);
-            case "availability" -> student.setAvailability(value);
+                break;
+            case "skills":
+                student.setSkills(value);
+                break;
+            case "interests":
+                student.setInterests(value);
+                break;
+            case "bio":
+                student.setBio(value);
+                break;
+            case "githubUrl":
+            case "github_url":
+            case "github":
+                student.setGithubUrl(value);
+                break;
+            case "linkedinUrl":
+            case "linkedin_url":
+            case "linkedin":
+                student.setLinkedinUrl(value);
+                break;
+            case "availability":
+                student.setAvailability(value);
+                break;
         }
     }
 

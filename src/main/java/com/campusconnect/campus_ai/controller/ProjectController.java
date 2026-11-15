@@ -8,11 +8,11 @@ import com.campusconnect.campus_ai.service.CurrentUserService;
 import com.campusconnect.campus_ai.service.ProjectToolService;
 import com.campusconnect.campus_ai.service.AuthContext;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestHeader;
-import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.util.*;
@@ -84,30 +84,87 @@ public class ProjectController {
     }
 
     @PostMapping
-    public Map<String, Object> create(                                      @RequestBody Map<String, Object> body) {
+    public Map<String, Object> create(@RequestBody Map<String, Object> body) {
         Long userId = AuthContext.id();
-        String name = body != null && body.get("name") instanceof String s ? s : null;
-        String description = body != null && body.get("description") instanceof String s ? s : null;
-        String domain = body != null && body.get("domain") instanceof String s ? s : null;
-        String requiredSkills = body != null && body.get("requiredSkills") instanceof String s ? s : null;
+        String name = null;
+        String description = null;
+        String domain = null;
+        String requiredSkills = null;
+        if (body != null) {
+            Object nameObj = body.get("name");
+            if (nameObj instanceof String) {
+                name = (String) nameObj;
+            }
+            Object descObj = body.get("description");
+            if (descObj instanceof String) {
+                description = (String) descObj;
+            }
+            Object domainObj = body.get("domain");
+            if (domainObj instanceof String) {
+                domain = (String) domainObj;
+            }
+            Object skillsObj = body.get("requiredSkills");
+            if (skillsObj instanceof String) {
+                requiredSkills = (String) skillsObj;
+            }
+        }
         var summary = projectToolService.createProject(userId, name, description, domain, requiredSkills);
-        return Map.of("id", summary.id(), "name", summary.name(), "domain", summary.domain() != null ? summary.domain() : "", "requiredSkills", summary.requiredSkills() != null ? summary.requiredSkills() : "", "status", summary.status(), "ownerName", summary.ownerName() != null ? summary.ownerName() : "");
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("id", summary.id());
+        result.put("name", summary.name());
+        result.put("domain", summary.domain() != null ? summary.domain() : "");
+        result.put("requiredSkills", summary.requiredSkills() != null ? summary.requiredSkills() : "");
+        result.put("status", summary.status());
+        result.put("ownerName", summary.ownerName() != null ? summary.ownerName() : "");
+        return result;
     }
 
     @PostMapping("/{projectId}/members")
-    public Map<String, Object> addMember(                                         @PathVariable Long projectId,
+    public Map<String, Object> addMember(@PathVariable Long projectId,
                                          @RequestBody Map<String, Object> body) {
         Long userId = AuthContext.id();
-        Long studentId = body != null ? toLong(body.get("studentId")) : null;
-        if (studentId == null && body != null && body.get("memberId") != null) studentId = toLong(body.get("memberId"));
+        Long studentId = null;
+        if (body != null) {
+            Object studentIdObj = body.get("studentId");
+            if (studentIdObj instanceof Number) {
+                studentId = ((Number) studentIdObj).longValue();
+            } else if (studentIdObj instanceof String) {
+                try {
+                    studentId = Long.valueOf((String) studentIdObj);
+                } catch (NumberFormatException ignored) {}
+            }
+            if (studentId == null && body.get("memberId") != null) {
+                Object memberIdObj = body.get("memberId");
+                if (memberIdObj instanceof Number) {
+                    studentId = ((Number) memberIdObj).longValue();
+                } else if (memberIdObj instanceof String) {
+                    try {
+                        studentId = Long.valueOf((String) memberIdObj);
+                    } catch (NumberFormatException ignored) {}
+                }
+            }
+        }
         if (studentId == null) throw new IllegalArgumentException("studentId required");
         var m = projectToolService.addMember(userId, projectId, studentId);
-        return Map.of("studentId", m.studentId(), "name", m.name(), "role", m.role());
+        Map<String, Object> result = new LinkedHashMap<>();
+        result.put("studentId", m.studentId());
+        result.put("name", m.name());
+        result.put("role", m.role());
+        return result;
     }
 
     private Long toLong(Object v) {
-        if (v instanceof Number n) return n.longValue();
-        if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof String) {
+            String s = (String) v;
+            if (!s.isBlank()) {
+                try {
+                    return Long.valueOf(s.trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         return null;
     }
 }

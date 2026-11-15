@@ -67,9 +67,13 @@ public class PlagiarismService {
      * @param title          that submission's title
      * @param userId         who submitted it — what an admin actually needs next
      * @param status         that submission's status (SUBMITTED, GRADED, …)
-     * @param score          blended containment score
+     * @param score          final score: word overlap, lifted by {@code semanticScore}
      * @param wordCoverage   share of the checked text's distinct words found there
      * @param phraseCoverage share of its adjacent word pairs found there
+     * @param semanticScore  raw cosine of the two embeddings, or null when either
+     *                       submission has no vector (Ollama was down, or the row
+     *                       predates the embedding column). Shown so a reader can
+     *                       see whether the semantic signal drove the score.
      */
     public record SubmissionMatch(
             Long submissionId,
@@ -78,13 +82,18 @@ public class PlagiarismService {
             String status,
             double score,
             double wordCoverage,
-            double phraseCoverage) {}
+            double phraseCoverage,
+            Double semanticScore) {}
 
     /**
      * @param verdict             NONE, LOW, MODERATE, HIGH or INSUFFICIENT
      * @param topScore            best matching submission's score, or 0
      * @param scannedSubmissions  how many stored submissions were compared
      * @param submissionWords     distinct meaningful words the score is based on
+     * @param semanticComparisons how many of those comparisons had embeddings on
+     *                            both sides. Zero means the result is word overlap
+     *                            only, and the summary says so — "we found nothing"
+     *                            and "we could not check" must not read alike.
      * @param summary             a sentence the caller can display as-is
      * @param matches             up to five matching submissions, best first
      */
@@ -93,15 +102,34 @@ public class PlagiarismService {
             double topScore,
             int scannedSubmissions,
             int submissionWords,
+            int semanticComparisons,
             String summary,
             List<SubmissionMatch> matches) {}
 
     /**
-     * Compare {@code submissionText} against every other stored submission.
+     * Compare {@code submissionText} against every other stored submission, on
+     * word overlap alone.
      *
-     * @throws IllegalArgumentException if the text is null or blank
+     * <p>This is the path taken when Ollama is unreachable. It is not a degraded
+     * mode to be avoided — the check has to work with the model server down, and
+     * word overlap is what catches a copy-paste, which is the overwhelming
+     * majority of real cases.
      */
     public CrossScanResult scanAgainstAllSubmissions(String submissionText) {
+        return scanAgainstAllSubmissions(submissionText, null);
+    }
+
+    /**
+     * Compare {@code submissionText} against every other stored submission,
+     * blending word overlap with semantic similarity.
+     *
+     * @param submissionText the text to check
+     * @param queryEmbedding embedding of that text, or null when it could not be
+     *                       computed. Null is not an error — every comparison
+     *                       simply scores on words alone.
+     * @throws IllegalArgumentException if the text is null or blank
+     */
+    public CrossScanResult scanAgainstAllSubmissions(String submissionText, float[] queryEmbedding) {
         if (submissionText == null || submissionText.isBlank()) {
             throw new IllegalArgumentException("Submission text must not be empty");
         }
@@ -111,7 +139,7 @@ public class PlagiarismService {
         Set<String> submissionBigrams = PlagiarismDetectionService.bigrams(submissionTokens);
 
         if (submissionWords.size() < MIN_MEANINGFUL_TOKENS) {
-            return new CrossScanResult("INSUFFICIENT", 0.0, 0, submissionWords.size(),
+            return new CrossScanResult("INSUFFICIENT", 0.0, 0, submissionWords.size(), 0,
                     "Add more text — a comparison needs at least " + MIN_MEANINGFUL_TOKENS
                             + " distinct words to mean anything.",
                     List.of());
@@ -119,7 +147,7 @@ public class PlagiarismService {
 
         List<ProjectSubmission> all = submissionRepository.findAll();
         if (all.size() < 2) {
-            return new CrossScanResult("NONE", 0.0, all.size(), submissionWords.size(),
+            return new CrossScanResult("NONE", 0.0, all.size(), submissionWords.size(), 0,
                     "Only " + all.size() + " submission" + (all.size() == 1 ? "" : "s")
                             + " stored — comparing submissions needs at least two with text.",
                     List.of());
@@ -127,6 +155,7 @@ public class PlagiarismService {
 
         List<SubmissionMatch> matches = new ArrayList<>();
         int comparable = 0;
+        int semanticComparisons = 0;
         boolean skippedSelf = false;
         String checkedText = submissionText.strip();
 
@@ -160,14 +189,27 @@ public class PlagiarismService {
             double phraseCoverage = submissionBigrams.isEmpty() ? 0.0
                     : (double) intersect(submissionBigrams, otherBigrams).size()
                             / submissionBigrams.size();
-            double score = W_UNIGRAM * wordCoverage + W_BIGRAM * phraseCoverage;
+            double wordScore = W_UNIGRAM * wordCoverage + W_BIGRAM * phraseCoverage;
 
-            // Same floor as the library scan: below half the LOW threshold the
-            // overlap is ordinary shared vocabulary, not a lead worth showing.
+            // The semantic signal. Null when either side has no vector, which is
+            // a normal state (Ollama was down when the row was stored) and
+            // reduces this pair to word overlap rather than failing the scan.
+            Double cosine = null;
+            if (queryEmbedding != null && other.getEmbedding() != null) {
+                cosine = SemanticSimilarity.cosine(queryEmbedding, other.getEmbedding());
+                semanticComparisons++;
+            }
+            double score = SemanticSimilarity.combine(wordScore, cosine == null ? 0.0 : cosine);
+
+            // The floor is applied to the FINAL score, not the word score. A
+            // machine-paraphrased copy can share almost no words with its source,
+            // so filtering on word overlap first would discard exactly the pair
+            // the semantic signal exists to find.
             if (score <= LOW_THRESHOLD / 2) continue;
 
             matches.add(new SubmissionMatch(other.getId(), other.getTitle(), other.getUserId(),
-                    other.getStatus(), round4(score), round4(wordCoverage), round4(phraseCoverage)));
+                    other.getStatus(), round4(score), round4(wordCoverage), round4(phraseCoverage),
+                    cosine == null ? null : round4(cosine)));
         }
 
         matches.sort(Comparator.comparingDouble(SubmissionMatch::score).reversed());
@@ -179,7 +221,8 @@ public class PlagiarismService {
         String verdict = verdictFor(topScore);
 
         return new CrossScanResult(verdict, round4(topScore), comparable, submissionWords.size(),
-                summarize(verdict, matches, comparable), List.copyOf(matches));
+                semanticComparisons, summarize(verdict, matches, comparable, semanticComparisons),
+                List.copyOf(matches));
     }
 
     private static Set<String> intersect(Set<String> a, Set<String> b) {
@@ -198,8 +241,14 @@ public class PlagiarismService {
     /**
      * Written here rather than in the UI so the thresholds and the wording that
      * explains them cannot drift apart.
+     *
+     * <p>The no-match sentence is split on whether embeddings were actually
+     * available. "No meaningful overlap" after a full semantic comparison is a
+     * finding; the same words after a word-only comparison would be a stronger
+     * claim than the scan can support, so it says what it did instead.
      */
-    private static String summarize(String verdict, List<SubmissionMatch> matches, int scanned) {
+    private static String summarize(String verdict, List<SubmissionMatch> matches, int scanned,
+                                    int semanticComparisons) {
         if (scanned == 0) {
             return "No stored submission has text yet. Save a submission body, then check again.";
         }
@@ -211,8 +260,13 @@ public class PlagiarismService {
                     + "\" — possibly a shared source or close collaboration.";
             case "LOW" -> "Some shared vocabulary with \"" + first
                     + "\", which usually means a common topic rather than copying.";
-            default -> "No meaningful overlap with the " + scanned
-                    + " other submission" + (scanned == 1 ? "" : "s") + " compared.";
+            default -> semanticComparisons == 0
+                    ? "No word overlap with the " + scanned + " other submission"
+                            + (scanned == 1 ? "" : "s") + " compared. Semantic comparison was "
+                            + "unavailable, so a paraphrase of one of them would not be visible here."
+                    : "No meaningful overlap with the " + scanned + " other submission"
+                            + (scanned == 1 ? "" : "s")
+                            + " compared, on words or on meaning.";
         };
     }
 

@@ -20,18 +20,44 @@ public class ReviewController {
 
     /**
      * Student writes a review for another student.
- * Reviewer identity comes from the JWT principal (never the body).
+     * Reviewer identity comes from the JWT principal (never the body).
      * POST /reviews {revieweeId, rating (1–5), comment, projectId (optional)}
      */
     @PostMapping
     public ReviewService.ReviewDto write(
             @RequestBody Map<String, Object> body) {
         Long reviewerId = AuthContext.id();
-        Long revieweeId = getLong(body, "revieweeId");
+        Long revieweeId = null;
+        if (body != null) {
+            Object revieweeIdObj = body.get("revieweeId");
+            if (revieweeIdObj instanceof Number) {
+                revieweeId = ((Number) revieweeIdObj).longValue();
+            } else if (revieweeIdObj instanceof String) {
+                try {
+                    revieweeId = Long.valueOf((String) revieweeIdObj);
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         if (revieweeId == null) throw new IllegalArgumentException("revieweeId required");
-        Integer rating = getInt(body, "rating");
-        String comment = body.get("comment") instanceof String s ? s : null;
-        Long projectId = getLong(body, "projectId");
+        Integer rating = null;
+        Object ratingObj = body.get("rating");
+        if (ratingObj instanceof Number) {
+            rating = ((Number) ratingObj).intValue();
+        }
+        String comment = null;
+        Object commentObj = body.get("comment");
+        if (commentObj instanceof String) {
+            comment = (String) commentObj;
+        }
+        Long projectId = null;
+        Object projectIdObj = body.get("projectId");
+        if (projectIdObj instanceof Number) {
+            projectId = ((Number) projectIdObj).longValue();
+        } else if (projectIdObj instanceof String) {
+            try {
+                projectId = Long.valueOf((String) projectIdObj);
+            } catch (NumberFormatException ignored) {}
+        }
 
         Review r = reviewService.writeReview(revieweeId, reviewerId, rating, comment, projectId);
         return reviewService.getReviewsForStudent(revieweeId).stream()
@@ -68,19 +94,4 @@ public class ReviewController {
         return reviewService.getReviewsForProject(projectId);
     }
 
-    private Long getLong(Map<String, Object> m, String key) {
-        Object v = m.get(key);
-        if (v == null) return null;
-        if (v instanceof Number n) return n.longValue();
-        if (v instanceof String s && !s.isBlank()) return Long.valueOf(s.trim());
-        return null;
-    }
-
-    private Integer getInt(Map<String, Object> m, String key) {
-        Object v = m.get(key);
-        if (v == null) return null;
-        if (v instanceof Number n) return n.intValue();
-        if (v instanceof String s && !s.isBlank()) return Integer.valueOf(s.trim());
-        return null;
-    }
 }

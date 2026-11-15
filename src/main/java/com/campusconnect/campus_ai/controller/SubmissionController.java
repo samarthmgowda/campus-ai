@@ -4,6 +4,7 @@ import com.campusconnect.campus_ai.entity.ProjectSubmission;
 import com.campusconnect.campus_ai.repository.ProjectSubmissionRepository;
 import com.campusconnect.campus_ai.service.AuthContext;
 import com.campusconnect.campus_ai.service.CurrentUser;
+import com.campusconnect.campus_ai.service.EmbeddingService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -56,13 +57,38 @@ public class SubmissionController {
     private static final int EXCERPT_CHARS = 160;
 
     private final ProjectSubmissionRepository submissionRepository;
+    private final EmbeddingService embeddingService;
 
-    public SubmissionController(ProjectSubmissionRepository submissionRepository) {
+    public SubmissionController(ProjectSubmissionRepository submissionRepository,
+                                EmbeddingService embeddingService) {
         this.submissionRepository = submissionRepository;
+        this.embeddingService = embeddingService;
     }
 
     /** Body is a record, not a bare map, so the accepted shape is documented. */
     public record CreateSubmissionRequest(String title, String text, String userId) {}
+
+    /**
+     * Whether the stored row got a semantic fingerprint.
+     *
+     * <p>Reported rather than hidden because it changes what the cross-check can
+     * find later: a row stored without a vector is compared on words alone, so a
+     * paraphrase of it stays invisible until it is re-embedded. Saying so at
+     * store time is the only moment the person can do anything about it.
+     */
+    private boolean embed(ProjectSubmission s) {
+        if (s.getSubmissionText() == null || s.getSubmissionText().isBlank()) return false;
+        try {
+            s.setEmbedding(embeddingService.embed(s.getSubmissionText()));
+            return true;
+        } catch (RuntimeException e) {
+            // Ollama down, timed out, or returned the wrong shape. Storing the
+            // body without a vector is strictly better than refusing the store:
+            // the text still counts for word overlap, and the Library page can
+            // backfill the vector later.
+            return false;
+        }
+    }
 
     /**
      * A stored submission, trimmed for a list.
@@ -146,6 +172,10 @@ public class SubmissionController {
         s.setCreatedAt(LocalDateTime.now());
         s.setUpdatedAt(LocalDateTime.now());
 
+        // Embed before saving so the row is never stored in a state the
+        // semantic check cannot use. Failure is reported, not thrown.
+        boolean embedded = embed(s);
+
         ProjectSubmission saved = submissionRepository.save(s);
 
         Map<String, Object> resp = new LinkedHashMap<>();
@@ -154,6 +184,7 @@ public class SubmissionController {
         resp.put("userId", saved.getUserId());
         resp.put("status", saved.getStatus());
         resp.put("words", countWords(saved.getSubmissionText()));
+        resp.put("embedded", embedded);
         return ResponseEntity.ok(resp);
     }
 

@@ -16,15 +16,32 @@ public class ModerationController {
         this.moderationService = moderationService;
     }
 
- /** POST /reports {targetType, targetId, reason, details} */
+    /** POST /reports {targetType, targetId, reason, details} */
     @PostMapping("/reports")
     public ModerationService.ReportDto report(
             @RequestBody Map<String, Object> body) {
         Long reporterId = AuthContext.id();
-        String targetType = body != null && body.get("targetType") instanceof String s ? s : "";
+        String targetType;
+        if (body != null && body.get("targetType") instanceof String) {
+            targetType = (String) body.get("targetType");
+        } else {
+            targetType = "";
+        }
         Long targetId = body != null ? toLong(body.get("targetId")) : null;
-        String reason = body != null && body.get("reason") instanceof String r ? r : "OTHER";
-        String details = body != null && body.get("details") instanceof String d ? d : (body != null && body.get("comment") instanceof String c ? c : null);
+        String reason;
+        if (body != null && body.get("reason") instanceof String) {
+            reason = (String) body.get("reason");
+        } else {
+            reason = "OTHER";
+        }
+        String details;
+        if (body != null && body.get("details") instanceof String) {
+            details = (String) body.get("details");
+        } else if (body != null && body.get("comment") instanceof String) {
+            details = (String) body.get("comment");
+        } else {
+            details = null;
+        }
         return moderationService.report(reporterId, targetType, targetId, reason, details);
     }
 
@@ -34,7 +51,7 @@ public class ModerationController {
         return moderationService.list(status);
     }
 
- /** GET /reports/my — my reports */
+    /** GET /reports/my — my reports */
     @GetMapping("/reports/my")
     public List<ModerationService.ReportDto> myReports() {
         Long reporterId = AuthContext.id();
@@ -59,14 +76,35 @@ public class ModerationController {
             @PathVariable Long id,
             @RequestBody(required = false) Map<String, Object> body) {
         Long actorId = AuthContext.id();
-        String action = body != null && body.get("action") instanceof String a ? a : (body != null && body.get("status") instanceof String s ? s : "RESOLVED");
-        String resolution = body != null && body.get("resolution") instanceof String r ? r : null;
+        String action;
+        if (body != null && body.get("action") instanceof String) {
+            action = (String) body.get("action");
+        } else if (body != null && body.get("status") instanceof String) {
+            action = (String) body.get("status");
+        } else {
+            action = "RESOLVED";
+        }
+        String resolution;
+        if (body != null && body.get("resolution") instanceof String) {
+            resolution = (String) body.get("resolution");
+        } else {
+            resolution = null;
+        }
         return moderationService.resolve(id, actorId, action, resolution);
     }
 
     private Long toLong(Object v) {
-        if (v instanceof Number n) return n.longValue();
-        if (v instanceof String s && !s.isBlank()) try { return Long.valueOf(s.trim()); } catch (NumberFormatException ignored) {}
+        if (v instanceof Number) {
+            return ((Number) v).longValue();
+        }
+        if (v instanceof String) {
+            String s = (String) v;
+            if (!s.isBlank()) {
+                try {
+                    return Long.valueOf(s.trim());
+                } catch (NumberFormatException ignored) {}
+            }
+        }
         return null;
     }
 }
