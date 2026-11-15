@@ -8,6 +8,7 @@ import { Input } from '../components/ui/Input'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
 import { ConfirmDialog } from '../components/ui/ConfirmDialog'
+import { OriginalityPanel } from '../components/OriginalityPanel'
 import { FileText, Upload, Plus, X, Search, LibraryBig, CheckCircle2, Eye, EyeOff, Trash2 } from 'lucide-react'
 
 export default function DocumentsPage() {
@@ -173,6 +174,10 @@ export default function DocumentsPage() {
           </div>
         </div>
       )}
+
+      {/* Sits above the browser because it answers a question about the corpus
+          as a whole, the same way the stats row does. */}
+      <OriginalityPanel />
 
       <div className="relative mb-5">
         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-ink-400 pointer-events-none" aria-hidden="true" />

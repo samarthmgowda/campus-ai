@@ -150,6 +150,10 @@ public class SecurityConfig {
                 .requestMatchers("/events/admin/**").hasRole("ADMIN")
                 .requestMatchers("/reports/**").hasAnyRole("ADMIN", "STUDENT") // 'STUDENT' for their own reports
                 .requestMatchers("/eval/**").hasRole("ADMIN")
+                // Originality checks read the whole corpus and name the documents a
+                // submission overlaps with, so they belong to whoever curates the
+                // corpus — same gate as the Library below.
+                .requestMatchers("/evaluation/**").hasRole("ADMIN")
                 // Campus analytics is an admin view; recruiters get their own hub.
                 .requestMatchers("/analytics/**").hasRole("ADMIN")
                 .anyRequest().authenticated()

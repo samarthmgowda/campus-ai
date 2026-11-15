@@ -12,6 +12,29 @@ public interface DocumentChunkRepository extends JpaRepository<DocumentChunk, Lo
     List<DocumentChunk> findByDocument_Id(Long documentId);
     long countByDocument_Id(Long documentId);
 
+    /**
+     * Text-only view of the corpus, for plagiarism scanning.
+     *
+     * Selects explicit columns rather than returning entities because every
+     * DocumentChunk carries a 1024-float embedding: hydrating the entity list
+     * pulls one 4 KB vector per chunk over the wire and into the heap for a
+     * comparison that never reads them. Same shape as the two retrieval queries
+     * below (id, content, page, section, document id, document title).
+     *
+     * Hidden documents are excluded — the Library's "hidden from AI" switch
+     * means "not part of the knowledge base", and a scan that cites a hidden
+     * document would disclose text the admin deliberately withdrew.
+     */
+    @Query(value = """
+        SELECT c.id, c.content, c.page_number, c.section,
+               c.document_id, d.title as document_title
+        FROM document_chunk c
+        JOIN document d ON c.document_id = d.id
+        WHERE d.hidden = false
+          AND c.content IS NOT NULL
+        """, nativeQuery = true)
+    List<Object[]> findScannableChunks();
+
     @Query(value = """
         SELECT c.id, c.content, c.page_number, c.section,
                c.document_id, d.title as document_title,
