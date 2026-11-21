@@ -1,17 +1,15 @@
 import { useQuery } from '@tanstack/react-query'
-import { Link, useNavigate } from 'react-router-dom'
-import { useEffect } from 'react'
-import { api } from '../api/client'
+import { Link } from 'react-router-dom'
 import { useSession } from '../utils/identity'
 import { Card } from '../components/ui/Card'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, ErrorState, SkeletonCard } from '../components/ui/PageState'
-import { PageContainer, PageSection } from '../components/ui/PageContainer'
+import { PageContainer } from '../components/ui/PageContainer'
 import { StatTile, StatGrid } from '../components/ui/Stat'
-import { Reveal } from '../components/ui/Reveal'
 import {
-  Briefcase, Calendar, Bell, Star, Award, ArrowUpRight, Sparkles, UserPlus,
+  Briefcase, Calendar, Bell, Award, ArrowUpRight, Sparkles,
 } from 'lucide-react'
+import { api } from '../api/client'
 
 function greeting() {
   const h = new Date().getHours()
@@ -22,18 +20,9 @@ function greeting() {
 }
 
 export default function DashboardPage() {
-  const navigate = useNavigate()
   const session = useSession()
   const demoUserId = session?.userId ?? null
-  const role = session?.role ?? null
   const first = (session?.name ?? '').split(' ')[0]
-
-  // Alumni and recruiters have their own dashboards with different data.
-  // Redirect rather than rendering a student view to the wrong role.
-  useEffect(() => {
-    if (role === 'alumni') navigate('/dashboard/alumni', { replace: true })
-    else if (role === 'recruiter') navigate('/dashboard/recruiter', { replace: true })
-  }, [role, navigate])
 
   const { data: dash, isLoading, isError, error, refetch } = useQuery({
     queryKey: ['dashboard', demoUserId],
@@ -83,213 +72,109 @@ export default function DashboardPage() {
   const invites = dash?.pendingInvites as { count: number; items: any[] } | undefined
   const rsvps = dash?.events as { count: number; items: any[] } | undefined
   const reputation = dash?.reputation as { reviewCount: number; averageRating: number | null } | undefined
-  const connections = dash?.connections as { followers: number; following: number } | undefined
-  const skillRecs = dash?.skillRecommendations as { recommendations: any[] } | undefined
 
   const name = identity?.name || session?.name || 'Student'
-  const recs: any[] = skillRecs?.recommendations ?? []
+  const projectCount = projects?.count ?? 0
+  const inviteCount = invites?.count ?? 0
+  const rsvpCount = rsvps?.count ?? 0
+  const reviewCount = reputation?.reviewCount ?? 0
 
   return (
     <PageContainer>
       <PageHeader
         title={`${greeting()}${first ? `, ${first}` : ''}`}
         sub="Your projects, invites, and what to learn next"
-        actions={
-          invites?.count ? <Badge variant="warning">{invites.count} invite{invites.count === 1 ? '' : 's'}</Badge> : undefined
-        }
       />
 
-      {/* Identity strip — grounds the numbers in a person. */}
-      <Reveal>
-        <section className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-er-500 to-er-600 text-white p-6 sm:p-7 mb-5 shadow-card">
-          <div className="absolute -top-20 -right-14 h-56 w-56 rounded-full bg-white/10 blur-3xl" aria-hidden="true" />
-          <div className="absolute -bottom-24 -left-12 h-48 w-48 rounded-full bg-white/[0.07] blur-3xl" aria-hidden="true" />
-          <div className="relative flex items-center gap-4 flex-wrap">
-            <span
-              className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/15 border border-white/20 font-display font-bold text-xl flex-shrink-0"
-              aria-hidden="true"
-            >
-              {name.charAt(0).toUpperCase()}
-            </span>
-            <div className="min-w-0 flex-1">
-              <p className="font-display font-bold text-[20px] tracking-tight">{name}</p>
-              <p className="text-body-sm text-white/70 mt-0.5">
-                {identity?.branch}{identity?.year ? ` · Year ${identity.year}` : ''}
-              </p>
-            </div>
-            <div className="flex gap-5 sm:gap-7">
-              <div>
-                <p className="font-display font-bold text-[24px] leading-none tabular-nums">{connections?.followers ?? 0}</p>
-                <p className="text-caption text-white/60 mt-1">Followers</p>
-              </div>
-              <div>
-                <p className="font-display font-bold text-[24px] leading-none tabular-nums">{connections?.following ?? 0}</p>
-                <p className="text-caption text-white/60 mt-1">Following</p>
-              </div>
-            </div>
+      {/* Identity strip */}
+      <div className="rounded-2xl border border-white/10 bg-er-800 shadow-card p-4 mb-4">
+        <div className="flex items-center gap-3">
+          <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/20 font-display font-bold text-xl">
+            {name.charAt(0).toUpperCase()}
+          </span>
+          <div>
+            <p className="font-display font-bold text-[18px] tracking-tight">{name}</p>
+            <p className="text-body-sm text-ink-400 mt-0.5">
+              {identity?.branch}{identity?.year ? ` · Year ${identity.year}` : ''}
+            </p>
           </div>
-        </section>
-      </Reveal>
-
-      <PageSection title="Your activity" className="mb-6">
-        <StatGrid>
-          <StatTile
-            icon={Briefcase}
-            tint="brand"
-            label="Active projects"
-            value={projects?.count ?? 0}
-          />
-          <StatTile
-            icon={Bell}
-            tint="amber"
-            label="Pending invites"
-            value={invites?.count ?? 0}
-            hint={invites?.count ? 'Waiting on your reply' : 'Nothing pending'}
-          />
-          <StatTile
-            icon={Calendar}
-            tint="sky"
-            label="Event RSVPs"
-            value={rsvps?.count ?? 0}
-          />
-          <StatTile
-            icon={Award}
-            tint="teal"
-            label="Peer reviews"
-            value={reputation?.reviewCount ?? 0}
-            hint={reputation?.averageRating ? `${reputation.averageRating.toFixed(1)}★ average` : 'No rating yet'}
-          />
-        </StatGrid>
-      </PageSection>
-
-      <div className="grid gap-4 lg:grid-cols-3 mb-6">
-        <PageSection
-          title="My projects"
-          action={
-            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200">
-              All <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          }
-        >
-          <Card className="p-4 h-full">
-            {projects?.items?.length ? (
-              <ul className="space-y-2 stagger">
-                {projects.items.slice(0, 5).map((p: any, i: number) => (
-                  <li
-                    key={p.id}
-                    style={{ ['--stagger' as string]: Math.min(i, 5) }}
-                    className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] border border-white/10 px-3 py-2"
-                  >
-                    <span className="text-body-sm font-medium text-ink-50 truncate">{p.name}</span>
-                    <Badge variant={p.status === 'ACTIVE' ? 'success' : 'outline'} size="sm">{p.status}</Badge>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyHint
-                icon={Briefcase}
-                text="No projects yet"
-                cta={{ to: '/projects', label: 'Start one' }}
-              />
-            )}
-          </Card>
-        </PageSection>
-
-        <PageSection
-          title="Pending invites"
-          action={
-            <Link to="/projects" className="inline-flex items-center gap-0.5 text-body-sm font-semibold text-er-300 hover:text-er-200">
-              Review <ArrowUpRight className="h-3.5 w-3.5" aria-hidden="true" />
-            </Link>
-          }
-        >
-          <Card className="p-4 h-full">
-            {invites?.items?.length ? (
-              <ul className="space-y-2 stagger">
-                {invites.items.slice(0, 5).map((i: any, idx: number) => (
-                  <li
-                    key={i.id}
-                    style={{ ['--stagger' as string]: Math.min(idx, 5) }}
-                    className="rounded-xl bg-amber-500/12 border border-amber-500/25 px-3 py-2"
-                  >
-                    <p className="text-body-sm font-medium text-ink-50 truncate">{i.projectName}</p>
-                    <p className="text-caption text-ink-400">from {i.inviterName}</p>
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <EmptyHint icon={UserPlus} text="No pending invites" />
-            )}
-          </Card>
-        </PageSection>
-
-        <PageSection title="Skills to grow" description="Based on your peers and target roles">
-          <Card className="p-4 h-full">
-            {recs.length ? (
-              <div className="flex flex-wrap gap-1.5">
-                {recs.slice(0, 12).map((r: any) => (
-                  <span
-                    key={r.skill}
-                    className="rounded-full bg-er-900 border border-er-500/25 px-2.5 py-1 text-micro font-semibold text-er-200"
-                  >
-                    {r.skill}
-                  </span>
-                ))}
-              </div>
-            ) : (
-              <EmptyHint icon={Star} text="No suggestions yet" />
-            )}
-          </Card>
-        </PageSection>
+        </div>
       </div>
 
-      <Reveal>
-        <Link
-          to="/chat"
-          className="group flex items-center gap-4 rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-5"
-        >
-          <span
-            className="flex h-11 w-11 items-center justify-center rounded-xl bg-gradient-to-br from-er-500 to-er-600 text-white flex-shrink-0"
-            aria-hidden="true"
-          >
-            <Sparkles className="h-5 w-5" />
-          </span>
-          <span className="min-w-0 flex-1">
-            <span className="block font-display font-semibold text-[16px] text-ink-50">
-              Ask Campus AI anything
-            </span>
-            <span className="block text-body-sm text-ink-400 mt-0.5">
-              Handbooks, calendars, policies — answered with citations
-            </span>
-          </span>
-          <ArrowUpRight className="h-5 w-5 text-ink-500 group-hover:text-er-300 transition-colors flex-shrink-0" aria-hidden="true" />
-        </Link>
-      </Reveal>
-    </PageContainer>
-  )
-}
+      <StatGrid>
+        <StatTile
+          icon={Briefcase}
+          tint="brand"
+          label="Active projects"
+          value={projectCount}
+        />
+        <StatTile
+          icon={Bell}
+          tint="amber"
+          label="Pending invites"
+          value={inviteCount}
+          hint={inviteCount ? 'Waiting on your reply' : 'Nothing pending'}
+        />
+        <StatTile
+          icon={Calendar}
+          tint="sky"
+          label="Event RSVPs"
+          value={rsvpCount}
+        />
+        <StatTile
+          icon={Award}
+          tint="teal"
+          label="Peer reviews"
+          value={reviewCount}
+          hint={reputation?.averageRating ? `${reputation.averageRating.toFixed(1)}★ average` : 'No rating yet'}
+        />
+      </StatGrid>
 
-/** Small inline "nothing here yet" used inside the dashboard's summary cards. */
-function EmptyHint({
-  icon: Icon,
-  text,
-  cta,
-}: {
-  icon: typeof Briefcase
-  text: string
-  cta?: { to: string; label: string }
-}) {
-  return (
-    <div className="flex flex-col items-center justify-center text-center py-6">
-      <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-er-900 border border-white/10 mb-2.5" aria-hidden="true">
-        <Icon className="h-4 w-4 text-ink-500" />
-      </span>
-      <p className="text-body-sm text-ink-400">{text}</p>
-      {cta && (
-        <Link to={cta.to} className="text-body-sm font-semibold text-er-300 hover:text-er-200 mt-1.5">
-          {cta.label} →
-        </Link>
-      )}
-    </div>
+      <div className="grid gap-4 mb-6">
+        <Card className="p-4">
+          <h3 className="font-display font-semibold text-[14px] text-ink-50 mb-3">My projects</h3>
+          {projectCount > 0 ? (
+            <ul className="space-y-2">
+              {Array(projectCount).fill(0).map((_, i) => (
+                <li key={i} className="flex items-center justify-between gap-2 rounded-xl bg-white/[0.04] border border-white/10 px-3 py-2">
+                  <span className="text-body-sm font-medium text-ink-50 truncate">Project {i + 1}</span>
+                  <Badge variant="outline" size="sm">Active</Badge>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-body-sm text-ink-400">No projects yet</p>
+          )}
+        </Card>
+
+        <Card className="p-4">
+          <h3 className="font-display font-semibold text-[14px] text-ink-50 mb-3">Pending invites</h3>
+          {inviteCount > 0 ? (
+            <ul className="space-y-2">
+              {Array(inviteCount).fill(0).map((_, i) => (
+                <li key={i} className="rounded-xl bg-amber-500/12 border border-amber-500/25 px-3 py-2">
+                  <p className="text-body-sm font-medium text-ink-50 truncate">Invite from project {i + 1}</p>
+                  <p className="text-caption text-ink-400">awaiting your response</p>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-body-sm text-ink-400">No pending invites</p>
+          )}
+        </Card>
+      </div>
+
+      <Link
+        to="/chat"
+        className="inline-flex items-center gap-3 rounded-2xl border border-white/10 bg-er-800 shadow-card hover:shadow-card-hover hover:-translate-y-[2px] transition-all duration-200 p-4"
+      >
+        <Sparkles className="h-5 w-5" aria-hidden="true" />
+        <span>
+          <span className="block font-display font-semibold text-[14px] text-ink-50">Ask Campus AI anything</span>
+          <span className="block text-body-sm text-ink-400 mt-0.5">Handbooks, calendars, policies — answered with citations</span>
+        </span>
+        <ArrowUpRight className="h-4 w-4 text-ink-500 group-hover:text-er-300 transition-colors" aria-hidden="true" />
+      </Link>
+    </PageContainer>
   )
 }

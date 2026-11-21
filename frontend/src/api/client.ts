@@ -59,6 +59,11 @@ function authHeader(): Record<string, string> {
   return token ? { Authorization: `Bearer ${token}` } : {}
 }
 
+/** Reset the expiredHandled flag when a new session is established. */
+export function resetExpiredHandled(): void {
+  expiredHandled = false
+}
+
 /**
  * One recoverable "your session ended" event per page load.
  *
@@ -84,17 +89,42 @@ function handleUnauthorized(message?: string): never {
 
 /** Pull the most useful human sentence out of an error body. */
 async function errorMessage(res: Response): Promise<string> {
-  const body = await res.json().catch(() => null)
+  // Try to parse JSON body safely
+  let body: unknown
+  try {
+    body = await res.json()
+  } catch {
+    body = null
+  }
+
+  // If JSON parsed successfully and is an object, extract error message
   if (body && typeof body === 'object') {
     const b = body as Record<string, unknown>
+    // Check for common error message keys
     for (const key of ['error', 'message', 'detail']) {
       const value = b[key]
-      if (typeof value === 'string' && value.trim()) return value
+      if (typeof value === 'string' && value.trim()) {
+        return value
+      }
+    }
+    // If body has other string properties, return the first one found
+    const stringValues = Object.entries(b).filter(
+      ([_, v]) => typeof v === 'string'
+    )
+    if (stringValues.length > 0) {
+      return stringValues[0][1] as string
     }
   }
+
+  // Status-based fallback messages
   if (res.status === 403) return 'Your account does not have access to this.'
   if (res.status === 404) return 'That item could not be found.'
   if (res.status >= 500) return 'The server ran into a problem. Please try again.'
+
+  // Last resort: return status or body
+  if (body !== null && body !== undefined) {
+    return JSON.stringify(body)
+  }
   return `Request failed (HTTP ${res.status}).`
 }
 

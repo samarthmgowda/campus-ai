@@ -25,6 +25,7 @@
  */
 
 import { useSyncExternalStore } from 'react'
+import { api, ApiError, resetExpiredHandled } from '../api/client'
 
 export type Role = 'student' | 'alumni' | 'recruiter' | 'admin'
 
@@ -85,6 +86,17 @@ export function refreshSession(): void {
   notify()
 }
 
+/** Force re-validation of the session on next bootstrap mount. */
+export function markSessionStale(): void {
+  snapshot = readSession()
+  notify()
+}
+
+/** Call this after sign-in to mark the session stale and trigger re-validation. */
+export function triggerRevalidationAfterSignIn(): void {
+  markSessionStale()
+}
+
 /* ------------------------------------------------------------------ */
 /* Reset hooks                                                         */
 /* ------------------------------------------------------------------ */
@@ -124,7 +136,39 @@ export function resetSession(reason: 'logout' | 'login' | 'expired' = 'logout'):
 }
 
 /* ------------------------------------------------------------------ */
-/* Reads                                                               */
+/* Validate stored session against server                               */
+
+/**
+ * Validate the stored JWT token by calling the me endpoint.
+ * Returns true if the token is valid, false otherwise.
+ * On invalid token, clears the session and redirects to login.
+ */
+export async function validateSession(): Promise<boolean> {
+  if (typeof localStorage === 'undefined') return false
+  const token = getToken()
+  if (!token) return false
+
+  try {
+    const me = await api.get<{ id: number; email: string; fullName: string; role: string; profileId: number | null }>('/auth/me')
+    // Token is valid - update session with server's view
+    setSession(token, {
+      id: me.id,
+      role: me.role as Role,
+      name: me.fullName,
+      profileId: me.profileId,
+    })
+    return true
+  } catch (err) {
+    // Token invalid or expired - clear session
+    if (err instanceof ApiError && err.isAuthError) {
+      clearSession()
+      return false
+    }
+    // Other error - keep snapshot, let pages surface it
+    refreshSession()
+    return false
+  }
+}
 /* ------------------------------------------------------------------ */
 
 /** The raw JWT, or null when signed out. */
@@ -178,7 +222,16 @@ export function setSession(
   token: string,
   account: { id: number | string; role: Role; name?: string; profileId?: number | null },
 ): void {
-  localStorage.setItem(TOKEN_KEY, token)
+  // Guard: don't store empty/whitespace tokens
+  const trimmedToken = token && token.trim() ? token.trim() : null
+  if (!trimmedToken) {
+    clearSession()
+    notify()
+    return
+  }
+  // Reset the expiredHandled flag so subsequent 401s are handled fresh
+  resetExpiredHandled()
+  localStorage.setItem(TOKEN_KEY, trimmedToken)
   localStorage.setItem(ID_KEY, String(account.id))
   localStorage.setItem(ROLE_KEY, account.role)
   if (account.name) localStorage.setItem(NAME_KEY, account.name)

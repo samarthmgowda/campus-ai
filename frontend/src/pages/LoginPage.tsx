@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { api, ApiError } from '../api/client'
-import { resetSession, setSession, useSession, ROLE_LABELS, type Role } from '../utils/identity'
+import { resetSession, setSession, useSession, ROLE_LABELS, type Role, triggerRevalidationAfterSignIn } from '../utils/identity'
 import {
   ArrowLeft,
   ArrowRight,
@@ -87,6 +87,7 @@ export default function LoginPage() {
         name: account.fullName,
         profileId: account.profileId,
       })
+      triggerRevalidationAfterSignIn()
       navigate(from ?? '/home', { replace: true })
     } catch (e) {
       const message =

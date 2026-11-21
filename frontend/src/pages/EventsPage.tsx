@@ -1,14 +1,16 @@
 import { useState } from 'react'
-import { PageContainer } from '../components/ui/PageContainer'
+import { Link } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { api } from '../api/client'
 import type { Event as CampusEvent } from '../types'
 import { Button } from '../components/ui/Button'
 import { Badge } from '../components/ui/Badge'
 import { PageHeader, EmptyState, ErrorState, SkeletonCard } from '../components/ui/PageState'
+import { PageContainer } from '../components/ui/PageContainer'
 import { CalendarDays, MapPin, Plus, X, Check, CalendarPlus } from 'lucide-react'
 import { cn } from '../utils/cn'
-import { DragEventBuilder } from '../components/DragEventBuilder'
+import { SimpleEventCreate } from '../components/SimpleEventCreate'
+// SimpleEventCreate is the only event creation component; DragEventBuilder has been removed
 
 function dateBlock(iso: string) {
   try {
@@ -108,7 +110,7 @@ export default function EventsPage() {
       )}
 
       {showCreate && (
-        <DragEventBuilder />
+        <SimpleEventCreate />
       )}
 
       {isLoading ? (
@@ -135,7 +137,10 @@ export default function EventsPage() {
                   joined ? 'border-er-500/40 ring-1 ring-er-500/20' : 'border-white/10'
                 )}
               >
-                <div className="p-5 flex gap-4">
+                <Link
+                  to={`/events/${e.id}`}
+                  className="block"
+                >
                   <div
                     className={cn(
                       'flex flex-col items-center justify-center rounded-2xl w-[68px] h-[76px] flex-shrink-0 border',
@@ -177,7 +182,7 @@ export default function EventsPage() {
                       )}
                     </div>
                   </div>
-                </div>
+                </Link>
               </article>
             )
           })}

@@ -1,6 +1,5 @@
 import { useEffect, useState, type ReactNode } from 'react'
-import { api, ApiError } from '../api/client'
-import { getToken, setSession, refreshSession, resetSession } from '../utils/identity'
+import { getToken, resetSession, validateSession, markSessionStale } from '../utils/identity'
 
 /**
  * Validates the stored session against the server before the app renders.
@@ -22,50 +21,41 @@ export default function SessionBootstrap({ children }: { children: ReactNode }) 
   const [checking, setChecking] = useState(() => getToken() !== null)
 
   useEffect(() => {
-    const token = getToken()
-    if (!token) {
-      setChecking(false)
-      return
+    // Validate the stored session against the server on first mount,
+    // and re-validate periodically to maintain consistency.
+    let mounted = true
+    let revalidationTimeout: ReturnType<typeof setTimeout>
+
+    const validateAndSet = async () => {
+      if (!mounted) return
+      setChecking(true)
+      const isValid = await validateSession()
+      if (mounted) {
+        setChecking(false)
+        if (!isValid && typeof window !== 'undefined' && window.location.pathname !== '/login') {
+          window.location.assign('/login')
+        }
+      }
     }
 
-    let cancelled = false
-    // A slow or hung boot check must not hold the app hostage; fall through to
-    // the stored snapshot and let individual requests report their own errors.
-    const timeout = window.setTimeout(() => {
-      if (!cancelled) setChecking(false)
-    }, 6000)
+    // Run on mount
+    validateAndSet()
 
-    type Me = { id: number; email: string; fullName: string; role: string; profileId: number | null }
-
-    api
-      .get<Me>('/auth/me')
-      .then((me) => {
-        if (cancelled) return
-        setSession(token, {
-          id: me.id,
-          role: me.role as never,
-          name: me.fullName,
-          profileId: me.profileId,
-        })
-      })
-      .catch((err) => {
-        if (cancelled) return
-        if (err instanceof ApiError && err.isAuthError) {
-          // api/client already tore the session down and redirected.
-          return
-        }
-        // Offline or server error: keep the snapshot, let pages surface it.
-        refreshSession()
-      })
-      .finally(() => {
-        if (cancelled) return
-        window.clearTimeout(timeout)
-        setChecking(false)
-      })
+    // Re-validate periodically (every 2 minutes) and on visibility change
+    const revalidate = () => {
+      if (!mounted) return
+      revalidationTimeout = setTimeout(validateAndSet, 120_000)
+    }
+    revalidate()
+    const visibilityChange = () => {
+      if (document.visibilityState === 'visible') revalidate()
+    }
+    document.addEventListener('visibilitychange', visibilityChange)
 
     return () => {
-      cancelled = true
-      window.clearTimeout(timeout)
+      mounted = false
+      clearTimeout(revalidationTimeout)
+      document.removeEventListener('visibilitychange', visibilityChange)
     }
   }, [])
 
@@ -89,6 +79,11 @@ export default function SessionBootstrap({ children }: { children: ReactNode }) 
   }
 
   return <>{children}</>
+}
+
+/** Call this after sign-in to mark the session stale and trigger re-validation. */
+export function triggerRevalidationAfterSignIn(): void {
+  markSessionStale()
 }
 
 /** Sign out from anywhere: clears every user-scoped cache, then leaves. */
